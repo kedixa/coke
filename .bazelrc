@@ -1,0 +1,5 @@
+build --cxxopt=-std=c++20
+# build:lto --cxxopt=-flto --linkopt=-flto
+# build --subcommands
+build --compilation_mode=opt # fastbuild dbg opt
+build:memcheck --run_under='valgrind --leak-check=full --error-exitcode=1 '

@@ -1,0 +1,38 @@
+on:
+  push:
+    branches:
+    - master
+    - 'dev*'
+  pull_request:
+    branches:
+    - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        compiler:
+        - cc: gcc-11
+          cxx: g++-11
+          opts: ""
+        - cc: gcc-12
+          cxx: g++-12
+          opts: ""
+
+    steps:
+    - name: Prepare
+      run: |
+        sudo apt install -y libgtest-dev valgrind
+    - uses: actions/checkout@v3
+    - name: Build With GCC
+      env:
+        CC: ${{ matrix.compiler.cc }}
+        CXX: ${{ matrix.compiler.cxx }}
+        BAZEL_OPTS: ${{ matrix.compiler.opts }}
+      run: |
+        bazel build ... ${BAZEL_OPTS}
+        bazel test ... ${BAZEL_OPTS}
+        bazel test ... ${BAZEL_OPTS} --config=memcheck
