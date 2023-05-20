@@ -75,11 +75,35 @@ int main(int argc, char *argv[]) {
 
 ### Ubuntu 22.04
 ```bash
-apt install -y gcc g++ bazel-bootstrap libgtest-dev libssl-dev valgrind
-git clone https://github.com/kedixa/coke.git
-cd coke
-bazel build ...
-bazel test ... --config=memcheck
+apt install -y gcc g++ libgtest-dev libssl-dev git cmake
+git clone https://github.com/kedixa/coke.git && cd coke
+git clone https://github.com/sogou/workflow.git
+make -C workflow -j 8
+cmake -D Workflow_DIR=workflow .
+make -j 8
+```
+
+### Ubuntu 20.04
+```bash
+# 添加源以使用gcc 11
+add-apt-repository ppa:ubuntu-toolchain-r/test
+apt install -y gcc-11 g++-11 libgtest-dev libssl-dev git cmake
+git clone https://github.com/kedixa/coke.git && cd coke
+git clone https://github.com/sogou/workflow.git
+export CC=gcc-11 CXX=g++-11
+make -C workflow -j 8
+cmake -D Workflow_DIR=workflow .
+make -j 8
+```
+
+### CentOS Stream 8
+```bash
+yum install -y gcc-toolset-12-gcc gcc-toolset-12-gcc-c++ openssl-devel git cmake
+git clone https://github.com/kedixa/coke.git && cd coke
+git clone https://github.com/sogou/workflow.git
+scl enable gcc-toolset-12 "make -C workflow -j 8"
+scl enable gcc-toolset-12 "cmake -D Workflow_DIR=workflow ."
+scl enable gcc-toolset-12 "make -j 8"
 ```
 
 ## LICENSE
