@@ -1,0 +1,8 @@
+@PACKAGE_INIT@
+
+set(COKE_VERSION "@coke_VERSION@")
+set_and_check(COKE_INCLUDE_DIR "@PACKAGE_INCLUDE_DIR@")
+set_and_check(COKE_LIBRARY_DIR "@PACKAGE_LIBRARY_DIR@")
+
+check_required_components("@LIBRARY_NAME@")
+set(COKE_LIBRARIES "@LIBRARY_NAME@")
