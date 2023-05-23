@@ -120,11 +120,11 @@ TEST(WAIT, async_wait) {
 }
 
 int main(int argc, char *argv[]) {
-    coke::library_init(coke::GlobalSettings{
-        .poller_threads = 2,
-        .handler_threads = 2,
-        .compute_threads = 2,
-    });
+    coke::GlobalSettings s;
+    s.poller_threads = 2;
+    s.handler_threads = 2;
+    s.compute_threads = 2;
+    coke::library_init(s);
 
     testing::InitGoogleTest(&argc, argv);
 

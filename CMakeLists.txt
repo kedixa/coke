@@ -25,10 +25,17 @@ file(COPY
 )
 
 find_package(Workflow REQUIRED)
+find_package(OpenSSL REQUIRED)
 include_directories(${WORKFLOW_INCLUDE_DIR})
+include_directories(${OPENSSL_INCLUDE_DIR})
 
 add_subdirectory(src)
 add_subdirectory(example)
+
+if (ENABLE_TEST)
+    enable_testing()
+    add_subdirectory(test)
+endif()
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

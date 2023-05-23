@@ -51,6 +51,7 @@ coke::Task<> merge_sort_impl(size_t *first1, size_t *last1, size_t *first2, size
 coke::Task<> merge_sort(size_t *first, size_t *last) {
     size_t n = last - first;
     if (n > 1) {
+        // We didn't initialize buf[] because std::is_trival_v<size_t>
         size_t *buf = (size_t *)malloc(sizeof(size_t) * n);
         co_await merge_sort_impl(first, last, buf, buf + n, 0);
         free(buf);

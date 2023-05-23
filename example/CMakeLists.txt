@@ -11,11 +11,17 @@ set(ALL_EXAMPLES
 foreach(example ${ALL_EXAMPLES})
     string(REGEX MATCH "[^-]*$" exec_name ${example})
     add_executable(${exec_name} ${example}.cpp)
+
+    target_link_directories(${exec_name} PRIVATE ${WORKFLOW_LIB_DIR})
+
     target_link_libraries(${exec_name}
         ${COKE_LIBRARY_NAME}
-        ${WORKFLOW_LIB_DIR}/libworkflow.a
-        -lpthread -lssl -lcrypto
+        # use static link, in case not in system path
+        -Wl,-Bstatic workflow -Wl,-Bdynamic
+        pthread
+        OpenSSL::SSL OpenSSL::Crypto
     )
+
     include_directories(${exec_name} 
         ${COKE_INCLUDE_DIR}
         ${WORKFLOW_INCLUDE_DIR}

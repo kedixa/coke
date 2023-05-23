@@ -90,7 +90,9 @@ private:
 };
 
 
-template<SimpleType T=void>
+// clang deduce failed if use SimpleType
+
+template<typename T=void>
 class Task {
 public:
     using promise_type = Promise<T>;
