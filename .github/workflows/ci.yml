@@ -8,9 +8,12 @@ on:
     - master
   workflow_dispatch:
 
+env:
+  wf_tag: v0.10.7
+
 jobs:
-  build:
-    name: Build
+  build-ubuntu-2204:
+    name: ubuntu-22.04
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -36,3 +39,29 @@ jobs:
         bazel build ... ${BAZEL_OPTS}
         bazel test ... ${BAZEL_OPTS}
         bazel test ... ${BAZEL_OPTS} --config=memcheck
+
+  build-ubuntu-2004:
+    name: ubuntu-20.04
+    runs-on: ubuntu-22.04
+    container:
+      image: ubuntu:20.04
+    steps:
+    - name: Prepare
+      run: |
+        apt update
+        apt install -y software-properties-common
+        add-apt-repository ppa:ubuntu-toolchain-r/test
+        apt install -y gcc-11 g++-11 libgtest-dev libssl-dev git cmake
+    - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
+      with:
+        repository: sogou/workflow
+        ref: ${{ env.wf_tag }}
+        path: workflow
+    - name: Build With GCC
+      run: |
+        export CC=gcc-11 CXX=g++-11
+        cmake -S workflow -B build.workflow -D CMAKE_CXX_STANDARD=20
+        make -C workflow -j 8
+        cmake -S . -B build -D Workflow_DIR=workflow -D ENABLE_TEST=1
+        make -C build -j 8 all test
