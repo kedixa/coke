@@ -26,8 +26,10 @@ file(COPY
 
 find_package(Workflow REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(Threads REQUIRED)
 include_directories(${WORKFLOW_INCLUDE_DIR})
 include_directories(${OPENSSL_INCLUDE_DIR})
+include_directories(${COKE_INCLUDE_DIR})
 
 add_subdirectory(src)
 add_subdirectory(example)

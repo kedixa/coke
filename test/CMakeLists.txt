@@ -20,18 +20,13 @@ foreach(exec_name ${ALL_TESTS})
     endif ()
 
     target_link_directories(${exec_name} PRIVATE ${WORKFLOW_LIB_DIR})
+    target_link_options(${exec_name} PRIVATE "-Wl,-rpath,${WORKFLOW_LIB_DIR}")
 
     target_link_libraries(${exec_name}
         ${COKE_LIBRARY_NAME}
-        # use static link, in case not in system path
-        -Wl,-Bstatic workflow -Wl,-Bdynamic
-        pthread
+        workflow
+        Threads::Threads
         OpenSSL::SSL OpenSSL::Crypto
         GTest::GTest GTest::Main
-    )
-
-    include_directories(${exec_name}
-        ${COKE_INCLUDE_DIR}
-        ${WORKFLOW_INCLUDE_DIR}
     )
 endforeach()
