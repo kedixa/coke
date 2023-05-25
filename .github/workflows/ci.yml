@@ -96,7 +96,7 @@ jobs:
     strategy:
       matrix:
         compiler_prepare: [
-          "scl enable gcc-toolset-12 bash",
+          "source scl_source enable gcc-toolset-12",
           "export CC=clang CXX=clang++"
         ]
     steps:
