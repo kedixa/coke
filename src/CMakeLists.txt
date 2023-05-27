@@ -11,10 +11,6 @@ add_library(${COKE_LIBRARY_NAME} STATIC
     sleep.cpp
 )
 
-include_directories(${COKE_LIBRARY_NAME}
-    ${COKE_INCLUDE_DIR}
-)
-
 target_include_directories(${COKE_LIBRARY_NAME} PUBLIC
     ${COKE_INCLUDE_DIR}
 )
