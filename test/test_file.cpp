@@ -5,7 +5,6 @@
 #include <gtest/gtest.h>
 
 #include "coke/coke.h"
-#include "coke/fileio.h"
 
 constexpr size_t BUF_SIZE = 1024;
 char buf[BUF_SIZE];

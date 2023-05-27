@@ -6,7 +6,6 @@
 #include <fcntl.h>
 
 #include "coke/coke.h"
-#include "coke/fileio.h"
 
 constexpr size_t BUF_SIZE = 8ULL * 1024 * 1024;
 unsigned char buf[BUF_SIZE];

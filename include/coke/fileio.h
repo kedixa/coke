@@ -1,7 +1,7 @@
 #ifndef COKE_FILEIO_H
 #define COKE_FILEIO_H
 
-#include "sys/uio.h"  // struct iovec
+#include <sys/uio.h>  // struct iovec
 
 #include "coke/detail/awaiter_base.h"
 

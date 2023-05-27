@@ -2,7 +2,6 @@
 #include <chrono>
 
 #include "coke/coke.h"
-#include "coke/sleep.h"
 
 /**
  * This example outputs "Hello World" to stdout `n` times,
