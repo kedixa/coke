@@ -10,12 +10,12 @@ namespace coke {
 /**
  * Return value type of file input and output operations.
  * When `state` is not coke::STATE_SUCCESS, `error` means system error code errno.
- * When file io success, `ret` indicates the number of bytes read or written.
+ * When file io success, `nbytes` indicates the number of bytes read or written.
 */
 struct FileResult {
     int state;
     int error;
-    long ret;
+    long nbytes;  // the number of bytes read or written
 };
 
 class FileAwaiter : public AwaiterBase {
