@@ -5,7 +5,6 @@
 #include <chrono>
 
 #include "coke/coke.h"
-#include "coke/go.h"
 
 using std::size_t;
 constexpr size_t SMALL_HINT = 1 << 16;

@@ -6,7 +6,6 @@
 #include <fcntl.h>
 
 #include "coke/coke.h"
-#include "coke/fileio.h"
 
 constexpr size_t BUF_SIZE = 8ULL * 1024 * 1024;
 unsigned char buf[BUF_SIZE];
@@ -14,7 +13,7 @@ unsigned char buf[BUF_SIZE];
 /**
  * This example shows how to read data from file, count its words and lines,
  * the file maybe very large, so we read up to `BUF_SIZE` bytes at a time,
- * and read until FileResult::ret == 0 (which means EOF).
+ * and read until FileResult::nbytes == 0 (which means EOF).
 */
 
 coke::Task<> word_count(const std::string &fn) {
@@ -34,11 +33,11 @@ coke::Task<> word_count(const std::string &fn) {
     while (true) {
         res = co_await coke::pread(fd, buf, BUF_SIZE, offset);
 
-        if (res.state != 0 || res.ret <= 0)
+        if (res.state != 0 || res.nbytes == 0)
             break;
 
-        const unsigned char *end = buf + res.ret;
-        chars += res.ret;
+        const unsigned char *end = buf + res.nbytes;
+        chars += res.nbytes;
         for (const unsigned char *p = buf; p != end; p++) {
             lines += (*p == '\n');
 
@@ -50,7 +49,7 @@ coke::Task<> word_count(const std::string &fn) {
                 in_word = false;
         }
 
-        offset += res.ret;
+        offset += res.nbytes;
     }
 
     if (res.state == 0) {

@@ -7,7 +7,9 @@ namespace coke {
 template<typename T>
 FileAwaiter::FileAwaiter(T *task) {
     task->set_callback([this] (T *t) {
-        this->result = {t->get_state(), t->get_error(), t->get_retval()};
+        this->result.state = t->get_state();
+        this->result.error = t->get_error();
+        this->result.nbytes = t->get_retval();
         this->done();
     });
 
