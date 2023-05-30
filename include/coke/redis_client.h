@@ -37,8 +37,16 @@ public:
 public:
     explicit
     RedisClient(const RedisClientParams &params = RedisClientParams());
+    virtual ~RedisClient() = default;
 
-    AwaiterType request(std::string command, std::vector<std::string> params);
+    AwaiterType request(std::string command, std::vector<std::string> params) noexcept;
+
+    // TODO: Just an example, I'm thinking about it
+    // without consider request fail, return Task<std::string> (which will produce "PONG")
+    // is much better
+    AwaiterType ping() noexcept {
+        return request("PING", {});
+    }
 
 protected:
     virtual AwaiterType create_task(ReqType *);
