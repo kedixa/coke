@@ -4,33 +4,40 @@
 
 namespace coke {
 
-RedisClient::RedisClient(const RedisClientParams &p) : BasicClient(p) {
-    url.assign(p.use_ssl ? "rediss://" : "redis://");
+RedisClient::RedisClient(const RedisClientParams &params)
+    : params(params)
+{
+    url.assign(params.use_ssl ? "rediss://" : "redis://");
 
-    if (!p.password.empty())
-        url.append(":").append(p.password).append("@");
+    if (!params.password.empty())
+        url.append(":").append(params.password).append("@");
 
-    url.append(p.host).append(":").append(std::to_string(p.port));
-    url.append("/").append(std::to_string(p.db));
+    url.append(params.host).append(":")
+       .append(std::to_string(params.port))
+       .append("/").append(std::to_string(params.db));
 }
 
-RedisClient::awaiter_t
-RedisClient::request(const std::string &command, std::vector<std::string> params) {
+RedisClient::AwaiterType
+RedisClient::request(std::string command, std::vector<std::string> params) {
     RedisRequest req;
     req.set_request(command, params);
 
-    return Base::request("", std::move(req));
+    return create_task(&req);
 }
 
-RedisClient::task_t *
-RedisClient::create_task(const std::string &, req_t *req) {
+RedisClient::AwaiterType
+RedisClient::create_task(ReqType *req) {
     WFRedisTask *task;
     
     task = WFTaskFactory::create_redis_task(url, params.retry_max, nullptr);
     if (req)
         *(task->get_req()) = std::move(*req);
 
-    return task;
+    task->set_send_timeout(params.send_timeout);
+    task->set_receive_timeout(params.receive_timeout);
+    task->set_keep_alive(params.keep_alive_timeout);
+
+    return AwaiterType(task);
 }
 
 } // namespace coke

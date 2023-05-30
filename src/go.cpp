@@ -7,7 +7,7 @@ namespace coke {
 
 namespace detail {
 
-void *create_go_task(const std::string &queue_name, std::function<void()> &&func) {
+SubTask *create_go_task(const std::string &queue_name, std::function<void()> &&func) {
     return WFTaskFactory::create_go_task(queue_name, std::move(func));
 }
 

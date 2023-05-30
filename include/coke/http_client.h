@@ -5,7 +5,8 @@
 #include <utility>
 #include <string>
 
-#include "coke/basic_client.h"
+#include "coke/network.h"
+
 #include "workflow/HttpMessage.h"
 
 namespace coke {
@@ -14,36 +15,48 @@ using HttpRequest = protocol::HttpRequest;
 using HttpResponse = protocol::HttpResponse;
 using HttpResult = NetworkResult<HttpResponse>;
 
-struct HttpClientParams : public ClientParams {
-    int redirect_max = 0;
+struct HttpClientParams {
+    int retry_max           = 0;
+    int send_timeout        = -1;
+    int receive_timeout     = -1;
+    int keep_alive_timeout  = 60 * 1000;
+
+    int redirect_max        = 0;
     std::string proxy;
 };
 
 
-class HttpClient : public BasicClient<HttpRequest, HttpResponse> {
-    using Base = BasicClient<HttpRequest, HttpResponse>;
-
+class HttpClient {
 public:
-    using HttpAwaiter = Base::awaiter_t;
-    using HttpTask = Base::task_t;
+    using ReqType = HttpRequest;
+    using RespType = HttpResponse;
+    using AwaiterType = NetworkAwaiter<ReqType, RespType>;
     using HttpHeader = std::vector<std::pair<std::string, std::string>>;
-    using Base::request;
 
 public:
-    HttpClient(const HttpClientParams &p = HttpClientParams()) : BasicClient(p) {
-        redirect_max = p.receive_timeout;
-        proxy = p.proxy;
+    explicit
+    HttpClient(const HttpClientParams &params = HttpClientParams())
+        : params(params)
+    { }
+
+    virtual ~HttpClient() = default;
+
+    AwaiterType request(std::string url) {
+        return create_task(std::move(url), nullptr);
     }
 
-    HttpAwaiter request(const std::string &method, const std::string &url,
-                        const HttpHeader &headers, std::string_view body);
+    AwaiterType request(std::string url, ReqType &&req) {
+        return create_task(std::move(url), &req);
+    }
+
+    AwaiterType request(std::string url, std::string method,
+                        const HttpHeader &headers, std::string body);
 
 protected:
-    HttpTask *create_task(const std::string &url, req_t *req) override;
+    virtual AwaiterType create_task(std::string url, ReqType *req);
 
-private:
-    int redirect_max{0};
-    std::string proxy;
+protected:
+    HttpClientParams params;
 };
 
 } // namespace coke

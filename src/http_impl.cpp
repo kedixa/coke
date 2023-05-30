@@ -9,9 +9,9 @@
 
 namespace coke {
 
-HttpClient::HttpAwaiter
-HttpClient::request(const std::string &method, const std::string &url,
-                    const HttpHeader &headers, std::string_view body) {
+HttpClient::AwaiterType
+HttpClient::request(std::string url, std::string method,
+                    const HttpHeader &headers, std::string body) {
     ParsedURI uri;
     HttpRequest req;
     std::string request_uri("/");
@@ -26,35 +26,38 @@ HttpClient::request(const std::string &method, const std::string &url,
 
     req.set_method(method);
     req.set_request_uri(request_uri);
-    req.append_output_body_nocopy(body.data(), body.size());
+    req.append_output_body(body.data(), body.size());
 
     for (const auto &pair : headers)
         req.add_header_pair(pair.first, pair.second);
 
-    return Base::request(url, std::move(req));
+    return create_task(std::move(url), &req);
 }
 
 
-HttpClient::HttpTask *
-HttpClient::create_task(const std::string &url, req_t *req) {
+HttpClient::AwaiterType
+HttpClient::create_task(std::string url, ReqType *req) {
     WFHttpTask *task;
     HttpRequest *treq;
-    bool has_proxy = !proxy.empty();
-    bool https = url.compare(0, 8, "https://", 8) == 0;
+    bool https;
+    bool has_proxy = !params.proxy.empty();
+    const std::string &proxy = params.proxy;
+
+    https = strcasecmp(url.c_str(), "https://") == 0;
 
     if (has_proxy && https)
-        task = WFTaskFactory::create_http_task(url, proxy, redirect_max, params.retry_max, nullptr);
+        task = WFTaskFactory::create_http_task(url, proxy, params.redirect_max, params.retry_max, nullptr);
     else if (has_proxy)
-        task = WFTaskFactory::create_http_task(proxy, redirect_max, params.retry_max, nullptr);
+        task = WFTaskFactory::create_http_task(proxy, params.redirect_max, params.retry_max, nullptr);
     else
-        task = WFTaskFactory::create_http_task(url, redirect_max, params.retry_max, nullptr);
+        task = WFTaskFactory::create_http_task(url, params.redirect_max, params.retry_max, nullptr);
 
     treq = task->get_req();
 
     if (req)
         *treq = std::move(*req);
 
-    // use simple proxy if not https
+    // Use simple proxy if not https
     if (has_proxy && !https)
         treq->set_request_uri(url);
 
@@ -67,7 +70,11 @@ HttpClient::create_task(const std::string &url, req_t *req) {
     if (!treq->get_method())
         treq->set_method("GET");
 
-    return task;
+    task->set_send_timeout(params.send_timeout);
+    task->set_receive_timeout(params.receive_timeout);
+    task->set_keep_alive(params.keep_alive_timeout);
+
+    return AwaiterType(task);
 }
 
 bool HttpHeaderCursor::iterator::next() noexcept {
@@ -75,7 +82,7 @@ bool HttpHeaderCursor::iterator::next() noexcept {
         return false;
 
     const void *name, *value;
-    size_t nlen, vlen;
+    std::size_t nlen, vlen;
 
     if (http_header_cursor_next(&name, &nlen, &value, &vlen, &cursor) == 0) {
         data.name = std::string_view(static_cast<const char *>(name), nlen);

@@ -1,7 +1,9 @@
 #ifndef COKE_HTTP_SERVER_H
 #define COKE_HTTP_SERVER_H
 
+#include "coke/detail/task.h"
 #include "coke/network.h"
+
 #include "workflow/WFHttpServer.h"
 #include "workflow/HttpMessage.h"
 
@@ -10,9 +12,9 @@ namespace coke {
 using HttpRequest = protocol::HttpRequest;
 using HttpResponse = protocol::HttpResponse;
 using HttpAwaiter = NetworkAwaiter<HttpRequest, HttpResponse>;
-using HttpServerContext = ServerContext<HttpRequest, HttpResponse>;
+using HttpServerContext = ServerContext<WFNetworkTask<HttpRequest, HttpResponse>>;
 
-// TODO: The inheritance relationship of server will be modified in the near future
+// TODO: The inheritance relationship of server may be modified in the near future
 class HttpServer : public WFHttpServer {
     using processor_t = std::function<Task<>(HttpServerContext ctx)>;
 

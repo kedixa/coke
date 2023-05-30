@@ -28,7 +28,6 @@ static_assert(WAIT_TIMEOUT == TOR_WAIT_TIMEOUT);
 static_assert(CONNECT_TIMEOUT == TOR_CONNECT_TIMEOUT);
 static_assert(TRANSMIT_TIMEOUT == TOR_TRANSMIT_TIMEOUT);
 
-static SubTask *task_cast(void *task) { return static_cast<SubTask *>(task); }
 
 void library_init(const GlobalSettings &s) {
     WFGlobalSettings t = GLOBAL_SETTINGS_DEFAULT;
@@ -60,8 +59,8 @@ const char *get_error_string(int state, int error) {
     return WFGlobal::get_error_string(state, error);
 }
 
-void *AwaiterBase::create_series(void *first) {
-    return Workflow::create_series_work(task_cast(first), nullptr);
+void *AwaiterBase::create_series(SubTask *first) {
+    return Workflow::create_series_work(first, nullptr);
 }
 
 void AwaiterBase::suspend(void *s, bool is_new) {
@@ -70,12 +69,12 @@ void AwaiterBase::suspend(void *s, bool is_new) {
     if (is_new)
         series->start();
     else if(!in_series)
-        series->push_back(task_cast(subtask));
+        series->push_back(subtask);
 }
 
 AwaiterBase::~AwaiterBase() {
     // We assume that SubTask can be deleted
-    delete task_cast(subtask);
+    delete subtask;
 }
 
 } // namespace coke

@@ -5,7 +5,8 @@
 #include <utility>
 #include <string>
 
-#include "coke/basic_client.h"
+#include "coke/network.h"
+
 #include "workflow/RedisMessage.h"
 
 namespace coke {
@@ -14,30 +15,36 @@ using RedisRequest = protocol::RedisRequest;
 using RedisResponse = protocol::RedisResponse;
 using RedisResult = NetworkResult<RedisResponse>;
 
-struct RedisClientParams : public ClientParams {
-    bool use_ssl{false};
-    int port{6379};
-    int db{0};
+struct RedisClientParams {
+    int retry_max           = 0;
+    int send_timeout        = -1;
+    int receive_timeout     = -1;
+    int keep_alive_timeout  = 60 * 1000;
+
+    bool use_ssl            = false;
+    int port                = 6379;
+    int db                  = 0;
     std::string host;
     std::string password;
 };
 
-class RedisClient final : public BasicClient<RedisRequest, RedisResponse> {
-    using Base = BasicClient<RedisRequest, RedisResponse>;
+class RedisClient {
+public:
+    using ReqType = RedisRequest;
+    using RespType = RedisResponse;
+    using AwaiterType = NetworkAwaiter<ReqType, RespType>;
 
 public:
-    using Base::awaiter_t;
-    using Base::task_t;
+    explicit
+    RedisClient(const RedisClientParams &params = RedisClientParams());
 
-public:
-    RedisClient(const RedisClientParams &p);
-
-    awaiter_t request(const std::string &command, std::vector<std::string> params);
+    AwaiterType request(std::string command, std::vector<std::string> params);
 
 protected:
-    task_t *create_task(const std::string &, req_t *) override;
+    virtual AwaiterType create_task(ReqType *);
 
-private:
+protected:
+    RedisClientParams params;
     std::string url;
 };
 

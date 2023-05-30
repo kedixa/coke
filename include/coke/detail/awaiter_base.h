@@ -5,13 +5,15 @@
 
 #include "coke/detail/basic_concept.h"
 
+#include "workflow/SubTask.h"
+
 namespace coke {
 
 /**
- * Common base class for all awaitable objects in this project.
+ * Common base class for awaitable objects in this project.
 */
 class AwaiterBase {
-    static void *create_series(void *first);
+    static void *create_series(SubTask *first);
 
 public:
     AwaiterBase() = default;
@@ -85,14 +87,14 @@ protected:
      * in_series: Whether task is already in series, for example
      *          reply_task is in server's series.
     */
-    void set_task(void *subtask, bool in_series = false) noexcept {
+    void set_task(SubTask *subtask, bool in_series = false) noexcept {
         this->subtask = subtask;
         this->in_series = in_series;
     }
 
 protected:
     std::coroutine_handle<> hdl;
-    void *subtask{nullptr};
+    SubTask *subtask{nullptr};
     bool in_series{false};
 };
 

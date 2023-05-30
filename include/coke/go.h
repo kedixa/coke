@@ -13,11 +13,10 @@ namespace coke {
 
 namespace detail {
 
-// TODO When use inline std::string here, gcc 12 -flto undefind reference
-//inline static const std::string DFT_QUEUE{"coke_go"};
+// Some SSO std::string has 15 chars locally, so use a short and meaningful name
 inline static constexpr std::string_view DFT_QUEUE{"coke_dft_queue"};
 
-void *create_go_task(const std::string &queue_name, std::function<void()> &&func);
+SubTask *create_go_task(const std::string &queue_name, std::function<void()> &&func);
 
 } // namespace detail
 
@@ -49,7 +48,6 @@ public:
 
     return_t await_resume() {
         if constexpr (!std::is_same_v<return_t, void>) {
-            assert(ret.has_value());
             return std::move(ret.value());
         }
     }

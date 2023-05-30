@@ -3,60 +3,68 @@
 
 #include <optional>
 #include <utility>
+#include <cassert>
 
-#include "coke/coke.h"
-#include "workflow/WFTask.h"
+#include "coke/detail/basic_concept.h"
+#include "coke/detail/awaiter_base.h"
 
 namespace coke {
 
 template<typename RESP>
 struct NetworkResult {
+    using RespType = RESP;
+
     int state;
     int error;
+    int timeout_reason;
     long long seqid;
-    RESP resp;
-    // TODO addr, timeout reason
+    RespType resp;
 };
 
 template<typename REQ, typename RESP>
 class NetworkAwaiter : public AwaiterBase {
-    using req_t = REQ;
-    using resp_t = RESP;
-    using task_t = WFNetworkTask<req_t, resp_t>;
+    using ReqType = REQ;
+    using RespType = RESP;
+    using ResultType = NetworkResult<RespType>;
 
 public:
-    explicit NetworkAwaiter(task_t *task, bool reply = false) {
-        task->set_callback([this] (task_t *t) {
-            using result_t = NetworkResult<resp_t>;
-            ret.emplace(result_t{t->get_state(), t->get_error(),
-                        t->get_task_seq(), std::move(*t->get_resp())});
+    template<NetworkTaskType NT>
+        requires (std::same_as<typename NetworkTaskTrait<NT>::ReqType, ReqType> &&
+                std::same_as<typename NetworkTaskTrait<NT>::RespType, RespType>)
+    explicit NetworkAwaiter(NT *task, bool reply = false) {
+        task->set_callback([this] (NT *t) {
+            ret.emplace(
+                //ResultType {
+                    t->get_state(), t->get_error(), t->get_timeout_reason(),
+                    t->get_task_seq(), std::move(*t->get_resp())
+                //}
+            );
+
             this->done();
         });
 
         set_task(task, reply);
     }
 
-    NetworkResult<resp_t> await_resume() {
-        assert(ret.has_value());
+    ResultType await_resume() {
         return std::move(ret.value());
     }
 
 private:
-    std::optional<NetworkResult<resp_t>> ret;
+    std::optional<ResultType> ret;
 };
 
 
-struct ReplyResult {
+struct NetworkReplyResult {
     int state;
     int error;
 };
 
-
-class ReplyAwaiter : public AwaiterBase {
+class NetworkReplyAwaiter : public AwaiterBase {
 public:
-    template<typename REQ, typename RESP>
-    explicit ReplyAwaiter(WFNetworkTask<REQ, RESP> *task) {
-        task->set_callback([this] (WFNetworkTask<REQ, RESP> *t) {
+    template<NetworkTaskType NT>
+    explicit NetworkReplyAwaiter(NT *task) {
+        task->set_callback([this] (NT *t) {
             ret = {t->get_state(), t->get_error()};
             this->done();
         });
@@ -64,24 +72,23 @@ public:
         set_task(task, true);
     }
 
-    ReplyResult await_resume() {
+    NetworkReplyResult await_resume() {
         return ret;
     }
 
 private:
-    ReplyResult ret;
+    NetworkReplyResult ret;
 };
 
 
-template<typename REQ, typename RESP>
+template<NetworkTaskType NT>
 class ServerContext {
-    using req_t = REQ;
-    using resp_t = RESP;
-    using task_t = WFNetworkTask<req_t, resp_t>;
-    using awaiter_t = ReplyAwaiter;
+    using ReqType = NetworkTaskTrait<NT>::ReqType;
+    using RespType = NetworkTaskTrait<NT>::RespType;
+    using AwaiterType = NetworkReplyAwaiter;
 
 public:
-    ServerContext(task_t *task) : replied(false), task(task)
+    ServerContext(NT *task) : replied(false), task(task)
     { }
 
     ServerContext(ServerContext &&c) {
@@ -101,21 +108,21 @@ public:
         return *this;
     }
 
-    req_t &get_req() & { return *(task->get_req()); }
-    resp_t &get_resp() & { return *(task->get_resp()); }
+    ReqType &get_req() & { return *(task->get_req()); }
+    RespType &get_resp() & { return *(task->get_resp()); }
     long long get_seqid() { return task->get_seq(); }
 
-    ReplyAwaiter reply() {
+    AwaiterType reply() {
         // Each ServerContext must reply once
         assert(!replied);
         replied = true;
 
-        return ReplyAwaiter(task);
+        return AwaiterType(task);
     }
 
 private:
     bool replied;
-    task_t *task;
+    NT *task;
 };
 
 } // namespace coke
