@@ -49,7 +49,7 @@ public:
     }
 
 protected:
-    virtual AwaiterType create_task(ReqType *);
+    virtual AwaiterType create_task(ReqType *) noexcept;
 
 protected:
     RedisClientParams params;

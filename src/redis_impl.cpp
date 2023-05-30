@@ -18,7 +18,7 @@ RedisClient::RedisClient(const RedisClientParams &params)
 }
 
 RedisClient::AwaiterType
-RedisClient::request(std::string command, std::vector<std::string> params) {
+RedisClient::request(std::string command, std::vector<std::string> params) noexcept {
     RedisRequest req;
     req.set_request(command, params);
 
@@ -26,7 +26,7 @@ RedisClient::request(std::string command, std::vector<std::string> params) {
 }
 
 RedisClient::AwaiterType
-RedisClient::create_task(ReqType *req) {
+RedisClient::create_task(ReqType *req) noexcept {
     WFRedisTask *task;
     
     task = WFTaskFactory::create_redis_task(url, params.retry_max, nullptr);

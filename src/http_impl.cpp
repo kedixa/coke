@@ -36,7 +36,7 @@ HttpClient::request(std::string url, std::string method,
 
 
 HttpClient::AwaiterType
-HttpClient::create_task(std::string url, ReqType *req) {
+HttpClient::create_task(std::string url, ReqType *req) noexcept {
     WFHttpTask *task;
     HttpRequest *treq;
     bool https;

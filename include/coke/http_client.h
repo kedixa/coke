@@ -53,7 +53,7 @@ public:
                         const HttpHeader &headers, std::string body);
 
 protected:
-    virtual AwaiterType create_task(std::string url, ReqType *req);
+    virtual AwaiterType create_task(std::string url, ReqType *req) noexcept;
 
 protected:
     HttpClientParams params;
