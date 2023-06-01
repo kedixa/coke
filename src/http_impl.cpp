@@ -10,7 +10,7 @@
 namespace coke {
 
 HttpClient::AwaiterType
-HttpClient::request(std::string url, std::string method,
+HttpClient::request(const std::string &url, const std::string &method,
                     const HttpHeader &headers, std::string body) {
     ParsedURI uri;
     HttpRequest req;
@@ -31,12 +31,12 @@ HttpClient::request(std::string url, std::string method,
     for (const auto &pair : headers)
         req.add_header_pair(pair.first, pair.second);
 
-    return create_task(std::move(url), &req);
+    return create_task(url, &req);
 }
 
 
 HttpClient::AwaiterType
-HttpClient::create_task(std::string url, ReqType *req) noexcept {
+HttpClient::create_task(const std::string &url, ReqType *req) noexcept {
     WFHttpTask *task;
     HttpRequest *treq;
     bool https;
@@ -54,8 +54,16 @@ HttpClient::create_task(std::string url, ReqType *req) noexcept {
 
     treq = task->get_req();
 
-    if (req)
+    if (req) {
+        const char *uri = req->get_request_uri();
+        const char *turi = treq->get_request_uri();
+
+        // Use request_uri in url if not set in req
+        if ((!uri || !*uri) && turi && !has_proxy)
+            req->set_request_uri(turi);
+
         *treq = std::move(*req);
+    }
 
     // Use simple proxy if not https
     if (has_proxy && !https)

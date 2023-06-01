@@ -41,19 +41,19 @@ public:
 
     virtual ~HttpClient() = default;
 
-    AwaiterType request(std::string url) {
-        return create_task(std::move(url), nullptr);
+    AwaiterType request(const std::string &url) {
+        return create_task(url, nullptr);
     }
 
-    AwaiterType request(std::string url, ReqType &&req) {
-        return create_task(std::move(url), &req);
+    AwaiterType request(const std::string &url, ReqType &&req) {
+        return create_task(url, &req);
     }
 
-    AwaiterType request(std::string url, std::string method,
+    AwaiterType request(const std::string &url, const std::string &method,
                         const HttpHeader &headers, std::string body);
 
 protected:
-    virtual AwaiterType create_task(std::string url, ReqType *req) noexcept;
+    virtual AwaiterType create_task(const std::string &url, ReqType *req) noexcept;
 
 protected:
     HttpClientParams params;
