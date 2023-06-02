@@ -67,10 +67,10 @@ jobs:
         make -C build.cmake -j 8 all test
 
   build-fedora:
-    name: fedora-39
+    name: fedora-38
     runs-on: ubuntu-22.04
     container:
-      image: fedora:39
+      image: fedora:38
     steps:
     - name: Prepare
       run: |
