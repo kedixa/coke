@@ -11,7 +11,7 @@ namespace coke {
 
 class LatchAwaiter : public AwaiterBase {
 public:
-    explicit LatchAwaiter(void *task);
+    explicit LatchAwaiter(SubTask *task);
     void await_resume() { }
 };
 
@@ -37,7 +37,7 @@ public:
     virtual void count_down();
 
 protected:
-    void *task;
+    SubTask *task;
     bool awaited{false};
 };
 

@@ -5,7 +5,7 @@
 
 namespace coke {
 
-LatchAwaiter::LatchAwaiter(void *task) {
+LatchAwaiter::LatchAwaiter(SubTask *task) {
     WFCounterTask *counter = static_cast<WFCounterTask *>(task);
     counter->set_callback([this](WFCounterTask *) { this->done(); });
     set_task(task);
