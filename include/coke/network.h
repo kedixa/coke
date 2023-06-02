@@ -35,10 +35,10 @@ public:
     explicit NetworkAwaiter(NT *task, bool reply = false) {
         task->set_callback([this] (NT *t) {
             ret.emplace(
-                //ResultType {
+                ResultType {
                     t->get_state(), t->get_error(), t->get_timeout_reason(),
                     t->get_task_seq(), std::move(*t->get_resp())
-                //}
+                }
             );
 
             this->done();
@@ -84,8 +84,8 @@ private:
 
 template<NetworkTaskType NT>
 class ServerContext {
-    using ReqType = NetworkTaskTrait<NT>::ReqType;
-    using RespType = NetworkTaskTrait<NT>::RespType;
+    using ReqType = typename NetworkTaskTrait<NT>::ReqType;
+    using RespType = typename NetworkTaskTrait<NT>::RespType;
     using AwaiterType = NetworkReplyAwaiter;
 
 public:
