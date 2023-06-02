@@ -23,6 +23,7 @@ struct NetworkResult {
 
 template<typename REQ, typename RESP>
 class NetworkAwaiter : public AwaiterBase {
+public:
     using ReqType = REQ;
     using RespType = RESP;
     using ResultType = NetworkResult<RespType>;

@@ -16,15 +16,16 @@ using HttpServerContext = ServerContext<WFNetworkTask<HttpRequest, HttpResponse>
 
 // TODO: The inheritance relationship of server may be modified in the near future
 class HttpServer : public WFHttpServer {
-    using processor_t = std::function<Task<>(HttpServerContext ctx)>;
+    using ProcessorType = std::function<Task<>(HttpServerContext)>;
 
 public:
-    HttpServer(const struct WFServerParams *params, processor_t co_proc)
+    HttpServer(const struct WFServerParams *params, ProcessorType co_proc)
         : WFHttpServer(params, std::bind(&HttpServer::do_proc, this, std::placeholders::_1)),
         co_proc(std::move(co_proc))
     { }
 
-    HttpServer(processor_t co_proc) : HttpServer(&HTTP_SERVER_PARAMS_DEFAULT, std::move(co_proc))
+    HttpServer(ProcessorType co_proc)
+        : HttpServer(&HTTP_SERVER_PARAMS_DEFAULT, std::move(co_proc))
     { }
 
 private:
@@ -34,7 +35,7 @@ private:
     }
 
 private:
-    processor_t co_proc;
+    ProcessorType co_proc;
 };
 
 } // namespace coke
