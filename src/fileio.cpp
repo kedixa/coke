@@ -4,13 +4,15 @@
 
 namespace coke {
 
-template<typename T>
-FileAwaiter::FileAwaiter(T *task) {
-    task->set_callback([this] (T *t) {
-        this->result.state = t->get_state();
-        this->result.error = t->get_error();
-        this->result.nbytes = t->get_retval();
-        this->done();
+template<typename Task>
+FileAwaiter::FileAwaiter(Task *task) {
+    task->set_callback([info = this->get_info()] (Task *t) {
+        auto *awaiter = info->get_awaiter<FileAwaiter>();
+        awaiter->emplace_result(FileResult{
+            t->get_state(), t->get_error(), t->get_retval()
+        });
+
+        awaiter->done();
     });
 
     set_task(task);

@@ -7,16 +7,10 @@
 
 namespace coke {
 
-class SleepAwaiter : public AwaiterBase {
+class SleepAwaiter : public BasicAwaiter<int> {
 public:
-    SleepAwaiter() : state(0) { }
+    SleepAwaiter();
     SleepAwaiter(long sec, long nsec);
-
-    // may return STATE_SUCCESS or STATE_ABORTED
-    int await_resume() { return state; }
-
-private:
-    int state;
 };
 
 inline SleepAwaiter sleep(long sec, long nsec) {

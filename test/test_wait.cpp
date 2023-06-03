@@ -105,10 +105,17 @@ coke::Task<std::string> identity(std::string s) {
 }
 
 TEST(WAIT, wait_awaitable) {
-    std::string s;
+    std::string s("hello");
     std::string t = coke::sync_wait(identity(s));
     EXPECT_EQ(s, t);
 
+    coke::SleepAwaiter slp = coke::sleep(0, 100ULL * 1000 * 1000);
+    int ret = coke::sync_wait(std::move(slp));
+    EXPECT_EQ(ret, coke::STATE_SUCCESS);
+}
+
+TEST(WAIT, wait_two_awaitable) {
+    std::string s("hello");
     std::vector<std::string> ret = coke::sync_wait(
         identity(s), identity(s)
     );

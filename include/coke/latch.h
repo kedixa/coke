@@ -9,10 +9,9 @@
 
 namespace coke {
 
-class LatchAwaiter : public AwaiterBase {
+class LatchAwaiter : public BasicAwaiter<void> {
 public:
     explicit LatchAwaiter(SubTask *task);
-    void await_resume() { }
 };
 
 class Latch {
