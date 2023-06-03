@@ -104,6 +104,18 @@ coke::Task<std::string> identity(std::string s) {
     co_return s;
 }
 
+TEST(WAIT, wait_awaitable) {
+    std::string s;
+    std::string t = coke::sync_wait(identity(s));
+    EXPECT_EQ(s, t);
+
+    std::vector<std::string> ret = coke::sync_wait(
+        identity(s), identity(s)
+    );
+    std::vector<std::string> expect{s, s};
+    EXPECT_EQ(ret, expect);
+}
+
 coke::Task<> test_async() {
     std::vector<std::string> res{"asdf", "abc", "xyz"};
     auto ret = co_await coke::async_wait(

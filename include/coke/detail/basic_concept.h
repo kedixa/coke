@@ -13,7 +13,7 @@ namespace coke {
  * coke::Task template. Only SimpleType can be awaited.
 */
 template<typename T>
-concept SimpleType = (std::copyable<T> &&
+concept SimpleType = (std::movable<T> &&
                      std::is_same_v<T, std::remove_cvref_t<T>> &&
                      !std::is_array_v<T>) ||
                      std::is_void_v<T>;
