@@ -8,17 +8,41 @@
 namespace coke {
 
 class QpsPool {
-    using nano_type = long long;
+    using NanoType = long long;
 
 public:
+    using AwaiterType = SleepAwaiter;
+
+public:
+    /**
+     * Create QpsPool with `qps` limit, `qps` == 0 means no limit.
+     *  Example:
+     *  coke::QpsPool pool(10);
+     *
+     *  // in coroutine, the following loop will take about 10 seconds
+     *  for (size_t i = 0; i < 101; i++) {
+     *      co_await pool.get();
+     *      // do something under qps limit
+     *  }
+    */
     QpsPool(unsigned qps);
 
-    SleepAwaiter get(unsigned cnt = 1);
+    /**
+     * Reset another `qps` limit, even if pool is already in use.
+     * The new limit will take effect the next time `get` is called.
+    */
+    void reset_qps(unsigned qps) noexcept;
+
+    /**
+     * Acquire `count` license from QpsPool, the returned awaitable
+     * object should be co awaited immediately.
+    */
+    AwaiterType get(unsigned count = 1) noexcept;
 
 private:
     std::mutex mtx;
-    nano_type interval_nano;
-    nano_type last_nano;
+    NanoType interval_nano;
+    NanoType last_nano;
 };
 
 } // namespace coke
