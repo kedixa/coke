@@ -56,10 +56,6 @@ inline Task<> async_wait_helper(std::vector<Task<void>> tasks) {
     co_await lt;
 }
 
-} // namespace coke::detail
-
-namespace coke {
-
 template<typename T>
 concept AwaitableType = requires (T t) {
     requires std::derived_from<T, AwaiterBase>;
@@ -72,8 +68,21 @@ using AwaiterResult = std::remove_cvref_t<
 >;
 
 template<AwaitableType A>
-auto make_task_from_awaitable(A &&a) -> Task<AwaiterResult<A>> {
+auto make_task_from_awaitable_helper(A a) -> Task<AwaiterResult<A>> {
     co_return co_await a;
+}
+
+} // namespace coke::detail
+
+namespace coke {
+
+using detail::AwaitableType;
+using detail::AwaiterResult;
+
+template<AwaitableType A>
+    requires std::is_same_v<std::remove_reference_t<A>, A>
+auto make_task_from_awaitable(A &&a) -> Task<AwaiterResult<A>> {
+    return detail::make_task_from_awaitable_helper(std::move(a));
 }
 
 } // namespace coke

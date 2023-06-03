@@ -18,15 +18,10 @@ struct FileResult {
     long nbytes;  // the number of bytes read or written
 };
 
-class FileAwaiter : public AwaiterBase {
+class FileAwaiter : public BasicAwaiter<FileResult> {
 public:
-    template<typename T>
-    explicit FileAwaiter(T *task);
-
-    FileResult await_resume() { return result; }
-
-private:
-    FileResult result;
+    template<typename Task>
+    explicit FileAwaiter(Task *task);
 };
 
 FileAwaiter pread(int fd, void *buf, size_t count, off_t offset);

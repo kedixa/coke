@@ -22,7 +22,7 @@ struct NetworkResult {
 };
 
 template<typename REQ, typename RESP>
-class NetworkAwaiter : public AwaiterBase {
+class NetworkAwaiter : public BasicAwaiter<NetworkResult<RESP>> {
 public:
     using ReqType = REQ;
     using RespType = RESP;
@@ -33,26 +33,21 @@ public:
         requires (std::same_as<typename NetworkTaskTrait<NT>::ReqType, ReqType> &&
                 std::same_as<typename NetworkTaskTrait<NT>::RespType, RespType>)
     explicit NetworkAwaiter(NT *task, bool reply = false) {
-        task->set_callback([this] (NT *t) {
-            ret.emplace(
+        task->set_callback([info = this->get_info()] (NT *t) {
+            using Atype = NetworkAwaiter<ReqType, RespType>;
+            auto *awaiter = info->template get_awaiter<Atype>();
+            awaiter->emplace_result(
                 ResultType {
                     t->get_state(), t->get_error(), t->get_timeout_reason(),
                     t->get_task_seq(), std::move(*t->get_resp())
                 }
             );
 
-            this->done();
+            awaiter->done();
         });
 
-        set_task(task, reply);
+        this->set_task(task, reply);
     }
-
-    ResultType await_resume() {
-        return std::move(ret.value());
-    }
-
-private:
-    std::optional<ResultType> ret;
 };
 
 
@@ -61,24 +56,20 @@ struct NetworkReplyResult {
     int error;
 };
 
-class NetworkReplyAwaiter : public AwaiterBase {
+class NetworkReplyAwaiter : public BasicAwaiter<NetworkReplyResult> {
 public:
     template<NetworkTaskType NT>
     explicit NetworkReplyAwaiter(NT *task) {
-        task->set_callback([this] (NT *t) {
-            ret = {t->get_state(), t->get_error()};
-            this->done();
+        task->set_callback([info = this->get_info()] (NT *t) {
+            auto *awaiter = info->get_awaiter<NetworkReplyAwaiter>();
+            awaiter->emplace_result(NetworkReplyResult{
+                t->get_state(), t->get_error()
+            });
+            awaiter->done();
         });
 
-        set_task(task, true);
+        this->set_task(task, true);
     }
-
-    NetworkReplyResult await_resume() {
-        return ret;
-    }
-
-private:
-    NetworkReplyResult ret;
 };
 
 

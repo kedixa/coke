@@ -16,53 +16,39 @@ namespace detail {
 // Some SSO std::string has 15 chars locally, so use a short and meaningful name
 inline static constexpr std::string_view DFT_QUEUE{"coke_dft_queue"};
 
-SubTask *create_go_task(const std::string &queue_name, std::function<void()> &&func);
+SubTask *create_go_task(const std::string &queue, std::function<void()> &&func);
 
 } // namespace detail
 
 template<SimpleType R>
-class GoAwaiter : public AwaiterBase {
-    using return_t = std::remove_cvref_t<R>;
-    using option_t = std::conditional_t<std::is_same_v<return_t, void>, bool, return_t>;
-
+class GoAwaiter : public BasicAwaiter<R> {
 public:
-    template<typename FUNC, typename... ARGS>
-        requires std::invocable<FUNC, ARGS...>
-    GoAwaiter(const std::string &queue_name, FUNC &&func, ARGS&&... args) {
-        using result_t = std::remove_cvref_t<std::invoke_result_t<FUNC, ARGS...>>;
-        static_assert(std::is_same_v<return_t, void> || std::is_same_v<result_t, return_t>,
-                      "The result type of FUNC(ARGS...) must match return type");
+    GoAwaiter(const std::string &queue, std::function<R()> func) {
+        AwaiterInfo<R> *info = this->get_info();
 
-        std::function<result_t()> f = std::bind(std::forward<FUNC>(func), std::forward<ARGS>(args)...);
-        auto go = [this, f = std::move(f)] () mutable {
-            if constexpr (std::is_same_v<return_t, void>)
-                f();
+        auto go = [info, func = std::move(func)] () {
+            auto *awaiter = info->template get_awaiter<GoAwaiter<R>>();
+
+            if constexpr (!std::is_same_v<R, void>)
+                awaiter->emplace_result(func());
             else
-                ret.emplace(f());
+                func();
 
-            this->done();
+            awaiter->done();
         };
 
-        set_task(detail::create_go_task(queue_name, std::move(go)));
+        this->set_task(detail::create_go_task(queue, std::move(go)));
     }
-
-    return_t await_resume() {
-        if constexpr (!std::is_same_v<return_t, void>) {
-            return std::move(ret.value());
-        }
-    }
-
-private:
-    std::optional<option_t> ret;
 };
 
 
 template<typename FUNC, typename... ARGS>
     requires std::invocable<FUNC, ARGS...>
-auto go(const std::string &queue_name, FUNC &&func, ARGS&& ...args) {
+auto go(const std::string &queue, FUNC &&func, ARGS&& ...args) {
     using result_t = std::remove_cvref_t<std::invoke_result_t<FUNC, ARGS...>>;
+    auto &&f = std::bind(std::forward<FUNC>(func), std::forward<ARGS>(args)...);
 
-    return GoAwaiter<result_t>(queue_name, std::forward<FUNC>(func), std::forward<ARGS>(args)...);
+    return GoAwaiter<result_t>(queue, std::move(f));
 }
 
 template<typename FUNC, typename... ARGS>
@@ -71,25 +57,13 @@ auto go(FUNC &&func, ARGS&& ...args) {
     return go(std::string(detail::DFT_QUEUE), std::forward<FUNC>(func), std::forward<ARGS>(args)...);
 }
 
-
-// same as coke::go, but ignore return value
-template<typename FUNC, typename... ARGS>
-    requires std::invocable<FUNC, ARGS...>
-auto go_void(const std::string &queue_name, FUNC &&func, ARGS&&... args) {
-    return GoAwaiter<void>(queue_name, std::forward<FUNC>(func), std::forward<ARGS>(args)...);
-}
-
-// same as coke::go, but ignore return value
-template<typename FUNC, typename... ARGS>
-    requires std::invocable<FUNC, ARGS...>
-auto go_void(FUNC &&func, ARGS&&... args) {
-    return go_void(std::string(detail::DFT_QUEUE), std::forward<FUNC>(func), std::forward<ARGS>(args)...);
-}
-
-
 // switch to go thread pool's thread
-inline auto switch_go_thread() {
+inline auto switch_go_thread(const std::string &queue) {
     return go([]{});
+}
+
+inline auto switch_go_thread() {
+    return go(std::string(detail::DFT_QUEUE), []{});
 }
 
 } // namespace coke
