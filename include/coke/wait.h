@@ -131,6 +131,10 @@ Task<std::vector<T>> async_wait(std::vector<Task<T>> &&tasks) {
     return detail::async_wait_helper(std::move(tasks));
 }
 
+inline Task<> async_wait(std::vector<Task<void>> &&tasks) {
+    return detail::async_wait_helper(std::move(tasks));
+}
+
 template<AwaitableType A, AwaitableType... As>
     requires std::conjunction_v<std::is_same<AwaiterResult<A>, AwaiterResult<As>>...>
 auto async_wait(A &&first, As&&... others) {
