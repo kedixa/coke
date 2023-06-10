@@ -14,7 +14,7 @@ coke::Task<> http_get(const std::string &url) {
     coke::HttpClient cli;
     coke::HttpResult res = co_await cli.request(url);
 
-    if (res.state == 0) {
+    if (res.state == coke::STATE_SUCCESS) {
         coke::HttpResponse &resp = res.resp;
 
         std::cout << resp.get_http_version() << ' '
