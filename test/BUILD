@@ -24,3 +24,12 @@ cc_test(
     ],
     linkopts = ["-lgtest"],
 )
+
+cc_test(
+    name = "test_latch",
+    srcs = ["test_latch.cpp"],
+    deps = [
+        "//:common",
+    ],
+    linkopts = ["-lgtest"],
+)

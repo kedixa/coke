@@ -9,6 +9,7 @@ set(ALL_TESTS
     test_file
     test_sleep
     test_wait
+    test_latch
 )
 
 foreach(exec_name ${ALL_TESTS})
