@@ -33,7 +33,7 @@ coke::Task<> word_count(const std::string &fn) {
     while (true) {
         res = co_await coke::pread(fd, buf, BUF_SIZE, offset);
 
-        if (res.state != 0 || res.nbytes == 0)
+        if (res.state != coke::STATE_SUCCESS || res.nbytes == 0)
             break;
 
         const unsigned char *end = buf + res.nbytes;
@@ -52,14 +52,14 @@ coke::Task<> word_count(const std::string &fn) {
         offset += res.nbytes;
     }
 
-    if (res.state == 0) {
+    if (res.state == coke::STATE_SUCCESS) {
         std::cout << "Chars: " << chars << "\n"
                   << "Words: " << words << "\n"
                   << "Lines: " << lines << std::endl;
     }
     else {
-        std::cerr << "ERROR: state:" << res.state
-                  << " error:" << res.error << std::endl;
+        std::cerr << "ERROR: state:" << res.state << " error:" << res.error << std::endl;
+        std::cerr << coke::get_error_string(res.state, res.error) << std::endl;
     }
 
     close(fd);
