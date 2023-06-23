@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <cerrno>
 #include <cstdlib>
+#include <strings.h>
 
 #include "coke/http_client.h"
 #include "coke/http_utils.h"
@@ -8,6 +9,14 @@
 #include "workflow/WFTaskFactory.h"
 
 namespace coke {
+
+static std::string_view get_http_host(coke::HttpRequest &req) {
+    for (const coke::HttpHeaderView &header : coke::HttpHeaderCursor(req)) {
+        if (strncasecmp(header.name.data(), "Host", 4) == 0)
+            return header.value;
+    }
+    return std::string_view();
+}
 
 HttpClient::AwaiterType
 HttpClient::request(const std::string &url, const std::string &method,
@@ -61,6 +70,14 @@ HttpClient::create_task(const std::string &url, ReqType *req) noexcept {
         // Use request_uri in url if not set in req
         if ((!uri || !*uri) && turi && !has_proxy)
             req->set_request_uri(turi);
+
+        std::string_view req_host, treq_host;
+        req_host = get_http_host(*req);
+        if (req_host.empty()) {
+            treq_host = get_http_host(*treq);
+            if (!treq_host.empty())
+                req->set_header_pair("Host", std::string(treq_host));
+        }
 
         *treq = std::move(*req);
     }
