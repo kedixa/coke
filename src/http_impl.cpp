@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <strings.h>
+#include <openssl/evp.h>
 
 #include "coke/http_client.h"
 #include "coke/http_utils.h"
@@ -9,6 +10,23 @@
 #include "workflow/WFTaskFactory.h"
 
 namespace coke {
+
+static int encode_auth(const char *p, std::string& auth)
+{
+    std::size_t len = strlen(p);
+    std::size_t base64_len = (len + 2) / 3 * 4;
+    char *base64 = (char *)malloc(base64_len + 1);
+
+    if (!base64)
+        return -1;
+
+    EVP_EncodeBlock((unsigned char *)base64, (const unsigned char *)p, len);
+    auth.append("Basic ");
+    auth.append(base64, base64_len);
+
+    free(base64);
+    return 0;
+}
 
 static std::string_view get_http_host(coke::HttpRequest &req) {
     for (const coke::HttpHeaderView &header : coke::HttpHeaderCursor(req)) {
@@ -52,12 +70,14 @@ HttpClient::create_task(const std::string &url, ReqType *req) noexcept {
     bool has_proxy = !params.proxy.empty();
     const std::string &proxy = params.proxy;
 
-    https = strcasecmp(url.c_str(), "https://") == 0;
+    https = strncasecmp(url.c_str(), "https://", 8) == 0;
+
+    // redirect disabled when http url with proxy
 
     if (has_proxy && https)
         task = WFTaskFactory::create_http_task(url, proxy, params.redirect_max, params.retry_max, nullptr);
     else if (has_proxy)
-        task = WFTaskFactory::create_http_task(proxy, params.redirect_max, params.retry_max, nullptr);
+        task = WFTaskFactory::create_http_task(proxy, 0, params.retry_max, nullptr);
     else
         task = WFTaskFactory::create_http_task(url, params.redirect_max, params.retry_max, nullptr);
 
@@ -83,8 +103,18 @@ HttpClient::create_task(const std::string &url, ReqType *req) noexcept {
     }
 
     // Use simple proxy if not https
-    if (has_proxy && !https)
+    if (has_proxy && !https) {
+        ParsedURI proxy_uri;
+        if (URIParser::parse(proxy, proxy_uri) == 0) {
+            if (proxy_uri.userinfo  && proxy_uri.userinfo[0]) {
+                std::string proxy_auth;
+                if (encode_auth(proxy_uri.userinfo, proxy_auth) == 0)
+                    treq->add_header_pair("Proxy-Authorization", proxy_auth.data());
+            }
+        }
+
         treq->set_request_uri(url);
+    }
 
     if (!treq->get_http_version())
         treq->set_http_version("HTTP/1.1");
