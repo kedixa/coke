@@ -15,6 +15,7 @@
 #include "coke/qps_pool.h"
 #include "coke/sleep.h"
 #include "coke/wait.h"
+#include "coke/generic_awaiter.h"
 
 namespace coke {
 

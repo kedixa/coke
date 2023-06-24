@@ -42,3 +42,12 @@ cc_test(
     ],
     linkopts = ["-lgtest"],
 )
+
+cc_test(
+    name = "test_generic_awaiter",
+    srcs = ["test_generic_awaiter.cpp"],
+    deps = [
+        "//:common",
+    ],
+    linkopts = ["-lgtest"],
+)

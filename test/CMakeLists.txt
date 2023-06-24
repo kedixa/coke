@@ -10,6 +10,8 @@ set(ALL_TESTS
     test_sleep
     test_wait
     test_latch
+    test_go
+    test_generic_awaiter
 )
 
 foreach(exec_name ${ALL_TESTS})
