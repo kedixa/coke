@@ -13,6 +13,7 @@ using HttpRequest = protocol::HttpRequest;
 using HttpResponse = protocol::HttpResponse;
 using HttpAwaiter = NetworkAwaiter<HttpRequest, HttpResponse>;
 using HttpServerContext = ServerContext<WFNetworkTask<HttpRequest, HttpResponse>>;
+using HttpReplyResult = NetworkReplyResult;
 
 // TODO: The inheritance relationship of server may be modified in the near future
 class HttpServer : public WFHttpServer {

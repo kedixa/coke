@@ -98,7 +98,7 @@ auto sync_wait(std::vector<A> &&as) {
     std::vector<Task<return_type>> tasks;
     tasks.reserve(as.size());
     for (size_t i = 0; i < as.size(); i++)
-        tasks.emplace_back(std::move(as[i]));
+        tasks.emplace_back(make_task_from_awaitable(std::move(as[i])));
 
     return sync_wait(std::move(tasks));
 }

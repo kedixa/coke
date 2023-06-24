@@ -33,3 +33,12 @@ cc_test(
     ],
     linkopts = ["-lgtest"],
 )
+
+cc_test(
+    name = "test_go",
+    srcs = ["test_go.cpp"],
+    deps = [
+        "//:common",
+    ],
+    linkopts = ["-lgtest"],
+)
