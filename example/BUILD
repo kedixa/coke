@@ -41,3 +41,12 @@ cc_binary(
     ],
     #linkopts = ["-ltbb"],
 )
+
+cc_binary(
+    name = "http_proxy",
+    srcs = ["ex006-http_proxy.cpp"],
+    deps = [
+        "//:common",
+        "//:http",
+    ],
+)
