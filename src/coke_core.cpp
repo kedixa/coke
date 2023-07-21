@@ -49,6 +49,7 @@ void library_init(const GlobalSettings &s) {
     t.poller_threads    = s.poller_threads;
     t.handler_threads   = s.handler_threads;
     t.compute_threads   = s.compute_threads;
+    t.fio_max_events    = s.fio_max_events;
     t.resolv_conf_path  = s.resolv_conf_path;
     t.hosts_path        = s.hosts_path;
 

@@ -38,6 +38,7 @@ struct GlobalSettings {
     int poller_threads                  = 4;
     int handler_threads                 = 20;
     int compute_threads                 = -1;
+    int fio_max_events                  = 4096;
     const char *resolv_conf_path        = "/etc/resolv.conf";
     const char *hosts_path              = "/etc/hosts";
 };
