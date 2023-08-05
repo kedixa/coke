@@ -50,3 +50,12 @@ cc_binary(
         "//:http",
     ],
 )
+
+cc_binary(
+    name = "redis_cli",
+    srcs = ["ex007-redis_cli.cpp"],
+    deps = [
+        "//:common",
+        "//:redis"
+    ],
+)

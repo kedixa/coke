@@ -6,6 +6,8 @@ set(ALL_EXAMPLES
     ex003-http_hello_server
     ex004-word_count
     ex005-merge_sort
+    ex006-http_proxy
+    ex007-redis_cli
 )
 
 foreach(example ${ALL_EXAMPLES})
