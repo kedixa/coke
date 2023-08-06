@@ -59,3 +59,12 @@ cc_binary(
         "//:redis"
     ],
 )
+
+cc_binary(
+    name = "parallel_http_get",
+    srcs = ["ex008-parallel_http_get.cpp"],
+    deps = [
+        "//:common",
+        "//:http"
+    ],
+)
