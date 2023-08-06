@@ -13,6 +13,7 @@ namespace coke {
 
 using RedisRequest = protocol::RedisRequest;
 using RedisResponse = protocol::RedisResponse;
+using RedisValue = protocol::RedisValue;
 using RedisResult = NetworkResult<RedisResponse>;
 
 struct RedisClientParams {

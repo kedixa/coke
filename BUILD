@@ -42,3 +42,16 @@ cc_library(
         "@workflow//:redis",
     ],
 )
+
+cc_library(
+    name = "mysql",
+    srcs = [
+        "src/mysql_impl.cpp"
+    ],
+    hdrs = ["include"],
+    includes = ["include"],
+    deps = [
+        "//:common",
+        "@workflow//:mysql",
+    ],
+)

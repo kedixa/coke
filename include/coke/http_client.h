@@ -59,6 +59,8 @@ protected:
     HttpClientParams params;
 };
 
+using HttpAwaiter = HttpClient::AwaiterType;
+
 } // namespace coke
 
 #endif // COKE_HTTP_CLIENT_H

@@ -50,3 +50,21 @@ cc_binary(
         "//:http",
     ],
 )
+
+cc_binary(
+    name = "redis_cli",
+    srcs = ["ex007-redis_cli.cpp"],
+    deps = [
+        "//:common",
+        "//:redis"
+    ],
+)
+
+cc_binary(
+    name = "parallel_http_get",
+    srcs = ["ex008-parallel_http_get.cpp"],
+    deps = [
+        "//:common",
+        "//:http"
+    ],
+)
