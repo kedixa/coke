@@ -7,11 +7,11 @@
 
 namespace coke {
 
-using protocol::HttpMessage;
+using HttpMessage = protocol::HttpMessage;
 
 inline std::string_view http_body_view(const HttpMessage &message) {
     const void *body;
-    size_t blen;
+    std::size_t blen;
 
     if (message.get_parsed_body(&body, &blen))
         return std::string_view(static_cast<const char *>(body), blen);

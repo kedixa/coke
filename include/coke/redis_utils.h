@@ -7,10 +7,9 @@
 
 namespace coke {
 
-using protocol::RedisMessage;
-using protocol::RedisRequest;
-using protocol::RedisResponse;
-using protocol::RedisValue;
+using RedisRequest = protocol::RedisRequest;
+using RedisResponse = protocol::RedisResponse;
+using RedisValue = protocol::RedisValue;
 
 /**
  * Returns a human-readable string representation of RedisValue.
