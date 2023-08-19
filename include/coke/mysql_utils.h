@@ -159,7 +159,7 @@ public:
     // for is_ok
     std::string get_info() const { return std::string(get_info_view()); }
     std::string_view get_info_view() const {
-        const char *info = buf + result_set->rows_begin_offset;
+        const char *info = buf + result_set->info_offset;
         return std::string_view(info, result_set->info_len);
     }
 
