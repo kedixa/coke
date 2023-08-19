@@ -1,3 +1,5 @@
+#include <atomic>
+
 #include "coke/mysql_client.h"
 #include "coke/mysql_utils.h"
 
@@ -7,8 +9,8 @@
 
 namespace coke {
 
-MySQLClient::MySQLClient(const MySQLClientParams &p)
-    : params(p)
+MySQLClient::MySQLClient(const MySQLClientParams &p, bool use_transaction, std::size_t transaction_id)
+    : use_transaction(use_transaction), transaction_id(transaction_id), params(p)
 {
     url.assign(params.use_ssl ? "mysqls://" : "mysql://");
 
@@ -17,7 +19,7 @@ MySQLClient::MySQLClient(const MySQLClientParams &p)
     params.dbname = StringUtil::url_encode_component(p.dbname);
 
     // disable retry when use transaction
-    if (params.transaction_id)
+    if (use_transaction)
         params.retry_max = 0;
 
     if (!params.username.empty() || !params.password.empty())
@@ -34,9 +36,9 @@ MySQLClient::MySQLClient(const MySQLClientParams &p)
     if (!params.character_set_results.empty())
         url.append("&character_set_results=").append(params.character_set_results);
 
-    if (params.transaction_id != 0)
+    if (use_transaction)
         url.append("&transaction=coke_mysql_transaction_id_")
-           .append(std::to_string(params.transaction_id));
+           .append(std::to_string(transaction_id));
 
     if (url.size() > pos)
         url[pos] = '?';
@@ -44,8 +46,7 @@ MySQLClient::MySQLClient(const MySQLClientParams &p)
     URIParser::parse(url, uri);
 }
 
-MySQLClient::AwaiterType
-MySQLClient::request(const std::string &query) {
+MySQLClient::AwaiterType MySQLClient::request(const std::string &query) {
     WFMySQLTask *task;
 
     task = WFTaskFactory::create_mysql_task(uri, params.retry_max, nullptr);
@@ -57,8 +58,12 @@ MySQLClient::request(const std::string &query) {
     return AwaiterType(task);
 }
 
-MySQLClient::AwaiterType
-MySQLClient::disconnect() {
+std::size_t MySQLConnection::get_unique_id() {
+    static std::atomic<std::size_t> uid{0};
+    return uid.fetch_add(1, std::memory_order_relaxed);
+}
+
+MySQLConnection::AwaiterType MySQLConnection::disconnect() {
     WFMySQLTask *task;
 
     task = WFTaskFactory::create_mysql_task(uri, params.retry_max, nullptr);

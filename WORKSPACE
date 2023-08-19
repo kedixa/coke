@@ -3,4 +3,4 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_r
 load("//:workspace.bzl", "coke_workspace")
 
 #coke_workspace(workflow_tag='v0.10.8')
-coke_workspace(workflow_commit='b05368a520b13ee74e4788717648d195d0dcdf0d')
+coke_workspace(workflow_commit='8ee775fd33799a338a052bbe2518fa60f8048da5')
