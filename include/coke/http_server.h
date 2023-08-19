@@ -11,7 +11,6 @@ namespace coke {
 
 using HttpRequest = protocol::HttpRequest;
 using HttpResponse = protocol::HttpResponse;
-using HttpAwaiter = NetworkAwaiter<HttpRequest, HttpResponse>;
 using HttpServerContext = ServerContext<WFNetworkTask<HttpRequest, HttpResponse>>;
 using HttpReplyResult = NetworkReplyResult;
 

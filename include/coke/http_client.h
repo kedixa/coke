@@ -14,6 +14,7 @@ namespace coke {
 using HttpRequest = protocol::HttpRequest;
 using HttpResponse = protocol::HttpResponse;
 using HttpResult = NetworkResult<HttpResponse>;
+using HttpAwaiter = NetworkAwaiter<HttpRequest, HttpResponse>;
 
 struct HttpClientParams {
     int retry_max           = 0;
@@ -30,7 +31,7 @@ class HttpClient {
 public:
     using ReqType = HttpRequest;
     using RespType = HttpResponse;
-    using AwaiterType = NetworkAwaiter<ReqType, RespType>;
+    using AwaiterType = HttpAwaiter;
     using HttpHeader = std::vector<std::pair<std::string, std::string>>;
 
 public:
@@ -58,8 +59,6 @@ protected:
 protected:
     HttpClientParams params;
 };
-
-using HttpAwaiter = HttpClient::AwaiterType;
 
 } // namespace coke
 

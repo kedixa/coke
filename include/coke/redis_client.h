@@ -15,6 +15,7 @@ using RedisRequest = protocol::RedisRequest;
 using RedisResponse = protocol::RedisResponse;
 using RedisValue = protocol::RedisValue;
 using RedisResult = NetworkResult<RedisResponse>;
+using RedisAwaiter = NetworkAwaiter<RedisRequest, RedisResponse>;
 
 struct RedisClientParams {
     int retry_max           = 0;
@@ -33,7 +34,7 @@ class RedisClient {
 public:
     using ReqType = RedisRequest;
     using RespType = RedisResponse;
-    using AwaiterType = NetworkAwaiter<ReqType, RespType>;
+    using AwaiterType = RedisAwaiter;
 
 public:
     explicit RedisClient(const RedisClientParams &params);
