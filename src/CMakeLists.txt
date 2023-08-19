@@ -9,6 +9,7 @@ add_library(${COKE_LIBRARY_NAME} STATIC
     qps_pool.cpp
     redis_impl.cpp
     sleep.cpp
+    mysql_impl.cpp
 )
 
 target_include_directories(${COKE_LIBRARY_NAME} PUBLIC
