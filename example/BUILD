@@ -1,3 +1,25 @@
+cc_library(
+    name = "readline_helper",
+    hdrs = ["readline_helper.h"],
+)
+
+config_setting(
+    name = "use_gnu_readline",
+    values = {
+        "define": "use_gnu_readline=true"
+    }
+)
+
+rl_defs = select({
+    "//example:use_gnu_readline": ["USE_GNU_READLINE"],
+    "//conditions:default": [],
+})
+
+rl_linkopts = select({
+    "//example:use_gnu_readline": ["-lreadline"],
+    "//conditions:default": [],
+})
+
 cc_binary(
     name = "helloworld",
     srcs = ["ex001-helloworld.cpp"],
@@ -66,5 +88,15 @@ cc_binary(
     deps = [
         "//:common",
         "//:http"
+    ],
+)
+
+cc_binary(
+    name = "mysql_cli",
+    srcs = ["ex009-mysql_cli.cpp"],
+    deps = [
+        "//:common",
+        "//:mysql",
+        "//example:readline_helper"
     ],
 )
