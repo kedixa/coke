@@ -9,6 +9,7 @@ set(ALL_EXAMPLES
     ex006-http_proxy
     ex007-redis_cli
     ex008-parallel_http_get
+    ex009-mysql_cli
 )
 
 foreach(example ${ALL_EXAMPLES})
@@ -25,3 +26,12 @@ foreach(example ${ALL_EXAMPLES})
         OpenSSL::SSL OpenSSL::Crypto
     )
 endforeach()
+
+if (USE_GNU_READLINE)
+    target_compile_definitions(mysql_cli
+        PRIVATE USE_GNU_READLINE
+    )
+    target_link_libraries(mysql_cli
+        readline
+    )
+endif()
