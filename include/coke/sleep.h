@@ -20,7 +20,11 @@ inline SleepAwaiter sleep(long sec, long nsec) {
 inline SleepAwaiter sleep(std::chrono::nanoseconds nsec) {
     constexpr size_t NANO = 1000ULL * 1000 * 1000;
     std::chrono::nanoseconds::rep cnt = nsec.count();
-    return SleepAwaiter(cnt / NANO, cnt % NANO);
+
+    if (cnt < 0)
+        return SleepAwaiter(0, 0);
+    else
+        return SleepAwaiter(cnt / NANO, cnt % NANO);
 }
 
 inline SleepAwaiter yield() {
