@@ -1,8 +1,3 @@
-cc_library(
-    name = "readline_helper",
-    hdrs = ["readline_helper.h"],
-)
-
 config_setting(
     name = "use_gnu_readline",
     values = {
@@ -19,6 +14,13 @@ rl_linkopts = select({
     "//example:use_gnu_readline": ["-lreadline"],
     "//conditions:default": [],
 })
+
+cc_library(
+    name = "readline_helper",
+    hdrs = ["readline_helper.h"],
+    defines = rl_defs,
+    linkopts = rl_linkopts,
+)
 
 cc_binary(
     name = "helloworld",
@@ -78,7 +80,8 @@ cc_binary(
     srcs = ["ex007-redis_cli.cpp"],
     deps = [
         "//:common",
-        "//:redis"
+        "//:redis",
+        "//example:readline_helper"
     ],
 )
 
