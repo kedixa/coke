@@ -28,10 +28,13 @@ foreach(example ${ALL_EXAMPLES})
 endforeach()
 
 if (USE_GNU_READLINE)
-    target_compile_definitions(mysql_cli
-        PRIVATE USE_GNU_READLINE
+    set(USE_READLINE_EXAMPLES
+        mysql_cli
+        redis_cli
     )
-    target_link_libraries(mysql_cli
-        readline
-    )
+
+    foreach(example ${USE_READLINE_EXAMPLES})
+        target_compile_definitions(${example} PRIVATE USE_GNU_READLINE)
+        target_link_libraries(${example} readline)
+    endforeach()
 endif()

@@ -57,11 +57,11 @@ public:
     AwaiterType request(const std::string &query);
 
 protected:
-    MySQLClient(const MySQLClientParams &params, bool use_transaction, std::size_t transaction_id);
+    MySQLClient(const MySQLClientParams &params, bool unique_conn, std::size_t conn_id);
 
 protected:
-    bool use_transaction;
-    std::size_t transaction_id;
+    bool unique_conn;
+    std::size_t conn_id;
     MySQLClientParams params;
 
     std::string url;
@@ -87,11 +87,11 @@ public:
     static std::size_t get_unique_id();
 
 public:
-    explicit MySQLConnection(const MySQLClientParams &params, std::size_t transaction_id)
-        : MySQLClient(params, true, transaction_id)
+    explicit MySQLConnection(const MySQLClientParams &params, std::size_t conn_id)
+        : MySQLClient(params, true, conn_id)
     { }
 
-    std::size_t get_transaction_id() const { return transaction_id; }
+    std::size_t get_conn_id() const { return conn_id; }
 
     /**
      * Disconnect this Connection.

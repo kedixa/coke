@@ -9,26 +9,27 @@
 
 namespace coke {
 
-MySQLClient::MySQLClient(const MySQLClientParams &p, bool use_transaction, std::size_t transaction_id)
-    : use_transaction(use_transaction), transaction_id(transaction_id), params(p)
+MySQLClient::MySQLClient(const MySQLClientParams &p, bool unique_conn, std::size_t conn_id)
+    : unique_conn(unique_conn), conn_id(conn_id), params(p)
 {
+    std::string username, password, dbname;
+    username = StringUtil::url_encode_component(params.username);
+    password = StringUtil::url_encode_component(params.password);
+    dbname = StringUtil::url_encode_component(params.dbname);
+
     url.assign(params.use_ssl ? "mysqls://" : "mysql://");
 
-    params.username = StringUtil::url_encode_component(p.username);
-    params.password = StringUtil::url_encode_component(p.password);
-    params.dbname = StringUtil::url_encode_component(p.dbname);
-
     // disable retry when use transaction
-    if (use_transaction)
+    if (unique_conn)
         params.retry_max = 0;
 
-    if (!params.username.empty() || !params.password.empty())
-        url.append(params.username).append(":")
-           .append(params.password).append("@");
+    if (!username.empty() || !password.empty())
+        url.append(username).append(":")
+           .append(password).append("@");
 
     url.append(params.host).append(":")
        .append(std::to_string(params.port)).append("/")
-       .append(params.dbname);
+       .append(dbname);
 
     std::size_t pos = url.size();
     if (!params.character_set.empty())
@@ -36,9 +37,9 @@ MySQLClient::MySQLClient(const MySQLClientParams &p, bool use_transaction, std::
     if (!params.character_set_results.empty())
         url.append("&character_set_results=").append(params.character_set_results);
 
-    if (use_transaction)
+    if (unique_conn)
         url.append("&transaction=coke_mysql_transaction_id_")
-           .append(std::to_string(transaction_id));
+           .append(std::to_string(conn_id));
 
     if (url.size() > pos)
         url[pos] = '?';

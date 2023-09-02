@@ -10,8 +10,9 @@
 #include "coke/coke.h"
 #include "coke/redis_client.h"
 #include "coke/redis_utils.h"
+#include "readline_helper.h"
 
-coke::RedisClientParams params;
+std::string prompt_str;
 const char *optstr = "h:p:a:r:i:n:";
 
 /**
@@ -19,23 +20,19 @@ const char *optstr = "h:p:a:r:i:n:";
  * send them to the redis server, and write the results to standard output.
 */
 
-void prompt() {
-    std::cout << params.host << ":" << params.port << "> ";
-}
-
 bool get_command(std::string &cmd, std::vector<std::string> &args) {
     using str_iter = std::istream_iterator<std::string>;
-
     std::string line;
-    args.clear();
 
-    while (prompt(), std::getline(std::cin, line)) {
+    while (nextline(prompt_str.c_str(), line)) {
         // Only handle space delimiters, just for example
         std::istringstream iss(line);
         iss >> cmd;
 
         if (!cmd.empty()) {
+            args.clear();
             std::copy(str_iter(iss), str_iter{}, std::back_inserter(args));
+            add_history(line);
             return true;
         }
     }
@@ -91,6 +88,7 @@ void usage(const char *arg0) {
 }
 
 int main(int argc, char *argv[]) {
+    coke::RedisClientParams params;
     int repeat = 0, copt;
     long interval_sec = 0, interval_nsec = 0;
     double d = 0.0;
@@ -121,8 +119,13 @@ int main(int argc, char *argv[]) {
     if (repeat < 1)
         repeat = 1;
 
+    readline_init();
+    prompt_str.assign(params.host).append(":").append(std::to_string(params.port)).append("> ");
+
     coke::RedisClient cli(params);
     coke::sync_wait(redis_cli(cli, repeat, interval_sec, interval_nsec));
+
+    readline_deinit();
 
     return 0;
 }

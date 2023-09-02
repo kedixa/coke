@@ -5,16 +5,20 @@
 #include "coke/redis_utils.h"
 
 #include "workflow/WFTaskFactory.h"
+#include "workflow/StringUtil.h"
 
 namespace coke {
 
-RedisClient::RedisClient(const RedisClientParams &params)
-    : params(params)
+RedisClient::RedisClient(const RedisClientParams &p)
+    : params(p)
 {
+    std::string password;
+    password = StringUtil::url_encode_component(params.password);
+
     url.assign(params.use_ssl ? "rediss://" : "redis://");
 
-    if (!params.password.empty())
-        url.append(":").append(params.password).append("@");
+    if (!password.empty())
+        url.append(":").append(password).append("@");
 
     url.append(params.host).append(":")
        .append(std::to_string(params.port))
