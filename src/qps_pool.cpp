@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cmath>
 
 #include "coke/qps_pool.h"
 
@@ -15,6 +16,12 @@ QpsPool::QpsPool(unsigned qps) {
     reset_qps(qps);
 }
 
+QpsPool::QpsPool(double qps) {
+    last_nano = 0;
+
+    reset_qps(qps);
+}
+
 void QpsPool::reset_qps(unsigned qps) noexcept {
     std::lock_guard<std::mutex> lg(mtx);
 
@@ -22,6 +29,15 @@ void QpsPool::reset_qps(unsigned qps) noexcept {
         interval_nano = 0;
     else
         interval_nano = 1000000000ULL / qps;
+}
+
+void QpsPool::reset_qps(double qps) noexcept {
+    std::lock_guard<std::mutex> lg(mtx);
+
+    if (qps <= 0.0 || !std::isfinite(qps))
+        interval_nano = 0;
+    else
+        interval_nano = 1.0e9 / qps;
 }
 
 QpsPool::AwaiterType QpsPool::get(unsigned count) noexcept {
