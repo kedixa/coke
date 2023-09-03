@@ -10,6 +10,7 @@ add_library(${COKE_LIBRARY_NAME} STATIC
     redis_impl.cpp
     sleep.cpp
     mysql_impl.cpp
+    future.cpp
 )
 
 target_include_directories(${COKE_LIBRARY_NAME} PUBLIC
