@@ -10,6 +10,7 @@ set(ALL_EXAMPLES
     ex007-redis_cli
     ex008-parallel_http_get
     ex009-mysql_cli
+    ex010-timed_wait
 )
 
 foreach(example ${ALL_EXAMPLES})
