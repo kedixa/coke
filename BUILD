@@ -9,6 +9,7 @@ cc_library(
         "src/sleep.cpp",
         "src/latch.cpp",
         "src/qps_pool.cpp",
+        "src/future.cpp",
     ],
     hdrs = ["include"],
     includes = ["include"],

@@ -103,3 +103,11 @@ cc_binary(
         "//example:readline_helper"
     ],
 )
+
+cc_binary(
+    name = "timed_wait",
+    srcs = ["ex010-timed_wait.cpp"],
+    deps = [
+        "//:common",
+    ],
+)
