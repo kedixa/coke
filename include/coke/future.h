@@ -100,23 +100,70 @@ public:
     Future(const Future &) = delete;
     Future &operator=(const Future &) = delete;
 
+    /**
+     * Return whether the state of this Future is valid.
+    */
     bool valid() const { return state; }
+
+    /**
+     * Return whether the state of this Future is ready.
+    */
     bool ready() const { return state && state->is_ready(); }
 
+    /**
+     * Blocks until the result becomes available.
+     *
+     * If `valid()` is false before call wait/wait_for/wait_until, the caller
+     * will always get `FUTURE_STATE_INVALID`.
+     *
+     * Suppose `valid()` is true, and
+     * 1. after co_await `wait`, caller always get `FUTURE_STATE_READY`.
+     * 2. after co_await `wait_for/wait_until`, caller get
+     *    `FUTURE_STATE_READY` if state is ready before timeout
+     *    `FUTURE_STATE_TIMEOUT` if timeout before state is ready
+     *    `FUTURE_STATE_ABORTED` if timer is aborted by process exit
+     *
+     *    It is the better to ensure that all coroutines finish before
+     *    the process exits.
+    */
     FutureAwaiter wait();
+
+    /**
+     * Blocks until the result becomes available or timeout.
+     * See `wait`.
+    */
     FutureAwaiter wait_for(std::chrono::nanoseconds ns);
 
+    /**
+     * Blocks until the result becomes available or timeout.
+     * See `wait`.
+    */
     template<typename Clock, typename Duration>
         requires std::chrono::is_clock_v<Clock>
     FutureAwaiter wait_until(std::chrono::time_point<Clock, Duration> abs_tp);
 
-    Res get() requires (!std::is_void_v<Res>) { return state->get_value(); }
-    void get() requires (std::is_void_v<Res>) { }
+    /**
+     * Get the value set by coke::Promise, `Future::get` can only be called once
+     * after any of wait/wait_for/wair_until returns FUTURE_STATE_READY.
+    */
+    Res get() {
+        if constexpr (!std::is_void_v<Res>)
+            return state->get_value();
+    }
 
 private:
     Future(state_ptr_t ptr) : state(ptr) { }
 
     friend Promise<Res>;
+
+    static coke::Task<> wait_helper(std::chrono::nanoseconds ns, state_ptr_t state) {
+        int ret = co_await coke::sleep(ns);
+        int s = (ret == STATE_SUCCESS) ? FUTURE_STATE_TIMEOUT : FUTURE_STATE_ABORTED;
+
+        // If coke::sleep is aborted, which means this process is terminating,
+        // then future's wait returns FUTURE_STATE_ABORTED and do not call wait any more
+        state->wakeup(s);
+    }
 
 private:
     state_ptr_t state;
@@ -139,9 +186,34 @@ public:
 
     Future<Res> get_future() { return Future<Res>(state); }
 
-    void set_value() requires std::is_void_v<Res>;
-    void set_value(const Res &value) requires (!std::is_void_v<Res>);
-    void set_value(Res &&value) requires (!std::is_void_v<Res>);
+    void set_value(const Res &value);
+    void set_value(Res &&value);
+
+private:
+    state_ptr_t state;
+};
+
+template<>
+class Promise<void> {
+    using state_t = detail::FutureState<void>;
+    using state_ptr_t = std::shared_ptr<state_t>;
+
+public:
+    Promise() { state = std::make_shared<state_t>(); }
+    ~Promise() = default;
+
+    Promise(Promise &&) = default;
+    Promise &operator=(Promise &&) = default;
+
+    Promise(const Promise &) = delete;
+    Promise &operator=(const Promise &)  = delete;
+
+    Future<void> get_future() { return Future<void>(state); }
+
+    void set_value() {
+        if (state)
+            state->wakeup(FUTURE_STATE_READY);
+    }
 
 private:
     state_ptr_t state;
@@ -164,20 +236,11 @@ FutureAwaiter Future<Res>::wait() {
 
 template<FutureResType Res>
 FutureAwaiter Future<Res>::wait_for(std::chrono::nanoseconds ns) {
-    auto w = [](std::chrono::nanoseconds ns, state_ptr_t state) -> coke::Task<> {
-        int ret = co_await coke::sleep(ns);
-        int s = (ret == STATE_SUCCESS) ? FUTURE_STATE_TIMEOUT : FUTURE_STATE_ABORTED;
-
-        // If coke::sleep is aborted, which means this process is terminating,
-        // then future's wait returns FUTURE_STATE_ABORTED and do not call wait any more
-        state->wakeup(s);
-    };
-
     int s = FUTURE_STATE_INVALID;
     if (state) {
         SubTask *task = state->create_wait_task(s);
         if (task) {
-            w(ns, state).start();
+            wait_helper(ns, state).start();
             return FutureAwaiter(task);
         }
     }
@@ -194,13 +257,7 @@ FutureAwaiter Future<Res>::wait_until(std::chrono::time_point<Clock, Duration> a
 }
 
 template<FutureResType Res>
-void Promise<Res>::set_value() requires std::is_void_v<Res> {
-    if (state)
-        state->wakeup(FUTURE_STATE_READY);
-}
-
-template<FutureResType Res>
-void Promise<Res>::set_value(const Res &value) requires (!std::is_void_v<Res>) {
+void Promise<Res>::set_value(const Res &value) {
     if (state) {
         state->set_value(value);
         state->wakeup(FUTURE_STATE_READY);
@@ -208,7 +265,7 @@ void Promise<Res>::set_value(const Res &value) requires (!std::is_void_v<Res>) {
 }
 
 template<FutureResType Res>
-void Promise<Res>::set_value(Res &&value) requires (!std::is_void_v<Res>) {
+void Promise<Res>::set_value(Res &&value) {
     if (state) {
         state->set_value(std::move(value));
         state->wakeup(FUTURE_STATE_READY);
