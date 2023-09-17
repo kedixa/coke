@@ -51,3 +51,12 @@ cc_test(
     ],
     linkopts = ["-lgtest"],
 )
+
+cc_test(
+    name = "test_future",
+    srcs = ["test_future.cpp"],
+    deps = [
+        "//:common",
+    ],
+    linkopts = ["-lgtest"],
+)

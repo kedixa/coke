@@ -12,6 +12,7 @@ set(ALL_TESTS
     test_latch
     test_go
     test_generic_awaiter
+    test_future
 )
 
 foreach(exec_name ${ALL_TESTS})
