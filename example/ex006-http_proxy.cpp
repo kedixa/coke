@@ -12,7 +12,8 @@ coke::HttpClientParams cli_params {
     .send_timeout       = -1,
     .receive_timeout    = -1,
     .keep_alive_timeout = 60 * 1000,
-    .redirect_max       = 0
+    .redirect_max       = 0,
+    .proxy              = "",
 };
 
 coke::HttpClient cli(cli_params);
@@ -83,13 +84,13 @@ coke::Task<> process(coke::HttpServerContext ctx) {
 
 int main(int argc, char *argv[]) {
     int port = 8000;
-    struct WFServerParams params = HTTP_SERVER_PARAMS_DEFAULT;
+    coke::HttpServerParams params;
     params.request_size_limit = 8 * 1024 * 1024;
 
     if (argc > 1 && argv[1])
         port = std::atoi(argv[1]);
 
-    coke::HttpServer server(&params, process);
+    coke::HttpServer server(params, process);
     if (server.start(port) == 0) {
         std::cout << "Start proxy on port " << port << "\nPress Enter to exit" << std::endl;
 
