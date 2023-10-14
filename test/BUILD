@@ -60,3 +60,13 @@ cc_test(
     ],
     linkopts = ["-lgtest"],
 )
+
+cc_test(
+    name = "test_http",
+    srcs = ["test_http.cpp"],
+    deps = [
+        "//:common",
+        "//:http",
+    ],
+    linkopts = ["-lgtest"],
+)
