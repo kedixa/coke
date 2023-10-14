@@ -1,72 +1,10 @@
-cc_test(
-    name = "test_wait",
-    srcs = ["test_wait.cpp"],
-    deps = [
-        "//:common",
-    ],
-    linkopts = ["-lgtest"],
-)
+load("//:build.bzl", "create_test_target")
 
-cc_test(
-    name = "test_file",
-    srcs = ["test_file.cpp"],
-    deps = [
-        "//:common",
-    ],
-    linkopts = ["-lgtest"],
-)
-
-cc_test(
-    name = "test_sleep",
-    srcs = ["test_sleep.cpp"],
-    deps = [
-        "//:common",
-    ],
-    linkopts = ["-lgtest"],
-)
-
-cc_test(
-    name = "test_latch",
-    srcs = ["test_latch.cpp"],
-    deps = [
-        "//:common",
-    ],
-    linkopts = ["-lgtest"],
-)
-
-cc_test(
-    name = "test_go",
-    srcs = ["test_go.cpp"],
-    deps = [
-        "//:common",
-    ],
-    linkopts = ["-lgtest"],
-)
-
-cc_test(
-    name = "test_generic_awaiter",
-    srcs = ["test_generic_awaiter.cpp"],
-    deps = [
-        "//:common",
-    ],
-    linkopts = ["-lgtest"],
-)
-
-cc_test(
-    name = "test_future",
-    srcs = ["test_future.cpp"],
-    deps = [
-        "//:common",
-    ],
-    linkopts = ["-lgtest"],
-)
-
-cc_test(
-    name = "test_http",
-    srcs = ["test_http.cpp"],
-    deps = [
-        "//:common",
-        "//:http",
-    ],
-    linkopts = ["-lgtest"],
-)
+create_test_target("test_wait")
+create_test_target("test_file")
+create_test_target("test_sleep")
+create_test_target("test_latch")
+create_test_target("test_go")
+create_test_target("test_generic_awaiter")
+create_test_target("test_future")
+create_test_target("test_http", ["//:http"])
