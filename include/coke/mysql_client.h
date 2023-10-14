@@ -12,8 +12,8 @@ namespace coke {
 
 using MySQLRequest = protocol::MySQLRequest;
 using MySQLResponse = protocol::MySQLResponse;
-using MySQLResult = NetworkResult<MySQLResponse>;
 using MySQLAwaiter = NetworkAwaiter<MySQLRequest, MySQLResponse>;
+using MySQLResult = MySQLAwaiter::ResultType;
 
 struct MySQLClientParams {
     int retry_max           = 0;

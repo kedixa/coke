@@ -1,5 +1,5 @@
-#ifndef COKE_SERVER_COMMON_H
-#define COKE_SERVER_COMMON_H
+#ifndef COKE_BASIC_SERVER_H
+#define COKE_BASIC_SERVER_H
 
 #include "coke/network.h"
 #include "workflow/WFServer.h"
@@ -13,12 +13,14 @@ struct NetworkReplyResult {
 
 class NetworkReplyAwaiter : public BasicAwaiter<NetworkReplyResult> {
 public:
-    template<NetworkTaskType NT>
-    explicit NetworkReplyAwaiter(NT *task) {
-        task->set_callback([info = this->get_info()] (NT *t) {
+    template<typename REQ, typename RESP>
+    explicit NetworkReplyAwaiter(WFNetworkTask<REQ, RESP> *task) {
+        using TaskType = WFNetworkTask<REQ, RESP>;
+
+        task->set_callback([info = this->get_info()] (TaskType *task) {
             auto *awaiter = info->get_awaiter<NetworkReplyAwaiter>();
             awaiter->emplace_result(NetworkReplyResult{
-                t->get_state(), t->get_error()
+                task->get_state(), task->get_error()
             });
             awaiter->done();
         });
@@ -27,14 +29,15 @@ public:
     }
 };
 
-template<NetworkTaskType NT>
+template<typename REQ, typename RESP>
 class ServerContext {
-    using ReqType = typename NetworkTaskTrait<NT>::ReqType;
-    using RespType = typename NetworkTaskTrait<NT>::RespType;
+    using ReqType = REQ;
+    using RespType = RESP;
+    using TaskType = WFNetworkTask<REQ, RESP>;
     using AwaiterType = NetworkReplyAwaiter;
 
 public:
-    ServerContext(NT *task) : replied(false), task(task)
+    ServerContext(TaskType *task) : replied(false), task(task)
     { }
 
     ServerContext(ServerContext &&c) {
@@ -58,6 +61,14 @@ public:
     RespType &get_resp() & { return *(task->get_resp()); }
     long long get_seqid() { return task->get_seq(); }
 
+    /**
+     * `get_task` returns the `WFNetworkTask *` owned by this ServerContext,
+     * to make it easier to use low level functions such as task->get_connection.
+     *
+     * Read the documentation in detail to learn about lifecycle related issues.
+    */
+    TaskType *get_task() { return task; }
+
     AwaiterType reply() {
         // Each ServerContext must reply once
         assert(!replied);
@@ -68,7 +79,7 @@ public:
 
 private:
     bool replied;
-    NT *task;
+    TaskType *task;
 };
 
 using ServerParams = WFServerParams;
@@ -81,7 +92,7 @@ public:
     using ReqType = REQ;
     using RespType = RESP;
     using TaskType = WFNetworkTask<ReqType, RespType>;
-    using ServerContextType = ServerContext<TaskType>;
+    using ServerContextType = ServerContext<ReqType, RespType>;
     using ReplyResultType = NetworkReplyResult;
     using ProcessorType = std::function<Task<>(ServerContextType)>;
 
@@ -108,4 +119,4 @@ private:
 
 } // namespace coke
 
-#endif // COKE_SERVER_COMMON_H
+#endif // COKE_BASIC_SERVER_H

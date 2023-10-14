@@ -5,6 +5,10 @@
 
 namespace coke {
 
+constexpr int MAJOR_VERSION = 0;
+constexpr int MINOR_VERSION = 1;
+constexpr int BUGFIX_VERSION = 0;
+
 constexpr int STATE_UNDEFINED = -1;
 constexpr int STATE_SUCCESS = 0;
 constexpr int STATE_TOREPLY = 3;

@@ -2,7 +2,7 @@
 #define COKE_HTTP_SERVER_H
 
 #include "coke/detail/task.h"
-#include "coke/server_common.h"
+#include "coke/basic_server.h"
 
 #include "workflow/WFHttpServer.h"
 #include "workflow/HttpMessage.h"
@@ -11,7 +11,7 @@ namespace coke {
 
 using HttpRequest = protocol::HttpRequest;
 using HttpResponse = protocol::HttpResponse;
-using HttpServerContext = ServerContext<WFNetworkTask<HttpRequest, HttpResponse>>;
+using HttpServerContext = ServerContext<HttpRequest, HttpResponse>;
 using HttpReplyResult = NetworkReplyResult;
 
 struct HttpServerParams : public ServerParams {

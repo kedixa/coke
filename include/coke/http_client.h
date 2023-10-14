@@ -13,8 +13,8 @@ namespace coke {
 
 using HttpRequest = protocol::HttpRequest;
 using HttpResponse = protocol::HttpResponse;
-using HttpResult = NetworkResult<HttpResponse>;
 using HttpAwaiter = NetworkAwaiter<HttpRequest, HttpResponse>;
+using HttpResult = HttpAwaiter::ResultType;
 
 struct HttpClientParams {
     int retry_max           = 0;

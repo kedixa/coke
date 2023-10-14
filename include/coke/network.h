@@ -5,48 +5,53 @@
 #include <utility>
 #include <cassert>
 
-#include "coke/detail/basic_concept.h"
 #include "coke/detail/awaiter_base.h"
+#include "workflow/WFTask.h"
 
 namespace coke {
 
-template<typename RESP>
+template<typename REQ, typename RESP>
 struct NetworkResult {
+    using ReqType = REQ;
     using RespType = RESP;
+    using TaskType = WFNetworkTask<ReqType, RespType>;
 
     int state;
     int error;
-    int timeout_reason;
-    long long seqid;
+
     RespType resp;
+
+    // Attention: the task will be destroyed at the beginning of the next task
+    TaskType *task;
 };
 
 template<typename REQ, typename RESP>
-class NetworkAwaiter : public BasicAwaiter<NetworkResult<RESP>> {
+class NetworkAwaiter : public BasicAwaiter<NetworkResult<REQ, RESP>> {
 public:
     using ReqType = REQ;
     using RespType = RESP;
-    using ResultType = NetworkResult<RespType>;
+    using ResultType = NetworkResult<ReqType, RespType>;
+    using TaskType = WFNetworkTask<ReqType, RespType>;
 
 public:
-    template<NetworkTaskType NT>
-        requires (std::same_as<typename NetworkTaskTrait<NT>::ReqType, ReqType> &&
-                std::same_as<typename NetworkTaskTrait<NT>::RespType, RespType>)
-    explicit NetworkAwaiter(NT *task, bool reply = false) {
-        task->set_callback([info = this->get_info()] (NT *t) {
-            using Atype = NetworkAwaiter<ReqType, RespType>;
-            auto *awaiter = info->template get_awaiter<Atype>();
-            awaiter->emplace_result(
-                ResultType {
-                    t->get_state(), t->get_error(), t->get_timeout_reason(),
-                    t->get_task_seq(), std::move(*t->get_resp())
-                }
-            );
+    explicit NetworkAwaiter(TaskType *task, bool move_resp = true) {
+        task->set_callback([info = this->get_info(), move_resp] (TaskType *task) {
+            using AwaiterType = NetworkAwaiter<ReqType, RespType>;
+            auto *awaiter = info->template get_awaiter<AwaiterType>();
 
+            ResultType result;
+            result.state = task->get_state();
+            result.error = task->get_error();
+            result.task = task;
+
+            if (move_resp)
+                result.resp = std::move(*task->get_resp());
+
+            awaiter->emplace_result(std::move(result));
             awaiter->done();
         });
 
-        this->set_task(task, reply);
+        this->set_task(task);
     }
 };
 

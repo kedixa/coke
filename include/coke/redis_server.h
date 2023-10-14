@@ -2,7 +2,7 @@
 #define COKE_REDIS_SERVER_H
 
 #include "coke/detail/task.h"
-#include "coke/server_common.h"
+#include "coke/basic_server.h"
 
 #include "workflow/WFRedisServer.h"
 #include "workflow/RedisMessage.h"
@@ -12,7 +12,7 @@ namespace coke {
 using RedisRequest = protocol::RedisRequest;
 using RedisResponse = protocol::RedisResponse;
 using RedisValue = protocol::RedisValue;
-using RedisServerContext = ServerContext<WFNetworkTask<RedisRequest, RedisResponse>>;
+using RedisServerContext = ServerContext<RedisRequest, RedisResponse>;
 using RedisReplyResult = NetworkReplyResult;
 
 struct RedisServerParams : public ServerParams {
