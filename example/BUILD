@@ -34,3 +34,4 @@ create_example_target("ex007-redis_cli", ["//:redis", "//example:readline_helper
 create_example_target("ex008-parallel_http_get", ["//:http"])
 create_example_target("ex009-mysql_cli", ["//:mysql", "//example:readline_helper"])
 create_example_target("ex010-timed_wait")
+create_example_target("ex011-redis_server", ["//:redis"])
