@@ -14,8 +14,8 @@ namespace coke {
 using RedisRequest = protocol::RedisRequest;
 using RedisResponse = protocol::RedisResponse;
 using RedisValue = protocol::RedisValue;
-using RedisResult = NetworkResult<RedisResponse>;
 using RedisAwaiter = NetworkAwaiter<RedisRequest, RedisResponse>;
+using RedisResult = RedisAwaiter::ResultType;
 
 struct RedisClientParams {
     int retry_max           = 0;
