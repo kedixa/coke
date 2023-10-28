@@ -70,12 +70,23 @@ void AwaiterBase::suspend(void *s, bool is_new) {
     if (is_new)
         series->start();
     else if(!in_series)
-        series->push_back(subtask);
+        series->push_front(subtask);
 }
 
 AwaiterBase::~AwaiterBase() {
     // We assume that SubTask can be deleted
     delete subtask;
+}
+
+// series.h impl
+SeriesAwaiter::SeriesAwaiter() {
+    auto cb = [info = this->get_info()](WFCounterTask *task) {
+        auto *awaiter = info->get_awaiter<SeriesAwaiter>();
+        awaiter->emplace_result(series_of(task));
+        awaiter->done();
+    };
+
+    set_task(WFTaskFactory::create_counter_task(0, cb));
 }
 
 } // namespace coke
