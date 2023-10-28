@@ -3,7 +3,7 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "common",
     srcs = [
-        "src/coke_core.cpp",
+        "src/coke_impl.cpp",
         "src/fileio.cpp",
         "src/go.cpp",
         "src/sleep.cpp",

@@ -16,6 +16,7 @@
 #include "coke/sleep.h"
 #include "coke/wait.h"
 #include "coke/generic_awaiter.h"
+#include "coke/series.h"
 
 namespace coke {
 

@@ -1,7 +1,6 @@
 #ifndef COKE_HTTP_SERVER_H
 #define COKE_HTTP_SERVER_H
 
-#include "coke/detail/task.h"
 #include "coke/basic_server.h"
 
 #include "workflow/WFHttpServer.h"

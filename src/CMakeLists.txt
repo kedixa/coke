@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
 
 add_library(${COKE_LIBRARY_NAME} STATIC
-    coke_core.cpp
+    coke_impl.cpp
     fileio.cpp
     go.cpp
     http_impl.cpp
