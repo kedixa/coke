@@ -2,20 +2,23 @@
 #define COKE_QPS_POOL_H
 
 #include <mutex>
+#include <cstdint>
 
 #include "coke/sleep.h"
 
 namespace coke {
 
 class QpsPool {
-    using NanoType = long long;
+    using NanoType = int64_t;
+    static constexpr NanoType SUB_MASK = 1'000L;
 
 public:
     using AwaiterType = SleepAwaiter;
 
 public:
     /**
-     * Create QpsPool with `qps` limit, `qps` == 0 means no limit.
+     * Create QpsPool with query/seconds limit, `query` == 0 means no limit.
+     * requires `query` >= 0 and seconds >= 1
      *  Example:
      *  coke::QpsPool pool(10);
      *
@@ -25,21 +28,13 @@ public:
      *      // do something under qps limit
      *  }
     */
-    QpsPool(unsigned qps);
-
-    /**
-     * When qps is not integer, for example, 0.5 qps means 2 seconds
-     * per query. `qps` <= 0.0 means no limit, invalid param may cause
-     * bad result.
-    */
-    QpsPool(double qps);
+    QpsPool(long query, long seconds = 1);
 
     /**
      * Reset another `qps` limit, even if pool is already in use.
      * The new limit will take effect the next time `get` is called.
     */
-    void reset_qps(unsigned qps) noexcept;
-    void reset_qps(double qps) noexcept;
+    void reset_qps(long query, long seconds = 1) noexcept;
 
     /**
      * Acquire `count` license from QpsPool, the returned awaitable
@@ -50,7 +45,9 @@ public:
 private:
     std::mutex mtx;
     NanoType interval_nano;
+    NanoType interval_sub;
     NanoType last_nano;
+    NanoType last_sub;
 };
 
 } // namespace coke
