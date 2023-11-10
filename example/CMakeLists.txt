@@ -12,6 +12,7 @@ set(ALL_EXAMPLES
     ex009-mysql_cli
     ex010-timed_wait
     ex011-redis_server
+    ex012-faster_merge_sort
 )
 
 foreach(example ${ALL_EXAMPLES})
