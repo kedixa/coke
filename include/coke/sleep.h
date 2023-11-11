@@ -2,33 +2,53 @@
 #define COKE_SLEEP_H
 
 #include <chrono>
+#include <string>
 
 #include "coke/detail/awaiter_base.h"
 
 namespace coke {
 
+constexpr int SLEEP_UNKNOWN_ERROR = -1;
+constexpr int SLEEP_SUCCESS = 0;
+constexpr int SLEEP_CANCELED = 1;
+constexpr int SLEEP_ABORTED = 2;
+
 class SleepAwaiter : public BasicAwaiter<int> {
+    static std::chrono::nanoseconds __plus(long sec, long nsec) {
+        using namespace std::chrono;
+        return seconds(sec) + nanoseconds(nsec);
+    }
+
 public:
-    SleepAwaiter();
-    SleepAwaiter(long sec, long nsec);
+    SleepAwaiter() { emplace_result(SLEEP_SUCCESS); }
+    SleepAwaiter(long sec, long nsec) : SleepAwaiter(__plus(sec, nsec)) { }
+
+    SleepAwaiter(std::chrono::nanoseconds nsec);
+    SleepAwaiter(const std::string &name, std::chrono::nanoseconds nsec);
 };
 
 inline SleepAwaiter sleep(long sec, long nsec) {
     return SleepAwaiter(sec, nsec);
 }
 
-inline SleepAwaiter sleep(std::chrono::nanoseconds nsec) {
-    constexpr size_t NANO = 1000ULL * 1000 * 1000;
-    std::chrono::nanoseconds::rep cnt = nsec.count();
+template<typename Rep, typename Period>
+SleepAwaiter sleep(const std::chrono::duration<Rep, Period> &d) {
+    return SleepAwaiter(d);
+}
 
-    if (cnt < 0)
-        return SleepAwaiter(0, 0);
-    else
-        return SleepAwaiter(cnt / NANO, cnt % NANO);
+template<typename Rep, typename Period>
+SleepAwaiter sleep(const std::string &name, const std::chrono::duration<Rep, Period> &d) {
+    return SleepAwaiter(name, d);
 }
 
 inline SleepAwaiter yield() {
     return SleepAwaiter(0, 0);
+}
+
+inline void cancel_sleep_by_name(const std::string &name, std::size_t max);
+
+inline void cancel_sleep_by_name(const std::string &name) {
+    return cancel_sleep_by_name(name, std::size_t(-1));
 }
 
 } // namespace coke
