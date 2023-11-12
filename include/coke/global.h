@@ -2,6 +2,7 @@
 #define COKE_GLOBAL_H
 
 #include <cstddef>
+#include <cstdint>
 
 namespace coke {
 
