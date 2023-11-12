@@ -52,7 +52,8 @@ QpsPool::AwaiterType QpsPool::get(unsigned count) noexcept {
     if (next_nano > current) {
         last_nano = next_nano;
         last_sub = next_sub;
-        return AwaiterType(0, next_nano - current);
+
+        return AwaiterType(std::chrono::nanoseconds(next_nano - current));
     }
     else {
         last_nano = current;
