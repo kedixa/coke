@@ -51,6 +51,15 @@ struct GlobalSettings {
 void library_init(const GlobalSettings &s);
 const char *get_error_string(int state, int error);
 
+
+/**
+ * Get a globally unique id, which must be greater than zero,
+ * so zero can be treated as an illegal id.
+*/
+uint64_t get_unique_id();
+
+constexpr uint64_t INVALID_UNIQUE_ID = 0;
+
 } // namespace coke
 
 #endif // COKE_GLOBAL_H

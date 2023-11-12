@@ -1,14 +1,10 @@
+#include <atomic>
+
 #include "coke/detail/awaiter_base.h"
 #include "coke/global.h"
 #include "coke/coke.h"
 
-#include <cstdlib>
-#include <mutex>
-#include <condition_variable>
-#include <cassert>
-
 #include "workflow/Workflow.h"
-#include "workflow/WFTask.h"
 #include "workflow/WFTaskFactory.h"
 
 namespace coke {
@@ -62,6 +58,12 @@ const char *get_error_string(int state, int error) {
 
 void *AwaiterBase::create_series(SubTask *first) {
     return Workflow::create_series_work(first, nullptr);
+}
+
+uint64_t get_unique_id() {
+    static std::atomic<uint64_t> uid{1};
+    // Assume uid will not exhausted before process ends
+    return uid.fetch_add(1, std::memory_order_relaxed);
 }
 
 void AwaiterBase::suspend(void *s, bool is_new) {

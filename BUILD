@@ -10,6 +10,7 @@ cc_library(
         "src/latch.cpp",
         "src/qps_pool.cpp",
         "src/future.cpp",
+        "src/cancelable_timer.cpp",
     ],
     hdrs = ["include"],
     includes = ["include"],

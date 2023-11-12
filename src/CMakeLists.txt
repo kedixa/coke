@@ -11,6 +11,7 @@ add_library(${COKE_LIBRARY_NAME} STATIC
     sleep.cpp
     mysql_impl.cpp
     future.cpp
+    cancelable_timer.cpp
 )
 
 target_include_directories(${COKE_LIBRARY_NAME} PUBLIC
