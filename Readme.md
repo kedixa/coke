@@ -106,5 +106,10 @@ scl enable gcc-toolset-12 "cmake -D Workflow_DIR=workflow ."
 scl enable gcc-toolset-12 "make -j 8"
 ```
 
+## 注意事项
+### 关于具名任务
+`Workflow`中有些任务创建时可以指定名称，例如具名`WFTimerTask`可以根据名称被取消、具名`WFCounterTask`可以根据名称唤醒、具名`WFGoTask`可以根据名称区分计算队列等。`Coke`保留所有以`coke:`开始的名称，以满足自身使用。
+
+
 ## LICENSE
 TODO
