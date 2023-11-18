@@ -26,7 +26,7 @@ public:
 
     SleepAwaiter(std::chrono::nanoseconds nsec);
     SleepAwaiter(const std::string &name, std::chrono::nanoseconds nsec);
-    SleepAwaiter(std::size_t id, std::chrono::nanoseconds nsec);
+    SleepAwaiter(uint64_t id, std::chrono::nanoseconds nsec, bool insert_head=false);
 };
 
 inline SleepAwaiter sleep(long sec, long nsec) {
@@ -44,8 +44,10 @@ SleepAwaiter sleep(const std::string &name, const std::chrono::duration<Rep, Per
 }
 
 template<typename Rep, typename Period>
-SleepAwaiter sleep(std::size_t id, const std::chrono::duration<Rep, Period> &d) {
-    return SleepAwaiter(id, d);
+SleepAwaiter sleep(uint64_t id, const std::chrono::duration<Rep, Period> &d,
+                   bool insert_head = false)
+{
+    return SleepAwaiter(id, d, insert_head);
 }
 
 inline SleepAwaiter yield() {
@@ -58,9 +60,9 @@ inline void cancel_sleep_by_name(const std::string &name) {
     return cancel_sleep_by_name(name, std::size_t(-1));
 }
 
-std::size_t cancel_sleep_by_id(std::size_t id, std::size_t max);
+std::size_t cancel_sleep_by_id(uint64_t id, std::size_t max);
 
-inline std::size_t cancel_sleep_by_id(std::size_t id) {
+inline std::size_t cancel_sleep_by_id(uint64_t id) {
     return cancel_sleep_by_id(id, std::size_t(-1));
 }
 

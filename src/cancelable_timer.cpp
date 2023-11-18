@@ -25,7 +25,7 @@ public:
     using Map = std::map<uint64_t, List>;
     using MapIter = Map::iterator;
 
-    void add_task(uint64_t uid, CancelableTimer *task);
+    void add_task(uint64_t uid, CancelableTimer *task, bool insert_head);
     std::size_t cancel(uint64_t uid, std::size_t max);
     void del_task_unlocked(MapIter miter, ListIter liter);
 
@@ -108,7 +108,7 @@ private:
     CancelableTimerMap *timer_map;
 };
 
-void CancelableTimerMap::add_task(uint64_t uid, CancelableTimer *task) {
+void CancelableTimerMap::add_task(uint64_t uid, CancelableTimer *task, bool insert_head) {
     TimerMapLock lk(this);
 
     MapIter miter = timer_map.lower_bound(uid);
@@ -116,7 +116,13 @@ void CancelableTimerMap::add_task(uint64_t uid, CancelableTimer *task) {
         miter = timer_map.insert(miter, {uid, List{}});
 
     List &lst = miter->second;
-    ListIter liter = lst.insert(lst.end(), task);
+    ListIter liter;
+
+    if (insert_head)
+        liter = lst.insert(lst.begin(), task);
+    else
+        liter = lst.insert(lst.end(), task);
+
     task->set_in_map(this, miter, liter);
 }
 
@@ -190,13 +196,14 @@ void CancelableTimer::handle(int state, int error) {
 
 namespace coke {
 
-WFTimerTask *create_cancelable_timer(uint64_t id, time_t seconds, long nanoseconds,
+WFTimerTask *create_cancelable_timer(uint64_t id, bool insert_head,
+                                     time_t seconds, long nanoseconds,
                                      timer_callback_t callback)
 {
     auto *timer_map = detail::CancelableTimerMap::get_instance(id);
     auto *task = new detail::CancelableTimer(seconds, nanoseconds, WFGlobal::get_scheduler(),
                                              std::move(callback));
-    timer_map->add_task(id, task);
+    timer_map->add_task(id, task, insert_head);
     return task;
 }
 

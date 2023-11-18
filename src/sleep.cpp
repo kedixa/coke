@@ -18,7 +18,7 @@ static int get_sleep_state(WFTimerTask *task) {
 }
 
 using std::chrono::nanoseconds;
-WFTimerTask *create_cancelable_timer(uint64_t, time_t, long, timer_callback_t);
+WFTimerTask *create_cancelable_timer(uint64_t, bool, time_t, long, timer_callback_t);
 
 static std::pair<time_t, long> split_nano(nanoseconds nano) {
     constexpr uint64_t NANO = 1'000'000'000;
@@ -56,7 +56,7 @@ void cancel_sleep_by_name(const std::string &name, std::size_t max) {
     return WFTaskFactory::cancel_by_name(name, max);
 }
 
-SleepAwaiter::SleepAwaiter(std::size_t id, nanoseconds nano) {
+SleepAwaiter::SleepAwaiter(uint64_t id, nanoseconds nano, bool insert_head) {
     auto cb = [info = this->get_info()](WFTimerTask *task) {
         auto *awaiter = info->get_awaiter<SleepAwaiter>();
         awaiter->emplace_result(get_sleep_state(task));
@@ -64,7 +64,7 @@ SleepAwaiter::SleepAwaiter(std::size_t id, nanoseconds nano) {
     };
 
     auto [sec, nsec] = split_nano(nano);
-    set_task(create_cancelable_timer(id, sec, nsec, cb));
+    set_task(create_cancelable_timer(id, insert_head, sec, nsec, cb));
 }
 
 } // namespace coke
