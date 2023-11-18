@@ -139,7 +139,6 @@ public:
      * See `wait`.
     */
     template<typename Clock, typename Duration>
-        requires std::chrono::is_clock_v<Clock>
     FutureAwaiter wait_until(std::chrono::time_point<Clock, Duration> abs_tp);
 
     /**
@@ -250,7 +249,6 @@ FutureAwaiter Future<Res>::wait_for(std::chrono::nanoseconds ns) {
 
 template<FutureResType Res>
 template<typename Clock, typename Duration>
-    requires std::chrono::is_clock_v<Clock>
 FutureAwaiter Future<Res>::wait_until(std::chrono::time_point<Clock, Duration> abs_tp) {
     auto dur = abs_tp - Clock::now();
     return wait_for(dur);

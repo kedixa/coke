@@ -1,12 +1,12 @@
 #ifndef COKE_MYSQL_UTILS_H
 #define COKE_MYSQL_UTILS_H
 
-#include <charconv>
 #include <cmath>
-#include <cstdlib>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include "coke/compatible/to_numeric.h"
 
 #include "workflow/MySQLMessage.h"
 #include "workflow/mysql_types.h"
@@ -81,13 +81,7 @@ protected:
 
     template<typename T>
     std::errc to_numeric(T &value) const noexcept {
-        const char *first = data.data();
-        const char *last = first + data.size();
-        auto r = std::from_chars(first, last, value);
-
-        if (r.ec == std::errc() && r.ptr != last)
-            return std::errc::invalid_argument;
-        return r.ec;
+        return comp::to_numeric(data, value);
     }
 
     template<typename T>
