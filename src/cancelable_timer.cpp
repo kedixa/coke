@@ -9,7 +9,7 @@
 
 namespace coke::detail {
 
-constexpr uint64_t CANCELABLE_MAP_MAX = 128;
+constexpr uint64_t CANCELABLE_MAP_MAX = 16;
 class CancelableTimer;
 
 class CancelableTimerMap {
@@ -24,6 +24,11 @@ public:
     using ListIter = List::iterator;
     using Map = std::map<uint64_t, List>;
     using MapIter = Map::iterator;
+
+    CancelableTimerMap() = default;
+
+    // When destructing, it is undefined behavior if there are still unfinished timers.
+    ~CancelableTimerMap() = default;
 
     void add_task(uint64_t uid, CancelableTimer *task, bool insert_head);
     std::size_t cancel(uint64_t uid, std::size_t max);
@@ -46,6 +51,7 @@ class CancelableTimer : public WFTimerTask {
 
     static constexpr auto acquire = std::memory_order_acquire;
     static constexpr auto release = std::memory_order_release;
+    static constexpr auto acq_rel = std::memory_order_acq_rel;
 
 protected:
     int duration(struct timespec *value) override {
@@ -56,50 +62,54 @@ protected:
 
     virtual void dispatch() override;
     virtual void handle(int state, int error) override;
+    virtual SubTask *done() override;
 
 public:
-    int cancel_timer_unlocked() {
-        int ret;
+    /**
+     * Cancel the unfinished timer. This function must be called within the
+     * timer map lock.
+     * CancelableTimer guarantees that if `cancel_timer_in_map` is called
+     * before `handle` takes effect, the timer's state is `SLEEP_CANCELED`.
+    */
+    int cancel_timer_in_map();
 
-        if (dispatched)
-            ret = this->WFTimerTask::cancel();
-        else {
-            seconds = 0;
-            nanoseconds = 0;
-            ret = 0;
-        }
-
-        this->in_map.clear(release);
-        return ret;
-    }
-
-    // called in timer lock
+    /**
+     * Set the location where the timer is placed. It must be called within the
+     * timer map lock and should be called immediately after construction.
+    */
     void set_in_map(CancelableTimerMap *timer_map, MapIter miter, ListIter liter) {
         this->timer_map = timer_map;
         this->miter = miter;
         this->liter = liter;
-        this->in_map.test_and_set(release);
+        in_map.store(true, release);
     }
 
 public:
     CancelableTimer(time_t seconds, long nanoseconds,
                     CommScheduler *scheduler, timer_callback_t&& cb)
-        : WFTimerTask(scheduler, std::move(cb)), dispatched(false),
+        : WFTimerTask(scheduler, std::move(cb)),
+          in_map(false), canceled(false), switched(false), dispatch_done(false),
           seconds(seconds), nanoseconds(nanoseconds),
           timer_map(nullptr)
     { }
 
     virtual ~CancelableTimer() {
-        if (in_map.test(acquire)) {
+        if (in_map.load(acquire)) {
             TimerMapLock lk(timer_map);
-            if (in_map.test(acquire))
+            if (in_map.load(acquire))
                 timer_map->del_task_unlocked(miter, liter);
         }
     }
 
 private:
-    bool dispatched;
-    std::atomic_flag in_map;
+    /**
+     * We spent a lot of time using four std::atomic<bool>s to avoid using one
+     * std::mutex, and now we're wondering if it's worth it.
+    */
+    std::atomic<bool> in_map;
+    std::atomic<bool> canceled;
+    std::atomic<bool> switched;
+    std::atomic<bool> dispatch_done;
 
     time_t seconds;
     long nanoseconds;
@@ -142,7 +152,7 @@ std::size_t CancelableTimerMap::cancel(uint64_t uid, std::size_t max) {
         lst.pop_front();
         ++cnt;
 
-        timer->cancel_timer_unlocked();
+        timer->cancel_timer_in_map();
         // The timer may have been destroyed at this time
     }
 
@@ -162,34 +172,68 @@ void CancelableTimerMap::del_task_unlocked(MapIter miter, ListIter liter) {
 
 void CancelableTimer::dispatch() {
     int ret;
+    bool c = canceled.load(acquire);
 
-    {
-        TimerMapLock lk(timer_map);
-        dispatched = true;
-        ret = this->scheduler->sleep(this);
+    if (c) {
+        seconds = 0;
+        nanoseconds = 0;
     }
+
+    ret = this->scheduler->sleep(this);
+    if (ret >= 0 && !c && switched.exchange(true, acq_rel))
+        this->WFTimerTask::cancel();
+
+    // sync with done
+    dispatch_done.store(true, release);
+    dispatch_done.notify_all();
 
     if (ret < 0)
         this->handle(SS_STATE_ERROR, errno);
 }
 
 void CancelableTimer::handle(int state, int error) {
-    bool canceled = !in_map.test(acquire);
-
-    if (state == WFT_STATE_SUCCESS && canceled) {
+    if (state == WFT_STATE_SUCCESS && canceled.load(acquire)) {
         state = WFT_STATE_SYS_ERROR;
         error = ECANCELED;
     }
 
-    if (!canceled) {
+    if (in_map.load(acquire)) {
         TimerMapLock lk(timer_map);
-        if (in_map.test(acquire)) {
+        if (in_map.load(acquire)) {
             timer_map->del_task_unlocked(miter, liter);
-            in_map.clear(release);
+            in_map.store(false, release);
         }
     }
 
     this->WFTimerTask::handle(state, error);
+}
+
+SubTask *CancelableTimer::done() {
+    SeriesWork *series = series_of(this);
+
+    if (this->callback)
+        this->callback(this);
+
+    // dispatch should finish before delete this
+    dispatch_done.wait(false, acquire);
+
+    delete this;
+    return series->pop();
+}
+
+int CancelableTimer::cancel_timer_in_map() {
+    int ret = 0;
+
+    // sync with dispatch and handle
+    canceled.store(true, release);
+
+    // sync with dispatch
+    if (switched.exchange(true, acq_rel))
+        ret = this->WFTimerTask::cancel();
+
+    // sync with handle and destructor
+    in_map.store(false, release);
+    return ret;
 }
 
 } // namespace coke::detail
