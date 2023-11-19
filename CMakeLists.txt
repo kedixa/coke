@@ -33,6 +33,7 @@ include_directories(${COKE_INCLUDE_DIR})
 
 add_subdirectory(src)
 add_subdirectory(example)
+add_subdirectory(benchmark)
 
 if (ENABLE_TEST)
     enable_testing()
