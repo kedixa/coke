@@ -1,5 +1,4 @@
 localtest
-benchmark
 Makefile
 bazel-*
 build.*

@@ -14,7 +14,7 @@ namespace coke {
 namespace detail {
 
 // Some SSO std::string has 15 chars locally, so use a short and meaningful name
-inline static constexpr std::string_view DFT_QUEUE{"coke_dft_queue"};
+inline static constexpr std::string_view DFT_QUEUE{"coke:dft-que"};
 
 SubTask *create_go_task(const std::string &queue, std::function<void()> &&func);
 
@@ -57,11 +57,12 @@ auto go(FUNC &&func, ARGS&& ...args) {
     return go(std::string(detail::DFT_QUEUE), std::forward<FUNC>(func), std::forward<ARGS>(args)...);
 }
 
-// switch to go thread pool's thread
-inline auto switch_go_thread(const std::string &queue) {
-    return go([]{});
+// Switch to a thread in the go thread pool with `name`
+inline auto switch_go_thread(const std::string &name) {
+    return go(name, []{});
 }
 
+// Switch to a thread in the go thread pool with default name
 inline auto switch_go_thread() {
     return go(std::string(detail::DFT_QUEUE), []{});
 }
