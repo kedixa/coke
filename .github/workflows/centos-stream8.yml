@@ -37,5 +37,5 @@ jobs:
         ${{ matrix.compiler_prepare }}
         cmake -S workflow -B build.workflow -D CMAKE_CXX_STANDARD=20
         make -C workflow -j 8
-        cmake -S . -B build -D Workflow_DIR=workflow -D ENABLE_TEST=1
+        cmake -S . -B build -D Workflow_DIR=workflow -D COKE_ENABLE_TEST=1 -D COKE_ENABLE_EXAMPLE=1 -D COKE_ENABLE_BENCHMARK=1
         make -C build -j 8 all test

@@ -6,13 +6,16 @@ project(
     LANGUAGES CXX
 )
 
+set(COKE_ENABLE_TEST FALSE CACHE BOOL "Whether to build and run tests, default FALSE")
+set(COKE_ENABLE_BENCHMARK FALSE CACHE BOOL "Whether to build benchmarks, default FALSE")
+set(COKE_ENABLE_EXAMPLE FALSE CACHE BOOL "Whether to build examples, default FALSE")
+set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "cmake build type")
+
 set(COKE_LIBRARY_NAME ${PROJECT_NAME})
 set(COKE_LIBRARY_DIR ${PROJECT_BINARY_DIR}/lib)
 set(COKE_INCLUDE_DIR ${PROJECT_BINARY_DIR}/include)
 set(COKE_INSTALL_CMAKE_FILE ${PROJECT_BINARY_DIR}/${COKE_LIBRARY_NAME}-config.install.cmake)
 
-set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "cmake build type")
-set(CMAKE_SKIP_RPATH TRUE)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${COKE_LIBRARY_DIR})
@@ -31,11 +34,35 @@ include_directories(${WORKFLOW_INCLUDE_DIR})
 include_directories(${OPENSSL_INCLUDE_DIR})
 include_directories(${COKE_INCLUDE_DIR})
 
-add_subdirectory(src)
-add_subdirectory(example)
-add_subdirectory(benchmark)
+# Try to find static workflow
+set(BACKUP_CMAKE_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
+set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+find_library(COKE_TRY_STATIC_WORKFLOW workflow PATHS ${WORKFLOW_LIB_DIR})
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${BACKUP_CMAKE_LIBRARY_SUFFIXES})
 
-if (ENABLE_TEST)
+if (COKE_TRY_STATIC_WORKFLOW STREQUAL "COKE_TRY_STATIC_WORKFLOW-NOTFOUND")
+    message(FATAL_ERROR "Workflow Not Found")
+else ()
+    message("Found Workflow: " ${COKE_TRY_STATIC_WORKFLOW})
+endif()
+
+add_subdirectory(src)
+
+if (COKE_ENABLE_EXAMPLE)
+    add_subdirectory(example)
+else ()
+    add_subdirectory(example EXCLUDE_FROM_ALL)
+    message("examples are not included in the default build target.")
+endif()
+
+if (COKE_ENABLE_BENCHMARK)
+    add_subdirectory(benchmark)
+else ()
+    add_subdirectory(benchmark EXCLUDE_FROM_ALL)
+    message("benchmarks are not included in the default build target.")
+endif()
+
+if (COKE_ENABLE_TEST)
     enable_testing()
     add_subdirectory(test)
 endif()
