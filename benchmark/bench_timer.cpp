@@ -195,7 +195,6 @@ coke::Task<> bench_pool_id(std::size_t max) {
     std::mt19937_64 mt(current_msec());
     std::size_t i;
 
-    co_await coke::switch_go_thread();
     while (next(i)) {
         uint64_t id = id_pool[i%max];
         co_await coke::sleep(id, microseconds(dist(mt)));
