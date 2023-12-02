@@ -4,12 +4,17 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "coke/detail/task.h"
+#include "coke/detail/awaiter_base.h"
+
 namespace coke {
 
+// version
 constexpr int MAJOR_VERSION = 0;
 constexpr int MINOR_VERSION = 1;
 constexpr int BUGFIX_VERSION = 0;
 
+// state constant from workflow, see WFTask.h
 constexpr int STATE_UNDEFINED = -1;
 constexpr int STATE_SUCCESS = 0;
 constexpr int STATE_TOREPLY = 3;
@@ -20,14 +25,21 @@ constexpr int STATE_DNS_ERROR = 66;
 constexpr int STATE_TASK_ERROR = 67;
 constexpr int STATE_ABORTED = 2;
 
+// timeout reason constant from workflow, see CommRequest.h
 constexpr int NOT_TIMEOUT = 0;
 constexpr int WAIT_TIMEOUT = 1;
 constexpr int CONNECT_TIMEOUT = 2;
 constexpr int TRANSMIT_TIMEOUT = 3;
 
+// return value of coroutine operation such as TimedMutex.lock
+// Negative numbers indicate errors
+constexpr int TOP_SUCCESS = 0;
+constexpr int TOP_TIMEOUT = 1;
+constexpr int TOP_ABORTED = 2;
+constexpr int TOP_CLOSED = 3;
 
 struct EndpointParams {
-    size_t  max_connections     = 200;
+    std::size_t max_connections = 200;
     int     connect_timeout     = 10 * 1000;
     int     response_timeout    = 10 * 1000;
     int     ssl_connect_timeout = 10 * 1000;

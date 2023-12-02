@@ -13,7 +13,7 @@ static int get_sleep_state(WFTimerTask *task) {
             return SLEEP_CANCELED;
         [[fallthrough]];
     default:
-        return SLEEP_UNKNOWN_ERROR;
+        return -task->get_error();
     }
 }
 
