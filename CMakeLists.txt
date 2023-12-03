@@ -9,18 +9,29 @@ project(
 set(COKE_ENABLE_TEST FALSE CACHE BOOL "Whether to build and run tests, default FALSE")
 set(COKE_ENABLE_BENCHMARK FALSE CACHE BOOL "Whether to build benchmarks, default FALSE")
 set(COKE_ENABLE_EXAMPLE FALSE CACHE BOOL "Whether to build examples, default FALSE")
+set(COKE_BUILD_STATIC TRUE CACHE BOOL "Whether to build coke static library, default TRUE")
+set(COKE_BUILD_SHARED FALSE CACHE BOOL "Whether to build coke shared library, default FALSE")
 set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "cmake build type")
 
-set(COKE_LIBRARY_NAME ${PROJECT_NAME})
+set(COKE_LIBRARY ${PROJECT_NAME})
 set(COKE_LIBRARY_DIR ${PROJECT_BINARY_DIR}/lib)
 set(COKE_INCLUDE_DIR ${PROJECT_BINARY_DIR}/include)
-set(COKE_INSTALL_CMAKE_FILE ${PROJECT_BINARY_DIR}/${COKE_LIBRARY_NAME}-config.install.cmake)
+set(COKE_INSTALL_CMAKE_FILE ${PROJECT_BINARY_DIR}/${COKE_LIBRARY}-config.install.cmake)
+
+if (COKE_BUILD_STATIC)
+    set(COKE_STATIC_LIBRARY ${COKE_LIBRARY}-static)
+endif ()
+
+if (COKE_BUILD_SHARED)
+    set(COKE_SHARED_LIBRARY ${COKE_LIBRARY}-shared)
+endif ()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${COKE_LIBRARY_DIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${COKE_LIBRARY_DIR})
 
+# Will only be executed once during the cmake processing phase
 file(COPY
     ${PROJECT_SOURCE_DIR}/include/coke
     DESTINATION
@@ -69,27 +80,32 @@ endif()
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
-set(LIBRARY_NAME ${COKE_LIBRARY_NAME})
+set(LIBRARY_NAME ${COKE_LIBRARY})
 set(INCLUDE_DIR ${COKE_INCLUDE_DIR})
 set(LIBRARY_DIR ${COKE_LIBRARY_DIR})
 configure_package_config_file(
-    ${COKE_LIBRARY_NAME}-config.cmake.in
-    ${PROJECT_BINARY_DIR}/${COKE_LIBRARY_NAME}-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY_NAME}
+    ${COKE_LIBRARY}-config.cmake.in
+    ${PROJECT_BINARY_DIR}/${COKE_LIBRARY}-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY}
     PATH_VARS INCLUDE_DIR LIBRARY_DIR LIBRARY_NAME
 )
 
 set(INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR})
 set(LIBRARY_DIR ${CMAKE_INSTALL_LIBDIR})
 configure_package_config_file(
-    ${COKE_LIBRARY_NAME}-config.cmake.in
+    ${COKE_LIBRARY}-config.cmake.in
     ${COKE_INSTALL_CMAKE_FILE}
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY_NAME}
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY}
     PATH_VARS INCLUDE_DIR LIBRARY_DIR LIBRARY_NAME
 )
 
 install(TARGETS
-    ${COKE_LIBRARY_NAME}
+    ${COKE_STATIC_LIBRARY}
+    LIBRARY DESTINATION lib
+)
+
+install(TARGETS
+    ${COKE_SHARED_LIBRARY}
     LIBRARY DESTINATION lib
 )
 
@@ -98,8 +114,8 @@ install(DIRECTORY
     DESTINATION include)
 
 install(FILES ${COKE_INSTALL_CMAKE_FILE}
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY_NAME}
-    RENAME ${COKE_LIBRARY_NAME}-config.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY}
+    RENAME ${COKE_LIBRARY}-config.cmake
 )
 
 set(CPACK_GENERATOR "RPM")
