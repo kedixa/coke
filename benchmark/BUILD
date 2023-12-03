@@ -5,3 +5,11 @@ cc_binary(
         "//:common",
     ],
 )
+
+cc_binary(
+    name = "bench_go",
+    srcs = ["bench_go.cpp"],
+    deps = [
+        "//:common",
+    ],
+)

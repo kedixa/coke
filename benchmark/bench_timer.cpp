@@ -195,7 +195,6 @@ coke::Task<> bench_pool_id(std::size_t max) {
     std::mt19937_64 mt(current_msec());
     std::size_t i;
 
-    co_await coke::switch_go_thread();
     while (next(i)) {
         uint64_t id = id_pool[i%max];
         co_await coke::sleep(id, microseconds(dist(mt)));
@@ -372,7 +371,7 @@ R"usage(
                     each timer sleep about 500us
     -h n,           set handler threads to n, default 20
     -p n,           set poller threads to n, default 4
-    -m sec,         run at most `sec` seconds for each case, default 15
+    -m sec,         run at most `sec` seconds for each case, default 5
     -t total,       run at most `total` timer for each case, default 10000
     -y              skip showing arguments before start benchmark
 )usage"

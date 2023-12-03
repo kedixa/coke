@@ -3,16 +3,23 @@
 #include <mutex>
 #include <map>
 #include <list>
+#include <new>
 
 #include "coke/sleep.h"
 #include "workflow/WFTaskFactory.h"
 
 namespace coke::detail {
 
+#ifdef __cpp_lib_hardware_interference_size
+static constexpr std::size_t HDIS = std::hardware_destructive_interference_size;
+#else
+static constexpr std::size_t HDIS = 64UL;
+#endif
+
 constexpr uint64_t CANCELABLE_MAP_MAX = 16;
 class CancelableTimer;
 
-class CancelableTimerMap {
+class alignas(HDIS) CancelableTimerMap {
 public:
     static CancelableTimerMap *get_instance(uint64_t uid) {
         static CancelableTimerMap ntm[CANCELABLE_MAP_MAX];

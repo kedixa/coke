@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.6)
 
-add_library(${COKE_LIBRARY_NAME} STATIC
+set(SRCS
     coke_impl.cpp
     fileio.cpp
     go.cpp
@@ -14,6 +14,36 @@ add_library(${COKE_LIBRARY_NAME} STATIC
     cancelable_timer.cpp
 )
 
-target_include_directories(${COKE_LIBRARY_NAME} PUBLIC
-    ${COKE_INCLUDE_DIR}
-)
+if (COKE_BUILD_STATIC)
+    add_library(${COKE_STATIC_LIBRARY} STATIC
+        ${SRCS}
+    )
+
+    target_include_directories(${COKE_STATIC_LIBRARY} PUBLIC
+        ${COKE_INCLUDE_DIR}
+    )
+
+    set_target_properties(${COKE_STATIC_LIBRARY} PROPERTIES OUTPUT_NAME ${COKE_LIBRARY})
+endif ()
+
+if (COKE_BUILD_SHARED)
+    add_library(${COKE_SHARED_LIBRARY} SHARED
+        ${SRCS}
+    )
+
+    target_include_directories(${COKE_SHARED_LIBRARY} PUBLIC
+        ${COKE_INCLUDE_DIR}
+    )
+
+    set_target_properties(${COKE_SHARED_LIBRARY}
+        PROPERTIES OUTPUT_NAME ${COKE_LIBRARY}
+        VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR}
+    )
+endif ()
+
+if (COKE_BUILD_STATIC)
+    add_library(${COKE_LIBRARY} ALIAS ${COKE_STATIC_LIBRARY})
+elseif (COKE_BUILD_SHARED)
+    add_library(${COKE_LIBRARY} ALIAS ${COKE_SHARED_LIBRARY})
+endif ()
+

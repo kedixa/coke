@@ -4,15 +4,17 @@
 #include <chrono>
 #include <string>
 
-#include "coke/detail/awaiter_base.h"
 #include "coke/global.h"
 
 namespace coke {
 
-constexpr int SLEEP_UNKNOWN_ERROR = -1;
+// Negative numbers indicate errors
 constexpr int SLEEP_SUCCESS = 0;
 constexpr int SLEEP_CANCELED = 1;
 constexpr int SLEEP_ABORTED = 2;
+
+static_assert(SLEEP_SUCCESS == TOP_SUCCESS);
+static_assert(SLEEP_ABORTED == TOP_ABORTED);
 
 class SleepAwaiter : public BasicAwaiter<int> {
     static std::chrono::nanoseconds __plus(long sec, long nsec) {
