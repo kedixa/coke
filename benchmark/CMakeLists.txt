@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 
 set(ALL_BENCHMARK
     bench_timer
+    bench_go
 )
 
 foreach(exec_name ${ALL_BENCHMARK})
