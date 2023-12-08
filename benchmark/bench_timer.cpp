@@ -85,6 +85,21 @@ coke::Task<> bench_dismiss_timer() {
     }
 }
 
+coke::Task<> bench_coke_cost() {
+    std::mt19937_64 mt(current_msec());
+    std::size_t i, j = 0;
+
+    while (next(i)) {
+        // switch threads every 64 times to avoid stack overflow
+        if (j++ % 64 == 0)
+            co_await coke::yield();
+        else
+            co_await coke::SleepAwaiter();
+    }
+}
+
+// bench by name
+
 coke::Task<> bench_timer_by_name() {
     std::mt19937_64 mt(current_msec());
     std::size_t i;
@@ -94,29 +109,6 @@ coke::Task<> bench_timer_by_name() {
         name = std::to_string(i);
         co_await coke::sleep(name, microseconds(dist(mt)));
     }
-}
-
-coke::Task<> bench_pool_name(std::size_t max) {
-    std::mt19937_64 mt(current_msec());
-    std::size_t i;
-
-    while (next(i)) {
-        const std::string &name = name_pool[i%max];
-        co_await coke::sleep(name, microseconds(dist(mt)));
-    }
-    co_return;
-}
-
-coke::Task<> bench_one_name() {
-    return bench_pool_name(1);
-}
-
-coke::Task<> bench_two_name() {
-    return bench_pool_name(2);
-}
-
-coke::Task<> bench_ten_name() {
-    return bench_pool_name(10);
 }
 
 coke::Task<> bench_cancel_by_name() {
@@ -181,6 +173,47 @@ coke::Task<> bench_detach3_by_name() {
     }
 }
 
+coke::Task<> bench_pool_name(std::size_t max) {
+    std::mt19937_64 mt(current_msec());
+    std::size_t i;
+
+    while (next(i)) {
+        const std::string &name = name_pool[i%max];
+        co_await coke::sleep(name, microseconds(dist(mt)));
+    }
+    co_return;
+}
+
+coke::Task<> bench_one_name() {
+    return bench_pool_name(1);
+}
+
+coke::Task<> bench_two_name() {
+    return bench_pool_name(2);
+}
+
+coke::Task<> bench_ten_name() {
+    return bench_pool_name(10);
+}
+
+coke::Task<> bench_name_one_by_one() {
+    auto sleep = std::chrono::seconds(10);
+    auto first = std::chrono::milliseconds(10);
+    std::string name = name_pool[0];
+    std::size_t i;
+
+    while (next(i)) {
+        if (i == 0)
+            co_await coke::sleep(name, first);
+        else
+            co_await coke::sleep(name, sleep);
+
+        coke::cancel_sleep_by_name(name, 1);
+    }
+}
+
+// bench by id
+
 coke::Task<> bench_timer_by_id() {
     std::mt19937_64 mt(current_msec());
     std::size_t id, i;
@@ -189,29 +222,6 @@ coke::Task<> bench_timer_by_id() {
         id = coke::get_unique_id();
         co_await coke::sleep(id, microseconds(dist(mt)));
     }
-}
-
-coke::Task<> bench_pool_id(std::size_t max) {
-    std::mt19937_64 mt(current_msec());
-    std::size_t i;
-
-    while (next(i)) {
-        uint64_t id = id_pool[i%max];
-        co_await coke::sleep(id, microseconds(dist(mt)));
-    }
-    co_return;
-}
-
-coke::Task<> bench_one_id() {
-    return bench_pool_id(1);
-}
-
-coke::Task<> bench_two_id() {
-    return bench_pool_id(2);
-}
-
-coke::Task<> bench_ten_id() {
-    return bench_pool_id(10);
 }
 
 coke::Task<> bench_cancel_by_id() {
@@ -270,6 +280,44 @@ coke::Task<> bench_detach3_by_id() {
     }
 }
 
+coke::Task<> bench_pool_id(std::size_t max) {
+    std::mt19937_64 mt(current_msec());
+    std::size_t i;
+
+    while (next(i)) {
+        uint64_t id = id_pool[i%max];
+        co_await coke::sleep(id, microseconds(dist(mt)));
+    }
+    co_return;
+}
+
+coke::Task<> bench_one_id() {
+    return bench_pool_id(1);
+}
+
+coke::Task<> bench_two_id() {
+    return bench_pool_id(2);
+}
+
+coke::Task<> bench_ten_id() {
+    return bench_pool_id(10);
+}
+
+coke::Task<> bench_id_one_by_one() {
+    auto sleep = std::chrono::seconds(10);
+    auto first = std::chrono::milliseconds(10);
+    std::size_t id = id_pool[0];
+    std::size_t i;
+
+    while (next(i)) {
+        if (i == 0)
+            co_await coke::sleep(id, first);
+        else
+            co_await coke::sleep(id, sleep);
+
+        coke::cancel_sleep_by_id(id, 1);
+    }
+}
 
 // helper
 
@@ -338,6 +386,7 @@ int main(int argc, char *argv[]) {
 #define DO_BENCHMARK(func) coke::sync_wait(do_benchmark(#func, bench_ ## func))
     DO_BENCHMARK(default_timer);
     DO_BENCHMARK(dismiss_timer);
+    DO_BENCHMARK(coke_cost);
     delimiter();
 
     DO_BENCHMARK(timer_by_name);
@@ -348,6 +397,9 @@ int main(int argc, char *argv[]) {
     DO_BENCHMARK(one_name);
     DO_BENCHMARK(two_name);
     DO_BENCHMARK(ten_name);
+
+    if (concurrency > 1)
+        DO_BENCHMARK(name_one_by_one);
     delimiter();
 
     DO_BENCHMARK(timer_by_id);
@@ -358,6 +410,9 @@ int main(int argc, char *argv[]) {
     DO_BENCHMARK(one_id);
     DO_BENCHMARK(two_id);
     DO_BENCHMARK(ten_id);
+
+    if (concurrency > 1)
+        DO_BENCHMARK(id_one_by_one);
 #undef DO_BENCHMARK
 
     return 0;
