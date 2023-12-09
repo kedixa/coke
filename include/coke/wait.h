@@ -3,11 +3,11 @@
 
 #include <cstddef>
 #include <type_traits>
+#include <memory>
 #include <latch>
 
-#include "coke/detail/basic_concept.h"
+#include "coke/global.h"
 #include "coke/detail/wait_helper.h"
-#include "coke/detail/task.h"
 
 namespace coke {
 
@@ -30,22 +30,40 @@ inline void sync_wait(Task<void> &&task) {
 
 template<SimpleType T>
 std::vector<T> sync_wait(std::vector<Task<T>> &&tasks) {
-    size_t n = tasks.size();
+    std::size_t n = tasks.size();
     std::vector<T> vec(n);
     std::latch lt(n);
 
-    for (size_t i = 0; i < n; i++)
+    for (std::size_t i = 0; i < n; i++)
         detail::sync_wait_helper(std::move(tasks[i]), vec[i], lt).start();
 
     lt.wait();
     return vec;
 }
 
+/**
+ * Overloading for bool type because std::vector<bool> cannot be accessed by
+ * multiple threads.
+*/
+inline
+std::vector<bool> sync_wait(std::vector<Task<bool>> &&tasks) {
+    std::size_t n = tasks.size();
+    std::latch lt(n);
+    // `n` == 0 is also valid
+    std::unique_ptr<bool []> vec = std::make_unique<bool []>(n);
+
+    for (std::size_t i = 0; i < n; i++)
+        detail::sync_wait_helper(std::move(tasks[i]), vec[i], lt).start();
+
+    lt.wait();
+    return std::vector<bool>(vec.get(), vec.get() + n);
+}
+
 inline void sync_wait(std::vector<Task<void>> &&tasks) {
-    size_t n = tasks.size();
+    std::size_t n = tasks.size();
     std::latch lt(n);
 
-    for (size_t i = 0; i < n; i++)
+    for (std::size_t i = 0; i < n; i++)
         detail::sync_wait_helper(std::move(tasks[i]), lt).start();
 
     lt.wait();
@@ -97,7 +115,7 @@ auto sync_wait(std::vector<A> &&as) {
 
     std::vector<Task<return_type>> tasks;
     tasks.reserve(as.size());
-    for (size_t i = 0; i < as.size(); i++)
+    for (std::size_t i = 0; i < as.size(); i++)
         tasks.emplace_back(make_task_from_awaitable(std::move(as[i])));
 
     return sync_wait(std::move(tasks));
@@ -154,7 +172,7 @@ auto async_wait(std::vector<A> &&as) {
 
     std::vector<Task<return_type>> tasks;
     tasks.reserve(as.size());
-    for (size_t i = 0; i < as.size(); i++)
+    for (std::size_t i = 0; i < as.size(); i++)
         tasks.emplace_back(make_task_from_awaitable(std::move(as[i])));
 
     return detail::async_wait_helper(std::move(tasks));

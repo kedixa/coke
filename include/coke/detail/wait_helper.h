@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <latch>
 #include <vector>
+#include <memory>
 
 #include "coke/detail/task.h"
 #include "coke/latch.h"
@@ -35,22 +36,40 @@ inline Task<> async_wait_helper(Task<void> task, Latch &lt) {
 
 template<SimpleType T>
 Task<std::vector<T>> async_wait_helper(std::vector<Task<T>> tasks) {
-    size_t n = tasks.size();
+    std::size_t n = tasks.size();
     std::vector<T> vec(n);
     Latch lt(n);
 
-    for (size_t i = 0; i < n; i++)
+    for (std::size_t i = 0; i < n; i++)
         async_wait_helper(std::move(tasks[i]), vec[i], lt).start();
 
     co_await lt;
     co_return vec;
 }
 
+/**
+ * Overloading for bool type because std::vector<bool> cannot be accessed by
+ * multiple threads.
+*/
+inline
+Task<std::vector<bool>> async_wait_helper(std::vector<Task<bool>> tasks) {
+    std::size_t n = tasks.size();
+    Latch lt(n);
+    // `n` == 0 is also valid
+    std::unique_ptr<bool []> vec = std::make_unique<bool []>(n);
+
+    for (std::size_t i = 0; i < n; i++)
+        async_wait_helper(std::move(tasks[i]), vec[i], lt).start();
+
+    co_await lt;
+    co_return std::vector<bool>(vec.get(), vec.get() + n);
+}
+
 inline Task<> async_wait_helper(std::vector<Task<void>> tasks) {
-    size_t n = tasks.size();
+    std::size_t n = tasks.size();
     Latch lt(n);
 
-    for (size_t i = 0; i < n; i++)
+    for (std::size_t i = 0; i < n; i++)
         async_wait_helper(std::move(tasks[i]), lt).start();
 
     co_await lt;
