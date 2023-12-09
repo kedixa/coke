@@ -138,6 +138,41 @@ TEST(WAIT, async_wait) {
     coke::sync_wait(test_async());
 }
 
+coke::Task<bool> test_bool() {
+    co_await coke::yield();
+    co_return true;
+}
+
+coke::Task<> async_test_bool() {
+    constexpr std::size_t M = 1024;
+    std::vector<bool> vec;
+    std::vector<coke::Task<bool>> tasks;
+    tasks.reserve(M);
+
+    for (std::size_t i = 0; i < M; i++)
+        tasks.emplace_back(test_bool());
+
+    vec = co_await coke::async_wait(std::move(tasks));
+    EXPECT_EQ(vec, std::vector<bool>(M, true));
+}
+
+TEST(WAIT, sync_vector_bool) {
+    constexpr std::size_t M = 1024;
+    std::vector<bool> vec;
+    std::vector<coke::Task<bool>> tasks;
+    tasks.reserve(M);
+
+    for (std::size_t i = 0; i < M; i++)
+        tasks.emplace_back(test_bool());
+
+    vec = coke::sync_wait(std::move(tasks));
+    EXPECT_EQ(vec, std::vector<bool>(M, true));
+}
+
+TEST(WAIT, async_vector_bool) {
+    coke::sync_wait(async_test_bool());
+}
+
 int main(int argc, char *argv[]) {
     coke::GlobalSettings s;
     s.poller_threads = 2;

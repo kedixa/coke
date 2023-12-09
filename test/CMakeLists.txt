@@ -16,6 +16,8 @@ set(ALL_TESTS
     test_http
 )
 
+include (../cmake/find-workflow.cmake)
+
 foreach(exec_name ${ALL_TESTS})
     add_executable(${exec_name} ${exec_name}.cpp)
     add_test(NAME ${exec_name} COMMAND ${exec_name})
@@ -25,6 +27,11 @@ foreach(exec_name ${ALL_TESTS})
     endif ()
 
     target_link_directories(${exec_name} PRIVATE ${WORKFLOW_LIB_DIR})
+
+    target_include_directories(${exec_name} PRIVATE
+        ${WORKFLOW_INCLUDE_DIR}
+        ${OPENSSL_INCLUDE_DIR}
+    )
 
     target_link_libraries(${exec_name}
         ${COKE_LIBRARY}

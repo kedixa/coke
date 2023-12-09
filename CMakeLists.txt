@@ -17,6 +17,7 @@ set(COKE_LIBRARY ${PROJECT_NAME})
 set(COKE_LIBRARY_DIR ${PROJECT_BINARY_DIR}/lib)
 set(COKE_INCLUDE_DIR ${PROJECT_BINARY_DIR}/include)
 set(COKE_INSTALL_CMAKE_FILE ${PROJECT_BINARY_DIR}/${COKE_LIBRARY}-config.install.cmake)
+set(COKE_LIBRARY_TARGETS ${COKE_LIBRARY}Targets)
 
 if (COKE_BUILD_STATIC)
     set(COKE_STATIC_LIBRARY ${COKE_LIBRARY}-static)
@@ -38,39 +39,21 @@ file(COPY
     ${COKE_INCLUDE_DIR}
 )
 
-find_package(Workflow REQUIRED)
+if (NOT WORKFLOW_INCLUDE_DIR)
+    find_package(Workflow REQUIRED)
+endif ()
+
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
-include_directories(${WORKFLOW_INCLUDE_DIR})
-include_directories(${OPENSSL_INCLUDE_DIR})
-include_directories(${COKE_INCLUDE_DIR})
-
-# Try to find static workflow
-set(BACKUP_CMAKE_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
-set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
-find_library(COKE_TRY_STATIC_WORKFLOW workflow PATHS ${WORKFLOW_LIB_DIR})
-set(CMAKE_FIND_LIBRARY_SUFFIXES ${BACKUP_CMAKE_LIBRARY_SUFFIXES})
-
-if (COKE_TRY_STATIC_WORKFLOW STREQUAL "COKE_TRY_STATIC_WORKFLOW-NOTFOUND")
-    message(FATAL_ERROR "Workflow Not Found")
-else ()
-    message("Found Workflow: " ${COKE_TRY_STATIC_WORKFLOW})
-endif()
 
 add_subdirectory(src)
 
 if (COKE_ENABLE_EXAMPLE)
     add_subdirectory(example)
-else ()
-    add_subdirectory(example EXCLUDE_FROM_ALL)
-    message("examples are not included in the default build target.")
-endif()
+endif ()
 
 if (COKE_ENABLE_BENCHMARK)
     add_subdirectory(benchmark)
-else ()
-    add_subdirectory(benchmark EXCLUDE_FROM_ALL)
-    message("benchmarks are not included in the default build target.")
 endif()
 
 if (COKE_ENABLE_TEST)
@@ -80,11 +63,12 @@ endif()
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
+
 set(LIBRARY_NAME ${COKE_LIBRARY})
 set(INCLUDE_DIR ${COKE_INCLUDE_DIR})
 set(LIBRARY_DIR ${COKE_LIBRARY_DIR})
 configure_package_config_file(
-    ${COKE_LIBRARY}-config.cmake.in
+    cmake/${COKE_LIBRARY}-config.cmake.in
     ${PROJECT_BINARY_DIR}/${COKE_LIBRARY}-config.cmake
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY}
     PATH_VARS INCLUDE_DIR LIBRARY_DIR LIBRARY_NAME
@@ -93,25 +77,36 @@ configure_package_config_file(
 set(INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR})
 set(LIBRARY_DIR ${CMAKE_INSTALL_LIBDIR})
 configure_package_config_file(
-    ${COKE_LIBRARY}-config.cmake.in
+    cmake/${COKE_LIBRARY}-config.install.cmake.in
     ${COKE_INSTALL_CMAKE_FILE}
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY}
     PATH_VARS INCLUDE_DIR LIBRARY_DIR LIBRARY_NAME
 )
 
-install(TARGETS
-    ${COKE_STATIC_LIBRARY}
-    LIBRARY DESTINATION lib
-)
+if (COKE_BUILD_STATIC)
+    install(TARGETS
+        ${COKE_STATIC_LIBRARY}
+        EXPORT ${COKE_LIBRARY_TARGETS}
+        LIBRARY DESTINATION lib
+    )
+endif ()
 
-install(TARGETS
-    ${COKE_SHARED_LIBRARY}
-    LIBRARY DESTINATION lib
+if (COKE_BUILD_SHARED)
+    install(TARGETS
+        ${COKE_SHARED_LIBRARY}
+        EXPORT ${COKE_LIBRARY_TARGETS}
+        LIBRARY DESTINATION lib
+    )
+endif ()
+
+install(EXPORT ${COKE_LIBRARY_TARGETS} FILE ${COKE_LIBRARY}-targets.cmake
+    NAMESPACE coke:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY}
 )
 
 install(DIRECTORY
     ${COKE_INCLUDE_DIR}/coke
-    DESTINATION include)
+    DESTINATION include
+)
 
 install(FILES ${COKE_INSTALL_CMAKE_FILE}
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY}

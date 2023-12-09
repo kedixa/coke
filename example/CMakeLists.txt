@@ -15,11 +15,18 @@ set(ALL_EXAMPLES
     ex012-faster_merge_sort
 )
 
+include (../cmake/find-workflow.cmake)
+
 foreach(example ${ALL_EXAMPLES})
     string(REGEX MATCH "[^-]*$" exec_name ${example})
     add_executable(${exec_name} ${example}.cpp)
 
     target_link_directories(${exec_name} PRIVATE ${WORKFLOW_LIB_DIR})
+
+    target_include_directories(${exec_name} PRIVATE
+        ${WORKFLOW_INCLUDE_DIR}
+        ${OPENSSL_INCLUDE_DIR}
+    )
 
     target_link_libraries(${exec_name}
         ${COKE_LIBRARY}

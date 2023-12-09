@@ -15,24 +15,26 @@ set(SRCS
 )
 
 if (COKE_BUILD_STATIC)
-    add_library(${COKE_STATIC_LIBRARY} STATIC
-        ${SRCS}
-    )
+    add_library(${COKE_STATIC_LIBRARY} STATIC ${SRCS})
 
     target_include_directories(${COKE_STATIC_LIBRARY} PUBLIC
-        ${COKE_INCLUDE_DIR}
+        $<BUILD_INTERFACE:${WORKFLOW_INCLUDE_DIR}>
+        $<BUILD_INTERFACE:${OPENSSL_INCLUDE_DIR}>
+        $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
+        $<INSTALL_INTERFACE:include>
     )
 
     set_target_properties(${COKE_STATIC_LIBRARY} PROPERTIES OUTPUT_NAME ${COKE_LIBRARY})
 endif ()
 
 if (COKE_BUILD_SHARED)
-    add_library(${COKE_SHARED_LIBRARY} SHARED
-        ${SRCS}
-    )
+    add_library(${COKE_SHARED_LIBRARY} SHARED ${SRCS})
 
     target_include_directories(${COKE_SHARED_LIBRARY} PUBLIC
-        ${COKE_INCLUDE_DIR}
+        $<BUILD_INTERFACE:${WORKFLOW_INCLUDE_DIR}>
+        $<BUILD_INTERFACE:${OPENSSL_INCLUDE_DIR}>
+        $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
+        $<INSTALL_INTERFACE:include>
     )
 
     set_target_properties(${COKE_SHARED_LIBRARY}
