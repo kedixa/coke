@@ -55,6 +55,33 @@ public:
     }
 };
 
+/**
+ * This is a simpler network task awaiter that can avoid unnecessary construction
+ * and movement of the response. Please understand the life cycle of the task
+ * in detail before using it.
+*/
+template<typename REQ, typename RESP>
+class SimpleNetworkAwaiter : public BasicAwaiter<WFNetworkTask<REQ,RESP> *> {
+public:
+    using ReqType = REQ;
+    using RespType = RESP;
+    using TaskType = WFNetworkTask<ReqType, RespType>;
+    using ResultType = TaskType *;
+
+public:
+    explicit SimpleNetworkAwaiter(TaskType *task) {
+        task->set_callback([info = this->get_info()] (TaskType *task) {
+            using AwaiterType = SimpleNetworkAwaiter<ReqType, RespType>;
+            auto *awaiter = info->template get_awaiter<AwaiterType>();
+
+            awaiter->emplace_result(task);
+            awaiter->done();
+        });
+
+        this->set_task(task);
+    }
+};
+
 } // namespace coke
 
 #endif // COKE_NETWORK_H
