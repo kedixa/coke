@@ -1,20 +1,29 @@
 #ifndef COKE_SEMAPHORE_H
 #define COKE_SEMAPHORE_H
 
-#include <mutex>
 #include <cstdint>
+#include <mutex>
 
 #include "coke/sleep.h"
 
 namespace coke {
 
 class TimedSemaphore {
+    template<typename Rep, typename Period>
+    using duration = std::chrono::duration<Rep, Period>;
+
+    template<typename Clock, typename Duration>
+    using time_point = std::chrono::time_point<Clock, Duration>;
+
 public:
     using count_type = uint32_t;
 
     explicit
     TimedSemaphore(count_type n) : TimedSemaphore(n, get_unique_id()) { }
-    TimedSemaphore(count_type n, uint64_t uid) : count(n), waiting(0), uid(uid) { }
+
+    TimedSemaphore(count_type n, uint64_t uid)
+        : count(n), waiting(0), uid(uid)
+    { }
 
     TimedSemaphore(const TimedSemaphore &) = delete;
     TimedSemaphore &operator= (const TimedSemaphore &) = delete;
@@ -59,39 +68,41 @@ public:
      * The return value may be coke::TOP_SUCCESS, coke::TOP_ABORTED, or any
      * negative number, see coke/global.h for more description.
      *
-     * If coke::TOP_SUCCESS is returned, the caller should release the count later.
+     * If coke::TOP_SUCCESS is returned, the caller should release it later.
     */
     Task<int> acquire() {
-        auto get_duration = []() { return std::chrono::seconds(10); };
-        return acquire_impl(get_duration);
+        auto get_dur = []() { return std::chrono::seconds(10); };
+        return acquire_impl(get_dur);
     }
 
     /**
-     * Try to get a count for at most `duration` time.
+     * Try to get a count for at most `time_duration` time.
      *
-     * The return value may be coke::TOP_SUCCESS, coke::TOP_TIMEOUT, coke::TOP_ABORTED,
-     * or any negative number, see coke/global.h for more description.
+     * The return value may be coke::TOP_SUCCESS, coke::TOP_TIMEOUT,
+     * coke::TOP_ABORTED, or any negative number, see coke/global.h for more
+     * description.
      *
-     * If coke::TOP_SUCCESS is returned, the caller should release the count later.
+     * If coke::TOP_SUCCESS is returned, the caller should release it later.
     */
     template<typename Rep, typename Period>
-    Task<int> acquire_for(const std::chrono::duration<Rep, Period> &duration) {
+    Task<int> try_acquire_for(const duration<Rep, Period> &time_duration) {
         using std::chrono::steady_clock;
-        return acquire_until(steady_clock::now() + duration);
+        return try_acquire_until(steady_clock::now() + time_duration);
     }
 
     /**
      * Try to get a count until `time_point`.
      *
-     * The return value may be coke::TOP_SUCCESS, coke::TOP_TIMEOUT, coke::TOP_ABORTED,
-     * or any negative number, see coke/global.h for more description.
+     * The return value may be coke::TOP_SUCCESS, coke::TOP_TIMEOUT,
+     * coke::TOP_ABORTED, or any negative number, see coke/global.h for more
+     * description.
      *
-     * If coke::TOP_SUCCESS is returned, the caller should release the count later.
+     * If coke::TOP_SUCCESS is returned, the caller should release it later.
     */
     template<typename Clock, typename Duration>
-    Task<int> acquire_until(const std::chrono::time_point<Clock, Duration> &time_point) {
-        auto get_duration = [time_point]() { return time_point - Clock::now(); };
-        return acquire_impl(get_duration);
+    Task<int> try_acquire_until(const time_point<Clock, Duration> &time_point) {
+        auto get_dur = [time_point]() { return time_point - Clock::now(); };
+        return acquire_impl(get_dur);
     }
 
 protected:
