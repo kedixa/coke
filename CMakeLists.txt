@@ -15,7 +15,7 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "cmake build type")
 
 set(COKE_LIBRARY ${PROJECT_NAME})
 set(COKE_LIBRARY_DIR ${PROJECT_BINARY_DIR}/lib)
-set(COKE_INCLUDE_DIR ${PROJECT_BINARY_DIR}/include)
+set(COKE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(COKE_INSTALL_CMAKE_FILE ${PROJECT_BINARY_DIR}/${COKE_LIBRARY}-config.install.cmake)
 set(COKE_LIBRARY_TARGETS ${COKE_LIBRARY}Targets)
 
@@ -31,13 +31,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${COKE_LIBRARY_DIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${COKE_LIBRARY_DIR})
-
-# Will only be executed once during the cmake processing phase
-file(COPY
-    ${PROJECT_SOURCE_DIR}/include/coke
-    DESTINATION
-    ${COKE_INCLUDE_DIR}
-)
 
 if (NOT WORKFLOW_INCLUDE_DIR)
     find_package(Workflow REQUIRED)
