@@ -11,6 +11,7 @@ cc_library(
         "src/qps_pool.cpp",
         "src/future.cpp",
         "src/cancelable_timer.cpp",
+        "src/mutex.cpp",
     ],
     hdrs = ["include"],
     includes = ["include"],

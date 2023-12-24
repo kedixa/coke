@@ -12,7 +12,6 @@ enum {
     TEST_TRY_ACQUIRE = 0,
     TEST_ACQUIRE = 1,
     TEST_ACQUIRE_FOR = 2,
-    TEST_ACQUIRE_UNTIL = 3,
 };
 
 struct ParamPack {
@@ -51,14 +50,6 @@ coke::Task<> do_test_semaphore(ParamPack p) {
             ret = -1;
             while (ret != coke::TOP_SUCCESS)
                 ret = co_await sem.try_acquire_for(ms10);
-            break;
-
-        case TEST_ACQUIRE_UNTIL:
-            ret = -1;
-            while (ret != coke::TOP_SUCCESS) {
-                auto now = std::chrono::steady_clock::now();
-                ret = co_await sem.try_acquire_until(now + ms10);
-            }
             break;
         }
 
@@ -112,11 +103,6 @@ TEST(SEMAPHORE, sem_acquire) {
 TEST(SEMAPHORE, sem_acquire_for) {
     test_semaphore(1, TEST_ACQUIRE_FOR);
     test_semaphore(16, TEST_ACQUIRE_FOR);
-}
-
-TEST(SEMAPHORE, sem_acquire_until) {
-    test_semaphore(1, TEST_ACQUIRE_UNTIL);
-    test_semaphore(16, TEST_ACQUIRE_UNTIL);
 }
 
 int main(int argc, char *argv[]) {

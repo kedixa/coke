@@ -12,6 +12,7 @@ set(SRCS
     mysql_impl.cpp
     future.cpp
     cancelable_timer.cpp
+    mutex.cpp
 )
 
 if (COKE_BUILD_STATIC)

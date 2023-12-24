@@ -12,9 +12,6 @@ class TimedSemaphore {
     template<typename Rep, typename Period>
     using duration = std::chrono::duration<Rep, Period>;
 
-    template<typename Clock, typename Duration>
-    using time_point = std::chrono::time_point<Clock, Duration>;
-
 public:
     using count_type = uint32_t;
 
@@ -71,8 +68,8 @@ public:
      * If coke::TOP_SUCCESS is returned, the caller should release it later.
     */
     Task<int> acquire() {
-        auto get_dur = []() { return std::chrono::seconds(10); };
-        return acquire_impl(get_dur);
+        detail::TimedWaitHelper h;
+        return acquire_impl(h);
     }
 
     /**
@@ -86,28 +83,17 @@ public:
     */
     template<typename Rep, typename Period>
     Task<int> try_acquire_for(const duration<Rep, Period> &time_duration) {
-        using std::chrono::steady_clock;
-        return try_acquire_until(steady_clock::now() + time_duration);
-    }
-
-    /**
-     * Try to get a count until `time_point`.
-     *
-     * The return value may be coke::TOP_SUCCESS, coke::TOP_TIMEOUT,
-     * coke::TOP_ABORTED, or any negative number, see coke/global.h for more
-     * description.
-     *
-     * If coke::TOP_SUCCESS is returned, the caller should release it later.
-    */
-    template<typename Clock, typename Duration>
-    Task<int> try_acquire_until(const time_point<Clock, Duration> &time_point) {
-        auto get_dur = [time_point]() { return time_point - Clock::now(); };
-        return acquire_impl(get_dur);
+        using std::chrono::nanoseconds;
+        auto nano = std::chrono::duration_cast<nanoseconds>(time_duration);
+        return acquire_impl(detail::TimedWaitHelper(nano));
     }
 
 protected:
-    template<typename GetDuration>
-    Task<int> acquire_impl(GetDuration get_duration);
+    /**
+     * The `helper` variable must not be a reference to ensure that it exists
+     * until the coroutine ends.
+    */
+    Task<int> acquire_impl(detail::TimedWaitHelper helper);
 
 private:
     std::mutex mtx;
@@ -116,45 +102,6 @@ private:
 
     uint64_t uid;
 };
-
-template<typename GetDuration>
-Task<int> TimedSemaphore::acquire_impl(GetDuration get_duration) {
-    constexpr std::chrono::nanoseconds zero(0);
-
-    std::unique_lock<std::mutex> lk(mtx);
-    bool insert_head = false;
-    int ret;
-
-    // Directly get one if it is enough,
-    if (waiting < count) {
-        --count;
-        co_return TOP_SUCCESS;
-    }
-
-    // otherwise reschedule to ensure relative fairness(but not absolutely).
-    while (true) {
-        auto dur = get_duration();
-        if (dur <= zero)
-            co_return TOP_TIMEOUT;
-
-        SleepAwaiter s = sleep(uid, dur, insert_head);
-        ++waiting;
-        insert_head = true;
-
-        lk.unlock();
-        ret = co_await s;
-        lk.lock();
-        --waiting;
-
-        if (count > 0)
-            break;
-        else if (ret == SLEEP_ABORTED || ret < 0)
-            co_return ret;
-    }
-
-    --count;
-    co_return TOP_SUCCESS;
-}
 
 } // namespace coke
 

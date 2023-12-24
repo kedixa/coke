@@ -87,6 +87,34 @@ inline std::size_t cancel_sleep_by_id(uint64_t id) {
     return cancel_sleep_by_id(id, std::size_t(-1));
 }
 
+
+namespace detail {
+
+class TimedWaitHelper {
+public:
+    using clock_type = std::chrono::steady_clock;
+    using time_point = clock_type::time_point;
+    using duration = clock_type::duration;
+
+    constexpr static time_point max() { return time_point::max(); }
+    static time_point now() { return clock_type::now(); }
+
+    TimedWaitHelper() : abs_time(max()) { }
+
+    TimedWaitHelper(const std::chrono::nanoseconds &nano)
+        : abs_time(now() + std::chrono::duration_cast<duration>(nano))
+    { }
+
+    bool infinite() const { return abs_time == max(); }
+
+    duration time_left() const { return abs_time - now(); }
+
+private:
+    time_point abs_time;
+};
+
+} // namespace detail
+
 } // namespace coke
 
 #endif // COKE_SLEEP_H

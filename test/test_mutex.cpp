@@ -11,7 +11,6 @@ enum {
     TEST_TRY_LOCK = 0,
     TEST_LOCK = 1,
     TEST_LOCK_FOR = 2,
-    TEST_LOCK_UNTIL = 3,
 };
 
 struct ParamPack {
@@ -48,14 +47,6 @@ coke::Task<> do_test_mutex(ParamPack p) {
             ret = -1;
             while (ret != coke::TOP_SUCCESS)
                 ret = co_await mtx.try_lock_for(ms10);
-            break;
-
-        case TEST_LOCK_UNTIL:
-            ret = -1;
-            while (ret != coke::TOP_SUCCESS) {
-                auto now = std::chrono::steady_clock::now();
-                ret = co_await mtx.try_lock_until(now + ms10);
-            }
             break;
         }
 
@@ -97,10 +88,6 @@ TEST(MUTEX, lock) {
 
 TEST(MUTEX, lock_for) {
     test_mutex(TEST_LOCK_FOR);
-}
-
-TEST(MUTEX, lock_until) {
-    test_mutex(TEST_LOCK_UNTIL);
 }
 
 int main(int argc, char *argv[]) {
