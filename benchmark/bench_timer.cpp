@@ -305,6 +305,35 @@ coke::Task<> bench_detach3_by_id() {
     }
 }
 
+coke::Task<> bench_detach_inf_by_id() {
+    std::size_t id, i;
+
+    co_await coke::switch_go_thread();
+
+    while (next(i)) {
+        id = coke::get_unique_id();
+        auto awaiter = coke::sleep(id, coke::InfiniteDuration{});
+        detach(std::move(awaiter)).start();
+        coke::cancel_sleep_by_id(id);
+    }
+}
+
+coke::Task<> bench_detach3_inf_by_id() {
+    std::size_t id, i;
+
+    co_await coke::switch_go_thread();
+
+    while (next(i)) {
+        id = coke::get_unique_id();
+        auto a = coke::sleep(id, coke::InfiniteDuration{});
+        auto b = coke::sleep(id, coke::InfiniteDuration{});
+        auto c = coke::sleep(id, coke::InfiniteDuration{});
+
+        detach3(std::move(a), std::move(b), std::move(c)).start();
+        coke::cancel_sleep_by_id(id);
+    }
+}
+
 coke::Task<> bench_pool_id(std::size_t max) {
     std::mt19937_64 mt(current_msec());
     std::size_t i;
@@ -433,6 +462,8 @@ int main(int argc, char *argv[]) {
     DO_BENCHMARK(dismiss_by_id);
     DO_BENCHMARK(detach_by_id);
     DO_BENCHMARK(detach3_by_id);
+    DO_BENCHMARK(detach_inf_by_id);
+    DO_BENCHMARK(detach3_inf_by_id);
     DO_BENCHMARK(one_id);
     DO_BENCHMARK(two_id);
     DO_BENCHMARK(ten_id);
