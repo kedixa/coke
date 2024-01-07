@@ -20,6 +20,7 @@
 #include "coke/series.h"
 #include "coke/semaphore.h"
 #include "coke/mutex.h"
+#include "coke/shared_mutex.h"
 
 namespace coke {
 
