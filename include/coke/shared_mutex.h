@@ -21,10 +21,17 @@ class SharedTimedMutex {
 public:
     using count_type = std::uint32_t;
 
+    /**
+     * @brief Create a SharedTimedMutex, the rid/wid is automatically
+     *        obtained from `coke::get_unique_id`.
+    */
     SharedTimedMutex()
         : SharedTimedMutex(INVALID_UNIQUE_ID, INVALID_UNIQUE_ID)
     { }
 
+    /**
+     * @brief Create a SharedTimedMutex with rid/wid specified by user.
+    */
     SharedTimedMutex(uint64_t rid, uint64_t wid)
         : read_doing(0), read_waiting(0), write_waiting(0),
           state(State::Idle), rid(rid), wid(wid)
@@ -35,9 +42,23 @@ public:
             this->wid = get_unique_id();
     }
 
+    /**
+     * @brief SharedTimedMutex is not copy or move constructible.
+    */
     SharedTimedMutex(const SharedTimedMutex &) = delete;
     SharedTimedMutex &operator= (const SharedTimedMutex &) = delete;
+
     ~SharedTimedMutex() = default;
+
+    /**
+     * @brief Get the read unique id.
+    */
+    uint64_t get_rid() const { return rid; }
+
+    /**
+     * @brief Get the write unique id.
+    */
+    uint64_t get_wid() const { return wid; }
 
     /**
      * @brief Try to lock the mutex for exclusive ownership.
@@ -119,10 +140,7 @@ public:
      * @pre Current coroutine doesn't owns the mutex in any mode(shared or
      *      exclusive).
     */
-    Task<int> lock() {
-        detail::TimedWaitHelper h;
-        return lock_impl(h);
-    }
+    Task<int> lock() { return lock_impl(detail::TimedWaitHelper{}); }
 
     /**
      * @brief Lock the mutex for exclusive ownership, block until success or

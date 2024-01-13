@@ -15,26 +15,44 @@ class TimedSemaphore {
 public:
     using count_type = uint32_t;
 
-    explicit
-    TimedSemaphore(count_type n) : TimedSemaphore(n, get_unique_id()) { }
-
-    TimedSemaphore(count_type n, uint64_t uid)
-        : count(n), waiting(0), uid(uid)
+    /**
+     * @brief Create a TimedSemaphore, with initial count `n`, the uid is
+     *        automatically obtained from `coke::get_unique_id`.
+    */
+    explicit TimedSemaphore(count_type n)
+        : TimedSemaphore(n, INVALID_UNIQUE_ID)
     { }
 
+    /**
+     * @brief Create a TimedSemaphore, with initial count `n`, the uid is
+     *        specified by user.
+    */
+    TimedSemaphore(count_type n, uint64_t uid)
+        : count(n), waiting(0), uid(uid)
+    {
+        if (this->uid == INVALID_UNIQUE_ID)
+            this->uid = get_unique_id();
+    }
+
+    /**
+     * @brief TimedSemaphore is not copy or move constructible.
+    */
     TimedSemaphore(const TimedSemaphore &) = delete;
     TimedSemaphore &operator= (const TimedSemaphore &) = delete;
+
     ~TimedSemaphore() = default;
 
     /**
-     * Get the unique id used by this timed semaphore.
+     * @brief Get the unique id.
     */
     uint64_t get_uid() const noexcept { return this->uid; }
 
     /**
-     * Try to get a count, return true if success, else false.
+     * @brief Try to acquire a count.
      *
-     * If true is returned, the caller should release the count later.
+     * @return Return true if acquire success, else false.
+     *
+     * @pre Current coroutine doesn't owns all the counts.
     */
     bool try_acquire() {
         std::lock_guard<std::mutex> lg(mtx);
@@ -48,38 +66,37 @@ public:
     }
 
     /**
-     * Release `cnt` counts, and wake up those who are waiting.
+     * @brief Release `cnt` counts, and wake up those who are waiting.
     */
     void release(count_type cnt = 1) {
         std::lock_guard<std::mutex> lg(mtx);
         count += cnt;
 
-        // XXX It is possible to falsely awaken
         if (waiting > 0 && cnt > 0)
             cancel_sleep_by_id(uid, waiting > cnt ? cnt : waiting);
     }
 
     /**
-     * Get a count, if there is no count, wait until there is.
+     * @brief Acquire a count, block until success.
      *
-     * The return value may be coke::TOP_SUCCESS, coke::TOP_ABORTED, or any
-     * negative number, see coke/global.h for more description.
+     * @return An awaitable object that needs to be awaited immediately. The
+     *         await result is an integer, which may be coke::TOP_SUCCESS,
+     *         coke::TOP_TIMEOUT(for try_acquire_for), coke::TOP_ABORTED or any
+     *         negative number. See `coke/global.h` for more description.
      *
-     * If coke::TOP_SUCCESS is returned, the caller should release it later.
+     * @pre Current coroutine doesn't owns all the count.
     */
-    Task<int> acquire() {
-        detail::TimedWaitHelper h;
-        return acquire_impl(h);
-    }
+    Task<int> acquire() { return acquire_impl(detail::TimedWaitHelper{}); }
 
     /**
-     * Try to get a count for at most `time_duration` time.
+     * @brief Acquire a count, block until success or `time_duration` timeout.
      *
-     * The return value may be coke::TOP_SUCCESS, coke::TOP_TIMEOUT,
-     * coke::TOP_ABORTED, or any negative number, see coke/global.h for more
-     * description.
+     * @return See `acquire`.
      *
-     * If coke::TOP_SUCCESS is returned, the caller should release it later.
+     * @param time_duration Max time to block, should be an instance of
+     *        std::chrono::duration.
+     *
+     * @pre Current coroutine doesn't owns all the count.
     */
     template<typename Rep, typename Period>
     Task<int> try_acquire_for(const duration<Rep, Period> &time_duration) {
