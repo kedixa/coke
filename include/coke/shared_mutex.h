@@ -29,10 +29,10 @@ public:
         : read_doing(0), read_waiting(0), write_waiting(0),
           state(State::Idle), rid(rid), wid(wid)
     {
-        if (rid == INVALID_UNIQUE_ID)
-            rid = get_unique_id();
-        if (wid == INVALID_UNIQUE_ID)
-            wid = get_unique_id();
+        if (this->rid == INVALID_UNIQUE_ID)
+            this->rid = get_unique_id();
+        if (this->wid == INVALID_UNIQUE_ID)
+            this->wid = get_unique_id();
     }
 
     SharedTimedMutex(const SharedTimedMutex &) = delete;
@@ -180,8 +180,8 @@ protected:
     Task<int> lock_shared_impl(detail::TimedWaitHelper helper);
 
     bool can_lock_shared() const noexcept {
-        return state == State::Idle ||
-            (state == State::Reading && write_waiting == 0);
+        return (state == State::Idle || state == State::Reading)
+               && write_waiting == 0;
     }
 
 private:

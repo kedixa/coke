@@ -144,7 +144,7 @@ Task<int> SharedTimedMutex::lock_shared_impl(detail::TimedWaitHelper helper) {
         lk.lock();
         --read_waiting;
 
-        if (state == State::Idle || state == State::Reading)
+        if (can_lock_shared())
             break;
         else if (ret == SLEEP_ABORTED || ret < 0)
             co_return ret;
