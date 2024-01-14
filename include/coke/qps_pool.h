@@ -23,7 +23,7 @@ public:
      *  coke::QpsPool pool(10);
      *
      *  // in coroutine, the following loop will take about 10 seconds
-     *  for (size_t i = 0; i < 101; i++) {
+     *  for (std::size_t i = 0; i < 101; i++) {
      *      co_await pool.get();
      *      // do something under qps limit
      *  }

@@ -18,12 +18,12 @@ FileAwaiter::FileAwaiter(Task *task) {
     set_task(task);
 }
 
-FileAwaiter pread(int fd, void *buf, size_t count, off_t offset) {
+FileAwaiter pread(int fd, void *buf, std::size_t count, off_t offset) {
     auto *task = WFTaskFactory::create_pread_task(fd, buf, count, offset, nullptr);
     return FileAwaiter(task);
 }
 
-FileAwaiter pwrite(int fd, const void *buf, size_t count, off_t offset) {
+FileAwaiter pwrite(int fd, const void *buf, std::size_t count, off_t offset) {
     auto *task = WFTaskFactory::create_pwrite_task(fd, buf, count, offset, nullptr);
     return FileAwaiter(task);
 }

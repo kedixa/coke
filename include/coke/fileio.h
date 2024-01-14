@@ -24,8 +24,8 @@ public:
     explicit FileAwaiter(Task *task);
 };
 
-FileAwaiter pread(int fd, void *buf, size_t count, off_t offset);
-FileAwaiter pwrite(int fd, const void *buf, size_t count, off_t offset);
+FileAwaiter pread(int fd, void *buf, std::size_t count, off_t offset);
+FileAwaiter pwrite(int fd, const void *buf, std::size_t count, off_t offset);
 
 FileAwaiter preadv(int fd, const struct iovec *iov, int iovcnt, off_t offset);
 FileAwaiter pwritev(int fd, const struct iovec *iov, int iovcnt, off_t offset);

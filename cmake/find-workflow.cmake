@@ -6,7 +6,6 @@ if (NOT COKE_TRY_STATIC_WORKFLOW)
 
     if (COKE_TRY_STATIC_WORKFLOW STREQUAL "COKE_TRY_STATIC_WORKFLOW-NOTFOUND")
         unset(COKE_TRY_STATIC_WORKFLOW)
-        add_library()
         message(FATAL_ERROR "Workflow Not Found")
     else ()
         message("Found Workflow: " ${COKE_TRY_STATIC_WORKFLOW})

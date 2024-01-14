@@ -136,7 +136,7 @@ private:
 };
 
 class MySQLResultSetView {
-    using result_set_t = struct __mysql_result_set;
+    using result_set_t = __mysql_result_set;
 
 public:
     MySQLResultSetView() : MySQLResultSetView(nullptr, nullptr) { }
