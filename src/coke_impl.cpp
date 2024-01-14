@@ -10,19 +10,20 @@
 namespace coke {
 
 // Check global constant value are always same as workflow's
-static_assert(STATE_UNDEFINED == WFT_STATE_UNDEFINED);
-static_assert(STATE_SUCCESS == WFT_STATE_SUCCESS);
-static_assert(STATE_TOREPLY == WFT_STATE_TOREPLY);
-static_assert(STATE_NOREPLY == WFT_STATE_NOREPLY);
-static_assert(STATE_SYS_ERROR == WFT_STATE_SYS_ERROR);
-static_assert(STATE_SSL_ERROR == WFT_STATE_SSL_ERROR);
-static_assert(STATE_DNS_ERROR == WFT_STATE_DNS_ERROR);
-static_assert(STATE_TASK_ERROR == WFT_STATE_TASK_ERROR);
-static_assert(STATE_ABORTED == WFT_STATE_ABORTED);
-static_assert(NOT_TIMEOUT == TOR_NOT_TIMEOUT);
-static_assert(WAIT_TIMEOUT == TOR_WAIT_TIMEOUT);
-static_assert(CONNECT_TIMEOUT == TOR_CONNECT_TIMEOUT);
-static_assert(TRANSMIT_TIMEOUT == TOR_TRANSMIT_TIMEOUT);
+static_assert(STATE_UNDEFINED   == WFT_STATE_UNDEFINED);
+static_assert(STATE_SUCCESS     == WFT_STATE_SUCCESS);
+static_assert(STATE_TOREPLY     == WFT_STATE_TOREPLY);
+static_assert(STATE_NOREPLY     == WFT_STATE_NOREPLY);
+static_assert(STATE_SYS_ERROR   == WFT_STATE_SYS_ERROR);
+static_assert(STATE_SSL_ERROR   == WFT_STATE_SSL_ERROR);
+static_assert(STATE_DNS_ERROR   == WFT_STATE_DNS_ERROR);
+static_assert(STATE_TASK_ERROR  == WFT_STATE_TASK_ERROR);
+static_assert(STATE_ABORTED     == WFT_STATE_ABORTED);
+
+static_assert(CTOR_NOT_TIMEOUT      == TOR_NOT_TIMEOUT);
+static_assert(CTOR_WAIT_TIMEOUT     == TOR_WAIT_TIMEOUT);
+static_assert(CTOR_CONNECT_TIMEOUT  == TOR_CONNECT_TIMEOUT);
+static_assert(CTOR_TRANSMIT_TIMEOUT == TOR_TRANSMIT_TIMEOUT);
 
 
 void library_init(const GlobalSettings &s) {
