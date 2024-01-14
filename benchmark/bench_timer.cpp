@@ -11,6 +11,7 @@
 #include <getopt.h>
 
 #include "coke/coke.h"
+#include "workflow/WFTaskFactory.h"
 
 using std::chrono::microseconds;
 std::atomic<std::size_t> current;
@@ -21,10 +22,10 @@ std::string name_pool[pool_size];
 uint64_t id_pool[pool_size];
 
 std::size_t total{10000};
-int concurrency = 1024;
+int concurrency = 4096;
 int max_secs_per_test = 5;
-int handler_threads = 20;
-int poller_threads = 4;
+int handler_threads = 12;
+int poller_threads = 6;
 bool yes = false;
 
 // Not sure if it's thread safe but it runs fine so far.
@@ -58,11 +59,35 @@ coke::Task<> detach(coke::SleepAwaiter awaiter) {
     co_await awaiter;
 }
 
-coke::Task<> detach3(coke::SleepAwaiter a, coke::SleepAwaiter b, coke::SleepAwaiter c) {
+coke::Task<> detach3(coke::SleepAwaiter a,
+                     coke::SleepAwaiter b,
+                     coke::SleepAwaiter c) {
     co_await coke::async_wait(std::move(a), std::move(b), std::move(c));
 }
 
 // benchmark
+
+coke::Task<> bench_wf_repeat() {
+    std::mt19937_64 mt(current_msec());
+    std::size_t i;
+
+    coke::GenericAwaiter<void> g;
+    auto create = [&] (WFRepeaterTask *) -> SubTask * {
+        if (next(i)) {
+            int nsec = dist(mt) * 1000;
+            return WFTaskFactory::create_timer_task(0, nsec, nullptr);
+        }
+        return nullptr;
+    };
+    auto callback = [&] (WFRepeaterTask *) {
+        g.done();
+    };
+
+    auto *rep = WFTaskFactory::create_repeater_task(create, callback);
+    g.take_over(rep);
+
+    co_await g;
+}
 
 coke::Task<> bench_default_timer() {
     std::mt19937_64 mt(current_msec());
@@ -280,6 +305,35 @@ coke::Task<> bench_detach3_by_id() {
     }
 }
 
+coke::Task<> bench_detach_inf_by_id() {
+    std::size_t id, i;
+
+    co_await coke::switch_go_thread();
+
+    while (next(i)) {
+        id = coke::get_unique_id();
+        auto awaiter = coke::sleep(id, coke::InfiniteDuration{});
+        detach(std::move(awaiter)).start();
+        coke::cancel_sleep_by_id(id);
+    }
+}
+
+coke::Task<> bench_detach3_inf_by_id() {
+    std::size_t id, i;
+
+    co_await coke::switch_go_thread();
+
+    while (next(i)) {
+        id = coke::get_unique_id();
+        auto a = coke::sleep(id, coke::InfiniteDuration{});
+        auto b = coke::sleep(id, coke::InfiniteDuration{});
+        auto c = coke::sleep(id, coke::InfiniteDuration{});
+
+        detach3(std::move(a), std::move(b), std::move(c)).start();
+        coke::cancel_sleep_by_id(id);
+    }
+}
+
 coke::Task<> bench_pool_id(std::size_t max) {
     std::mt19937_64 mt(current_msec());
     std::size_t i;
@@ -384,6 +438,7 @@ int main(int argc, char *argv[]) {
     head();
 
 #define DO_BENCHMARK(func) coke::sync_wait(do_benchmark(#func, bench_ ## func))
+    DO_BENCHMARK(wf_repeat);
     DO_BENCHMARK(default_timer);
     DO_BENCHMARK(dismiss_timer);
     DO_BENCHMARK(coke_cost);
@@ -407,6 +462,8 @@ int main(int argc, char *argv[]) {
     DO_BENCHMARK(dismiss_by_id);
     DO_BENCHMARK(detach_by_id);
     DO_BENCHMARK(detach3_by_id);
+    DO_BENCHMARK(detach_inf_by_id);
+    DO_BENCHMARK(detach3_inf_by_id);
     DO_BENCHMARK(one_id);
     DO_BENCHMARK(two_id);
     DO_BENCHMARK(ten_id);
@@ -421,11 +478,11 @@ int main(int argc, char *argv[]) {
 void usage(const char *arg0) {
     std::cout << arg0 << " [OPTION]...\n" <<
 R"usage(
-    -c concurrency, start `concurrency` series to benchmark timer, default 1024
+    -c concurrency, start `concurrency` series to benchmark timer, default 4096
                     this argument should greater or equal to 1024, because
                     each timer sleep about 500us
-    -h n,           set handler threads to n, default 20
-    -p n,           set poller threads to n, default 4
+    -h n,           set handler threads to n, default 12
+    -p n,           set poller threads to n, default 6
     -m sec,         run at most `sec` seconds for each case, default 5
     -t total,       run at most `total` timer for each case, default 10000
     -y              skip showing arguments before start benchmark

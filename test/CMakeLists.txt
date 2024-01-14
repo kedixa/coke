@@ -14,6 +14,9 @@ set(ALL_TESTS
     test_generic_awaiter
     test_future
     test_http
+    test_semaphore
+    test_mutex
+    test_shared_mutex
 )
 
 include (../cmake/find-workflow.cmake)

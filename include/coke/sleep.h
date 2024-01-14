@@ -16,6 +16,14 @@ constexpr int SLEEP_ABORTED = 2;
 static_assert(SLEEP_SUCCESS == TOP_SUCCESS);
 static_assert(SLEEP_ABORTED == TOP_ABORTED);
 
+
+/**
+ * InfiniteDuration is used to represent an infinite time when sleeping with id,
+ * and will only be awakened when `cancel_sleep_by_id`.
+*/
+struct InfiniteDuration { };
+
+
 class SleepAwaiter : public BasicAwaiter<int> {
     static std::chrono::nanoseconds __plus(long sec, long nsec) {
         using namespace std::chrono;
@@ -28,28 +36,39 @@ public:
 
     SleepAwaiter(std::chrono::nanoseconds nsec);
     SleepAwaiter(const std::string &name, std::chrono::nanoseconds nsec);
-    SleepAwaiter(uint64_t id, std::chrono::nanoseconds nsec, bool insert_head=false);
+    SleepAwaiter(uint64_t id, std::chrono::nanoseconds nsec,
+                 bool insert_head=false);
+    SleepAwaiter(uint64_t id, InfiniteDuration, bool insert_head=false);
 };
+
 
 inline SleepAwaiter sleep(long sec, long nsec) {
     return SleepAwaiter(sec, nsec);
 }
 
 template<typename Rep, typename Period>
-SleepAwaiter sleep(const std::chrono::duration<Rep, Period> &d) {
-    return SleepAwaiter(d);
+SleepAwaiter sleep(const std::chrono::duration<Rep, Period> &duration) {
+    return SleepAwaiter(duration);
 }
 
 template<typename Rep, typename Period>
-SleepAwaiter sleep(const std::string &name, const std::chrono::duration<Rep, Period> &d) {
-    return SleepAwaiter(name, d);
+SleepAwaiter sleep(const std::string &name,
+                   const std::chrono::duration<Rep, Period> &duration) {
+    return SleepAwaiter(name, duration);
 }
 
 template<typename Rep, typename Period>
-SleepAwaiter sleep(uint64_t id, const std::chrono::duration<Rep, Period> &d,
+SleepAwaiter sleep(uint64_t id,
+                   const std::chrono::duration<Rep, Period> &duration,
                    bool insert_head = false)
 {
-    return SleepAwaiter(id, d, insert_head);
+    return SleepAwaiter(id, duration, insert_head);
+}
+
+inline SleepAwaiter sleep(uint64_t id, const InfiniteDuration &inf_duration,
+                          bool insert_head = false)
+{
+    return SleepAwaiter(id, inf_duration, insert_head);
 }
 
 inline SleepAwaiter yield() {
@@ -67,6 +86,34 @@ std::size_t cancel_sleep_by_id(uint64_t id, std::size_t max);
 inline std::size_t cancel_sleep_by_id(uint64_t id) {
     return cancel_sleep_by_id(id, std::size_t(-1));
 }
+
+
+namespace detail {
+
+class TimedWaitHelper {
+public:
+    using clock_type = std::chrono::steady_clock;
+    using time_point = clock_type::time_point;
+    using duration = clock_type::duration;
+
+    constexpr static time_point max() { return time_point::max(); }
+    static time_point now() { return clock_type::now(); }
+
+    TimedWaitHelper() : abs_time(max()) { }
+
+    TimedWaitHelper(const std::chrono::nanoseconds &nano)
+        : abs_time(now() + std::chrono::duration_cast<duration>(nano))
+    { }
+
+    bool infinite() const { return abs_time == max(); }
+
+    duration time_left() const { return abs_time - now(); }
+
+private:
+    time_point abs_time;
+};
+
+} // namespace detail
 
 } // namespace coke
 
