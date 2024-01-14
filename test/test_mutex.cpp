@@ -1,11 +1,14 @@
-#include <vector>
+#include <atomic>
 #include <chrono>
+#include <vector>
 
 #include <gtest/gtest.h>
-
 #include "coke/coke.h"
 
 constexpr int MAX_TASKS = 16;
+constexpr auto ms10 = std::chrono::milliseconds(10);
+constexpr auto us1 = std::chrono::microseconds(1);
+constexpr auto relaxed = std::memory_order_relaxed;
 
 enum {
     TEST_TRY_LOCK = 0,
@@ -14,24 +17,21 @@ enum {
 };
 
 struct ParamPack {
-    coke::TimedMutex *mtx;
-    int *count;
+    coke::TimedMutex mtx;
+    std::atomic<int> count;
+    std::atomic<int> total;
     int test_method;
     int loop_max;
 };
 
-coke::Task<> do_test_mutex(ParamPack p) {
-    constexpr auto ms10 = std::chrono::milliseconds(10);
-
-    coke::TimedMutex &mtx = *(p.mtx);
-    int &count = *(p.count);
-    int test_method = p.test_method;
+coke::Task<> do_test_mutex(ParamPack *p) {
+    coke::TimedMutex &mtx = p->mtx;
     int ret;
 
-    for (int i = 0; i < p.loop_max; i++) {
+    for (int i = 0; i < p->loop_max; i++) {
         ret = -1;
 
-        switch (test_method) {
+        switch (p->test_method) {
         case TEST_TRY_LOCK:
             if (!mtx.try_lock())
                 ret = co_await mtx.lock();
@@ -44,38 +44,39 @@ coke::Task<> do_test_mutex(ParamPack p) {
             break;
 
         case TEST_LOCK_FOR:
-            ret = -1;
             while (ret != coke::TOP_SUCCESS)
                 ret = co_await mtx.try_lock_for(ms10);
             break;
         }
 
         EXPECT_EQ(ret, coke::TOP_SUCCESS);
-        count += 1;
+        p->total.fetch_add(1, relaxed);
+        ret = 1 + p->count.fetch_add(1, relaxed);
 
+        co_await coke::sleep(us1);
+        EXPECT_EQ(ret, 1);
+
+        p->count.fetch_sub(1, relaxed);
         mtx.unlock();
     }
 }
 
 void test_mutex(int test_method) {
-    coke::TimedMutex mtx;
-    int total = 0;
+    ParamPack p;
+    p.count = 0;
+    p.total = 0;
+    p.test_method = test_method;
+    p.loop_max = 128;
 
     std::vector<coke::Task<>> tasks;
     tasks.reserve(MAX_TASKS);
 
-    ParamPack p;
-    p.mtx = &mtx;
-    p.count = &total;
-    p.test_method = test_method;
-    p.loop_max = 1024;
-
     for (int i = 0; i < MAX_TASKS; i++)
-        tasks.emplace_back(do_test_mutex(p));
+        tasks.emplace_back(do_test_mutex(&p));
 
     coke::sync_wait(std::move(tasks));
 
-    EXPECT_EQ(total, (MAX_TASKS * p.loop_max));
+    EXPECT_EQ(p.total.load(), (MAX_TASKS * p.loop_max));
 }
 
 TEST(MUTEX, try_lock) {

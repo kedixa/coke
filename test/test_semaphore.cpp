@@ -1,12 +1,14 @@
 #include <atomic>
-#include <vector>
 #include <chrono>
+#include <vector>
 
 #include <gtest/gtest.h>
-
 #include "coke/coke.h"
 
 constexpr int MAX_TASKS = 16;
+constexpr auto ms10 = std::chrono::milliseconds(10);
+constexpr auto us1 = std::chrono::microseconds(1);
+constexpr auto relaxed = std::memory_order_relaxed;
 
 enum {
     TEST_TRY_ACQUIRE = 0,
@@ -15,26 +17,22 @@ enum {
 };
 
 struct ParamPack {
-    coke::TimedSemaphore *sem;
-    std::atomic<int> *x;
+    coke::TimedSemaphore sem;
+    std::atomic<int> count;
+    std::atomic<int> total;
     int sem_max;
     int test_method;
     int loop_max;
 };
 
-coke::Task<> do_test_semaphore(ParamPack p) {
-    constexpr auto ms10 = std::chrono::milliseconds(10);
+coke::Task<> do_test_semaphore(ParamPack *p) {
+    coke::TimedSemaphore &sem = p->sem;
+    int ret;
 
-    coke::TimedSemaphore &sem = *(p.sem);
-    std::atomic<int> &x = *(p.x);
-    int sem_max = p.sem_max;
-    int test_method = p.test_method;
-    int y, ret;
-
-    for (int i = 0; i < p.loop_max; i++) {
+    for (int i = 0; i < p->loop_max; i++) {
         ret = -1;
 
-        switch (test_method) {
+        switch (p->test_method) {
         case TEST_TRY_ACQUIRE:
             if (!sem.try_acquire())
                 ret = co_await sem.acquire();
@@ -47,47 +45,42 @@ coke::Task<> do_test_semaphore(ParamPack p) {
             break;
 
         case TEST_ACQUIRE_FOR:
-            ret = -1;
             while (ret != coke::TOP_SUCCESS)
                 ret = co_await sem.try_acquire_for(ms10);
             break;
         }
 
         EXPECT_EQ(ret, coke::TOP_SUCCESS);
+        p->total.fetch_add(1, relaxed);
+        ret = 1 + p->count.fetch_add(1, relaxed);
 
-        x.fetch_add(1, std::memory_order_relaxed);
-        y = x.load(std::memory_order_relaxed);
+        co_await coke::sleep(us1);
+        EXPECT_TRUE(ret > 0 && ret <= p->sem_max);
 
-        if (sem_max == 1)
-            EXPECT_EQ(y, 1);
-        else {
-            EXPECT_LE(y, sem_max);
-            EXPECT_GT(y, 0);
-        }
-
-        x.fetch_sub(1, std::memory_order_relaxed);
+        p->count.fetch_sub(1, relaxed);
         sem.release();
     }
 }
 
 void test_semaphore(int sem_max, int test_method) {
-    coke::TimedSemaphore sem(sem_max);
-    std::atomic<int> x{0};
+    ParamPack p {
+        .sem = coke::TimedSemaphore(sem_max),
+        .count = 0,
+        .total = 0,
+        .sem_max = sem_max,
+        .test_method = test_method,
+        .loop_max = 128
+    };
 
     std::vector<coke::Task<>> tasks;
     tasks.reserve(MAX_TASKS);
 
-    ParamPack p;
-    p.sem = &sem;
-    p.x = &x;
-    p.sem_max = sem_max;
-    p.test_method = test_method;
-    p.loop_max = 1024;
-
     for (int i = 0; i < MAX_TASKS; i++)
-        tasks.emplace_back(do_test_semaphore(p));
+        tasks.emplace_back(do_test_semaphore(&p));
 
     coke::sync_wait(std::move(tasks));
+
+    EXPECT_EQ(p.total.load(), (MAX_TASKS * p.loop_max));
 }
 
 TEST(SEMAPHORE, sem_try_acquire) {
