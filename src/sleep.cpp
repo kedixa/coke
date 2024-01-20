@@ -32,7 +32,7 @@ static std::pair<time_t, long> split_nano(nanoseconds nano) {
     if (cnt < 0)
         return {0, 0};
     else
-        return {cnt / NANO, cnt % NANO};
+        return {(time_t)(cnt / NANO), (long)(cnt % NANO)};
 }
 
 SleepAwaiter::SleepAwaiter(nanoseconds nano) {

@@ -119,7 +119,7 @@ static void to_string_impl(const RedisValue &value, const std::string &pre,
 
     case REDIS_REPLY_TYPE_ARRAY:
         arr_sz = value.arr_size();
-        for (size_t i = 0; i < arr_sz; i++) {
+        for (std::size_t i = 0; i < arr_sz; i++) {
             if (i)
                 str.append(pre);
 

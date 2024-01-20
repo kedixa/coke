@@ -136,7 +136,7 @@ private:
 };
 
 class MySQLResultSetView {
-    using result_set_t = struct __mysql_result_set;
+    using result_set_t = __mysql_result_set;
 
 public:
     MySQLResultSetView() : MySQLResultSetView(nullptr, nullptr) { }
@@ -157,7 +157,7 @@ public:
         return std::string_view(info, result_set->info_len);
     }
 
-    int get_affected_rows() const { return result_set->affected_rows; }
+    unsigned long long get_affected_rows() const { return result_set->affected_rows; }
     int get_warnings() const { return result_set->warning_count; }
     unsigned long long get_insert_id() const { return result_set->insert_id; }
 

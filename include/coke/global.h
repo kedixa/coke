@@ -10,9 +10,9 @@
 namespace coke {
 
 // version
-constexpr int MAJOR_VERSION = 0;
-constexpr int MINOR_VERSION = 1;
-constexpr int BUGFIX_VERSION = 0;
+constexpr int COKE_MAJOR_VERSION = 0;
+constexpr int COKE_MINOR_VERSION = 1;
+constexpr int COKE_BUGFIX_VERSION = 0;
 
 // state constant from workflow, see WFTask.h
 constexpr int STATE_UNDEFINED = -1;
@@ -26,25 +26,27 @@ constexpr int STATE_TASK_ERROR = 67;
 constexpr int STATE_ABORTED = 2;
 
 // timeout reason constant from workflow, see CommRequest.h
-constexpr int NOT_TIMEOUT = 0;
-constexpr int WAIT_TIMEOUT = 1;
-constexpr int CONNECT_TIMEOUT = 2;
-constexpr int TRANSMIT_TIMEOUT = 3;
+// `CTOR` means `coke timeout reason`
+constexpr int CTOR_NOT_TIMEOUT = 0;
+constexpr int CTOR_WAIT_TIMEOUT = 1;
+constexpr int CTOR_CONNECT_TIMEOUT = 2;
+constexpr int CTOR_TRANSMIT_TIMEOUT = 3;
 
 // return value of coroutine operation such as TimedMutex.lock
 // Negative numbers indicate system errors
 
 // The operation success
 constexpr int TOP_SUCCESS = 0;
-// The operation timeout before success, used by most time-related operations such as
-// TimedSemaphore::acquire_for etc.
+// The operation timeout before success, used by most time-related operations
+// such as TimedSemaphore::acquire_for etc.
 constexpr int TOP_TIMEOUT = 1;
-// TOP_ABORTED only appears when the process is about to exit but there are still coroutines
-// performing time-related operations, but Coke recommends waiting for all coroutines to end
-// before the end of the main function to avoid this situation.
+// TOP_ABORTED only appears when the process is about to exit but there are
+// still coroutines performing time-related operations, but Coke recommends
+// waiting for all coroutines to end before the end of the main function to
+// avoid this situation.
 constexpr int TOP_ABORTED = 2;
-// TOP_CLOSED is used when using an asynchronous container to indicate that the current
-// operation failed because the container has been closed.
+// TOP_CLOSED is used when using an asynchronous container to indicate that the
+// current operation failed because the container has been closed.
 constexpr int TOP_CLOSED = 3;
 
 

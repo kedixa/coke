@@ -38,7 +38,7 @@ template<SimpleType T>
 Task<std::vector<T>> async_wait_helper(std::vector<Task<T>> tasks) {
     std::size_t n = tasks.size();
     std::vector<T> vec(n);
-    Latch lt(n);
+    Latch lt((long)n);
 
     for (std::size_t i = 0; i < n; i++)
         async_wait_helper(std::move(tasks[i]), vec[i], lt).start();
@@ -54,7 +54,7 @@ Task<std::vector<T>> async_wait_helper(std::vector<Task<T>> tasks) {
 inline
 Task<std::vector<bool>> async_wait_helper(std::vector<Task<bool>> tasks) {
     std::size_t n = tasks.size();
-    Latch lt(n);
+    Latch lt((long)n);
     // `n` == 0 is also valid
     std::unique_ptr<bool []> vec = std::make_unique<bool []>(n);
 
@@ -67,7 +67,7 @@ Task<std::vector<bool>> async_wait_helper(std::vector<Task<bool>> tasks) {
 
 inline Task<> async_wait_helper(std::vector<Task<void>> tasks) {
     std::size_t n = tasks.size();
-    Latch lt(n);
+    Latch lt((long)n);
 
     for (std::size_t i = 0; i < n; i++)
         async_wait_helper(std::move(tasks[i]), lt).start();

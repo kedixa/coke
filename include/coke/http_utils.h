@@ -85,7 +85,7 @@ class HttpChunkCursor {
     struct iterator {
         iterator() { cur = end = nullptr; }
 
-        iterator(const char *body, size_t blen, bool chunked) {
+        iterator(const char *body, std::size_t blen, bool chunked) {
             this->cur = body;
             this->end = body + blen;
             this->chunked = chunked;

@@ -29,8 +29,12 @@ static int encode_auth(const char *p, std::string& auth)
 }
 
 static std::string_view get_http_host(coke::HttpRequest &req) {
+    constexpr int host_len = 4;
+
     for (const coke::HttpHeaderView &header : coke::HttpHeaderCursor(req)) {
-        if (strncasecmp(header.name.data(), "Host", 4) == 0)
+        if (header.name.length() != host_len)
+            continue;
+        if (strncasecmp(header.name.data(), "Host", host_len) == 0)
             return header.value;
     }
     return std::string_view();
@@ -70,7 +74,7 @@ HttpClient::create_task(const std::string &url, ReqType *req) noexcept {
     bool has_proxy = !params.proxy.empty();
     const std::string &proxy = params.proxy;
 
-    https = strncasecmp(url.c_str(), "https://", 8) == 0;
+    https = (strncasecmp(url.c_str(), "https://", 8) == 0);
 
     // redirect disabled when http url with proxy
 
