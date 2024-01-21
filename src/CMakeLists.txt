@@ -13,6 +13,7 @@ set(SRCS
     future.cpp
     cancelable_timer.cpp
     mutex.cpp
+    dag.cpp
 )
 
 if (COKE_BUILD_STATIC)
