@@ -12,6 +12,7 @@ cc_library(
         "src/future.cpp",
         "src/cancelable_timer.cpp",
         "src/mutex.cpp",
+        "src/dag.cpp",
     ],
     hdrs = ["include"],
     includes = ["include"],
