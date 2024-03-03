@@ -17,6 +17,7 @@ set(ALL_TESTS
     test_semaphore
     test_mutex
     test_shared_mutex
+    test_dag
 )
 
 include (../cmake/find-workflow.cmake)
