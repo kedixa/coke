@@ -9,9 +9,6 @@
 namespace coke {
 
 class SharedTimedMutex {
-    template<typename Rep, typename Period>
-    using duration = std::chrono::duration<Rep, Period>;
-
     enum class State : std::uint8_t {
         Idle        = 0,
         Reading     = 1,
@@ -19,6 +16,9 @@ class SharedTimedMutex {
     };
 
 public:
+    template<typename Rep, typename Period>
+    using Duration = std::chrono::duration<Rep, Period>;
+
     using count_type = std::uint32_t;
 
     /**
@@ -155,7 +155,7 @@ public:
      *      exclusive).
     */
     template<typename Rep, typename Period>
-    Task<int> try_lock_for(const duration<Rep, Period> &time_duration) {
+    Task<int> try_lock_for(const Duration<Rep, Period> &time_duration) {
         using std::chrono::nanoseconds;
         auto nano = std::chrono::duration_cast<nanoseconds>(time_duration);
         return lock_impl(detail::TimedWaitHelper(nano));
@@ -187,7 +187,7 @@ public:
      *      exclusive).
     */
     template<typename Rep, typename Period>
-    Task<int> try_lock_shared_for(const duration<Rep, Period> &time_duration) {
+    Task<int> try_lock_shared_for(const Duration<Rep, Period> &time_duration) {
         using std::chrono::nanoseconds;
         auto nano = std::chrono::duration_cast<nanoseconds>(time_duration);
         return lock_shared_impl(detail::TimedWaitHelper(nano));

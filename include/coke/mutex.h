@@ -6,10 +6,10 @@
 namespace coke {
 
 class TimedMutex {
-    template<typename Rep, typename Period>
-    using duration = std::chrono::duration<Rep, Period>;
-
 public:
+    template<typename Rep, typename Period>
+    using Duration = TimedSemaphore::Duration<Rep, Period>;
+
     /**
      * @brief Create a TimedMutex, the uid is automatically obtained from
      *        `coke::get_unique_id`.
@@ -73,7 +73,7 @@ public:
      * @pre Current coroutine doesn't owns the mutex.
     */
     template<typename Rep, typename Period>
-    Task<int> try_lock_for(const duration<Rep, Period> &time_duration) {
+    Task<int> try_lock_for(const Duration<Rep, Period> &time_duration) {
         return sem.try_acquire_for(time_duration);
     }
 
