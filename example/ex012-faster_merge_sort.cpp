@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
     cost = current_usec() - start;
     std::cout << std::setw(14) << "Sort " << std::setw(12) << cost << "us\n";
 
-    // 3. check result
+    // 4. check result
     bool ok = v == v2;
     std::cout << "Sort " << (ok ? "Success" : "Failed") << std::endl;
 
