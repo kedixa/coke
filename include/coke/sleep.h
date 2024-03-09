@@ -39,6 +39,9 @@ public:
     SleepAwaiter(uint64_t id, std::chrono::nanoseconds nsec,
                  bool insert_head=false);
     SleepAwaiter(uint64_t id, InfiniteDuration, bool insert_head=false);
+
+    // Inner use only
+    explicit SleepAwaiter(int s) { emplace_result(s); }
 };
 
 

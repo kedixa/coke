@@ -40,7 +40,17 @@ public:
      * Acquire `count` license from QpsPool, the returned awaitable
      * object should be co awaited immediately.
     */
-    AwaiterType get(unsigned count = 1) noexcept;
+    AwaiterType get(unsigned count = 1) noexcept {
+        return get_if(count, std::chrono::nanoseconds::max());
+    }
+
+    /**
+     * Acquire `count` license from QpsPool when the wait period less or equal
+     * to `ns`, the returned awaitable object should be co awaited immediately.
+     * The awaiter returns `coke::SLEEP_CANCELED` immediately if the license
+     * cannot be acquired in `ns`.
+    */
+    AwaiterType get_if(unsigned count, std::chrono::nanoseconds ns) noexcept;
 
 private:
     std::mutex mtx;
