@@ -5,26 +5,19 @@
 #include <list>
 #include <new>
 
+#include "coke/detail/constant.h"
 #include "coke/sleep.h"
 #include "workflow/WFTaskFactory.h"
 
 namespace coke::detail {
 
-#ifdef __cpp_lib_hardware_interference_size
-static constexpr std::size_t HDIS = std::hardware_destructive_interference_size;
-#else
-static constexpr std::size_t HDIS = 64UL;
-#endif
-
-constexpr uint64_t CANCELABLE_MAP_MAX = 16;
 class CancelInterface;
 
-
-class alignas(HDIS) CancelableTimerMap {
+class alignas(DESTRUCTIVE_ALIGN) CancelableTimerMap {
 public:
     static CancelableTimerMap *get_instance(uint64_t uid) {
-        static CancelableTimerMap ntm[CANCELABLE_MAP_MAX];
-        return ntm + uid % CANCELABLE_MAP_MAX;
+        static CancelableTimerMap ntm[CANCELABLE_MAP_SIZE];
+        return ntm + uid % CANCELABLE_MAP_SIZE;
     }
 
 public:

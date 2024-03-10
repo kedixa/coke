@@ -1,6 +1,8 @@
 #include <atomic>
 
 #include "coke/detail/awaiter_base.h"
+#include "coke/detail/mutex_table.h"
+#include "coke/detail/constant.h"
 #include "coke/global.h"
 #include "coke/coke.h"
 
@@ -91,5 +93,22 @@ SeriesAwaiter::SeriesAwaiter() {
 
     set_task(WFTaskFactory::create_counter_task(0, cb));
 }
+
+// detail/mutex_table.h impl
+
+namespace detail {
+
+struct alignas(DESTRUCTIVE_ALIGN) AlignedMutex {
+    std::mutex mtx;
+};
+
+std::mutex &get_mutex(void *ptr) {
+    static AlignedMutex m[MUTEX_TABLE_SIZE];
+
+    uintptr_t h = reinterpret_cast<uintptr_t>(ptr);
+    return m[h%MUTEX_TABLE_SIZE].mtx;
+}
+
+} // namespace detail
 
 } // namespace coke
