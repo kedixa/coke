@@ -17,6 +17,51 @@ coke::Task<> process(coke::Promise<void> p) {
     p.set_value();
 }
 
+coke::Task<std::string> create_task() {
+    co_await coke::sleep(milliseconds(300));
+    co_return std::string(100, 'a');
+}
+
+coke::Task<void> create_void_task() {
+    co_await coke::sleep(milliseconds(300));
+    co_return;
+}
+
+coke::Task<> test_async_future() {
+    {
+        std::string str(100, 'a'), result;
+        coke::Future<std::string> fut = coke::async_start_task(create_task());
+        int ret;
+
+        do {
+            ret = co_await fut.wait_for(milliseconds(100));
+        } while (ret != coke::FUTURE_STATE_READY);
+
+        EXPECT_TRUE(fut.valid());
+        EXPECT_TRUE(fut.ready());
+        EXPECT_FALSE(fut.broken());
+        result = fut.get();
+        EXPECT_EQ(str, result);
+    }
+
+    {
+        coke::Future<void> fut = coke::async_start_task(create_void_task());
+        int ret, n = 0;
+
+        do {
+            ret = co_await fut.wait_for(milliseconds(100));
+            ++n;
+        } while (ret != coke::FUTURE_STATE_READY);
+
+        EXPECT_GE(n, 1);
+        EXPECT_LE(n, 5);
+        EXPECT_TRUE(fut.valid());
+        EXPECT_TRUE(fut.ready());
+        EXPECT_FALSE(fut.broken());
+        fut.get();
+    }
+}
+
 template<typename T>
 coke::Task<> do_test(T data, int ms, int state) {
     coke::Promise<T> pro;
@@ -57,6 +102,26 @@ TEST(FUTURE, integer) {
 TEST(FUTURE, void) {
     do_test(200, coke::FUTURE_STATE_TIMEOUT);
     do_test(400, coke::FUTURE_STATE_READY);
+}
+
+TEST(FUTURE, broken) {
+    coke::Future<int> f;
+    EXPECT_FALSE(f.valid());
+
+    {
+        coke::Promise<int> p;
+        f = p.get_future();
+        EXPECT_TRUE(f.valid());
+    }
+
+    EXPECT_TRUE(f.broken());
+
+    int ret = coke::sync_wait(f.wait());
+    EXPECT_EQ(ret, coke::FUTURE_STATE_BROKEN);
+}
+
+TEST(FUTURE, from_task) {
+    coke::sync_wait(test_async_future());
 }
 
 int main(int argc, char *argv[]) {
