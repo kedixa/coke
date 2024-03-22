@@ -7,110 +7,91 @@
 
 using std::chrono::milliseconds;
 
-struct StopToken {
-    std::atomic<bool> stop_wait{false};
-    std::atomic<int> progress{0};
-};
-
 std::string current();
 
 /**
  * This example uses coke::Future to show how to wait for an asynchronous result,
  * and do different things depending on whether the wait times out.
- *
- * NOTICE: StopToken is not coupled with coke::Future. coke::Future/coke::Promise
- * aims to provide a mechanism that supports timeout and waits for asynchronous
- * results. Users can add additional auxiliary methods according to actual
- * conditions (such as StopToken in this example) to make things better.
 */
 
-coke::Task<> process(StopToken &token, coke::Promise<int> p) {
+coke::Task<int> process(std::atomic<bool> &stop, std::atomic<int> &cur_step) {
     // Suppose this is a complex routine, it needs many steps to finish work
 
-    // Because each step can take a long time, we use `token` to inform the
+    // Because each step can take a long time, we use `cur_step` to inform the
     // caller of our progress
 
-    // Step 1
-    token.progress = 1;
-    co_await coke::sleep(milliseconds(200));
-    // after each step, check to see if the caller has given up waiting
-    if (token.stop_wait) {
-        p.set_value(-1);
-        co_return;
+    for (int step = 1; step <= 3; step++) {
+        cur_step = step;
+        if (step != 1 && stop) {
+            // The caller has given up waiting, and we didn't finish the work
+            co_return -1;
+        }
+
+        // Do async works
+        co_await coke::sleep(milliseconds(200));
     }
 
-    // Step 2
-    token.progress = 2;
-    co_await coke::sleep(milliseconds(300));
-    if (token.stop_wait) {
-        p.set_value(-1);
-        co_return;
-    }
-
-    // Step 3
-    token.progress = 3;
-    co_await coke::sleep(milliseconds(500));
     // WOW! We finish the work
-    p.set_value(1);
+    co_return 1;
 }
 
 coke::Task<> wait_process(int first_ms, int second_ms) {
-    StopToken token;
-    coke::Promise<int> pro;
-    coke::Future<int> fut = pro.get_future();
+    std::atomic<bool> stop_flag{false};
+    std::atomic<int> cur_step{0};
     int ret;
+    int process_ret = -2;
 
     // 1. Start process
-    process(token, std::move(pro)).start();
+    coke::Future<int> fut = coke::create_future(process(stop_flag, cur_step));
     std::cout << current() << "Wait process\n";
 
     // 2. Wait for `first_ms` milliseconds
     ret = co_await fut.wait_for(milliseconds(first_ms));
 
     if (ret == coke::FUTURE_STATE_TIMEOUT) {
-        std::cout << current() << "Wait timeout after first_ms, on progress "
-                  << token.progress << "\n";
+        std::cout << current() << "Wait timeout after " << first_ms
+                  << "ms, on progress " << cur_step << "\n";
 
         // 3. Although it is not completed yet, it has reached a critical step.
         //    We can tolerate it for `second_ms` millisecond and try not to
-        //    waste all our efforts.
-        if (token.progress >= 3) {
-            std::cout << current() << "Try to wait second_ms\n";
+        //    waste all our efforts
+        if (cur_step >= 3) {
+            std::cout << current() << "Try to wait another " << second_ms << "ms\n";
             ret = co_await fut.wait_for(milliseconds(second_ms));
         }
     }
 
     if (ret == coke::FUTURE_STATE_READY) {
-        std::cout << current() << "Future is ready now\n";
+        process_ret = fut.get();
+        std::cout << current() << "Future is ready now, result is "
+                  << process_ret << "\n";
     }
     else {
         // 4. The work progress is very slow, terminate the wait,
         //    notify it to end early so as not to waste more resources
+        stop_flag = true;
         std::cout << current() << "Future is not ready, try to stop wait\n";
-        token.stop_wait = true;
 
-        // `process` has a reference to local `token` variable, we should wait
-        // until it finish, otherwise there is no need to wait promise if
-        // we don't need the value.
+        // `process` has a reference to local variable, we should wait
+        // until it finish
 
-        // wait until promise set_value
         ret = co_await fut.wait();
 
-        int fret = -1;
         if (ret == coke::FUTURE_STATE_READY)
-            fret = fut.get();
+            process_ret = fut.get();
 
-        std::cout << current() << "Wait finished and future get " << fret << std::endl;
+        std::cout << current() << "Wait finished and process returns "
+                  << process_ret << std::endl;
     }
 }
 
 int main() {
     std::cout << current() << "First case:\n";
-    coke::sync_wait(wait_process(300, 300));
+    coke::sync_wait(wait_process(300, 200));
 
     std::cout << "\n";
     std::cout << current() << "Second case:\n";
-    coke::sync_wait(wait_process(800, 300));
+    coke::sync_wait(wait_process(500, 200));
 
     return 0;
 }

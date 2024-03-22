@@ -69,7 +69,7 @@ public:
 
 protected:
     Task<int> wait_impl(TimedWaitHelper helper) {
-        constexpr TimedWaitHelper::Duration  zero(0);
+        constexpr TimedWaitHelper::Duration zero(0);
 
         std::unique_lock<std::mutex> lk(mtx);
         if (is_broken)
@@ -86,8 +86,8 @@ protected:
             co_return  FUTURE_STATE_TIMEOUT;
 
         SleepAwaiter s = helper.infinite()
-                            ? sleep(uid, InfiniteDuration{})
-                            : sleep(uid, dur);
+                         ? sleep(uid, InfiniteDuration{})
+                         : sleep(uid, dur);
         lk.unlock();
         int ret = co_await s;
         lk.lock();
@@ -195,6 +195,7 @@ public:
      *    It is the better to ensure that all coroutines finish before
      *    the process exits.
     */
+    [[nodiscard]]
     Task<int> wait() { return state->wait(); }
 
     /**
@@ -204,6 +205,7 @@ public:
      *
      * See Future::wait() for more infomation.
      */
+    [[nodiscard]]
     Task<int> wait_for(std::chrono::nanoseconds nsec) {
         return state->wait_for(nsec);
     }
@@ -328,7 +330,7 @@ Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
  *        immediately.
 */
 template<SimpleType T>
-Future<T> async_start_task(Task<T> &&task) {
+Future<T> create_future(Task<T> &&task) {
     Promise<T> promise;
     Future<T> future = promise.get_future();
 

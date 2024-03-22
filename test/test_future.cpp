@@ -30,7 +30,7 @@ coke::Task<void> create_void_task() {
 coke::Task<> test_async_future() {
     {
         std::string str(100, 'a'), result;
-        coke::Future<std::string> fut = coke::async_start_task(create_task());
+        coke::Future<std::string> fut = coke::create_future(create_task());
         int ret;
 
         do {
@@ -45,7 +45,7 @@ coke::Task<> test_async_future() {
     }
 
     {
-        coke::Future<void> fut = coke::async_start_task(create_void_task());
+        coke::Future<void> fut = coke::create_future(create_void_task());
         int ret, n = 0;
 
         do {
@@ -73,7 +73,7 @@ coke::Task<> do_test(T data, int ms, int state) {
     wait_state = co_await fut.wait_for(milliseconds(ms));
     EXPECT_EQ(wait_state, state);
 
-    fut.wait();
+    co_await fut.wait();
 }
 
 coke::Task<> do_test(int ms, int state) {
@@ -86,7 +86,7 @@ coke::Task<> do_test(int ms, int state) {
     wait_state = co_await fut.wait_for(milliseconds(ms));
     EXPECT_EQ(wait_state, state);
 
-    fut.wait();
+    co_await fut.wait();
 }
 
 TEST(FUTURE, string) {
