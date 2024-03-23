@@ -9,9 +9,6 @@
 namespace coke {
 
 class TimedSemaphore {
-    template<typename Rep, typename Period>
-    using duration = std::chrono::duration<Rep, Period>;
-
 public:
     using count_type = uint32_t;
 
@@ -86,23 +83,21 @@ public:
      *
      * @pre Current coroutine doesn't owns all the count.
     */
+    [[nodiscard]]
     Task<int> acquire() { return acquire_impl(detail::TimedWaitHelper{}); }
 
     /**
-     * @brief Acquire a count, block until success or `time_duration` timeout.
+     * @brief Acquire a count, block until success or `nsec` timeout.
      *
      * @return See `acquire`.
      *
-     * @param time_duration Max time to block, should be an instance of
-     *        std::chrono::duration.
+     * @param nsec Max time to block.
      *
      * @pre Current coroutine doesn't owns all the count.
     */
-    template<typename Rep, typename Period>
-    Task<int> try_acquire_for(const duration<Rep, Period> &time_duration) {
-        using std::chrono::nanoseconds;
-        auto nano = std::chrono::duration_cast<nanoseconds>(time_duration);
-        return acquire_impl(detail::TimedWaitHelper(nano));
+    [[nodiscard]]
+    Task<int> try_acquire_for(const NanoSec &nsec) {
+        return acquire_impl(detail::TimedWaitHelper(nsec));
     }
 
 protected:

@@ -237,6 +237,7 @@ public:
      *
      * @pre Current DagGraph is valid.
     */
+    [[nodiscard]]
     Task<> run(T &data) {
         detail::DagContext<T> ctx(Base::nodes.size(), data);
         Base::start(ctx);
@@ -262,6 +263,7 @@ public:
     DagGraph(const DagGraph &) = delete;
     ~DagGraph() = default;
 
+    [[nodiscard]]
     Task<> run() {
         detail::DagContext<void> ctx(Base::nodes.size());
         Base::start(ctx);

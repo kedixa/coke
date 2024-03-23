@@ -37,7 +37,8 @@ void QpsPool::reset_qps(long query, long seconds) noexcept {
     }
 }
 
-QpsPool::AwaiterType QpsPool::get(unsigned count) noexcept {
+QpsPool::AwaiterType
+QpsPool::get_if(unsigned count, const NanoSec &nsec) noexcept {
     std::lock_guard<std::mutex> lg(mtx);
     NanoType current, next_nano, next_sub;
 
@@ -49,15 +50,21 @@ QpsPool::AwaiterType QpsPool::get(unsigned count) noexcept {
 
     current = __get_current_nano();
 
-    if (next_nano > current) {
-        last_nano = next_nano;
-        last_sub = next_sub;
-
-        return AwaiterType(std::chrono::nanoseconds(next_nano - current));
+    auto nano = NanoSec(next_nano - current);
+    if (nano.count() > 0) {
+        if (nano < nsec) {
+            last_nano = next_nano;
+            last_sub = next_sub;
+            return AwaiterType(nano);
+        }
+        else {
+            return AwaiterType(SleepAwaiter::InnerTag{}, SLEEP_CANCELED);
+        }
     }
     else {
         last_nano = current;
         last_sub = 0;
+        // SLEEP_SUCCESS
         return AwaiterType();
     }
 }

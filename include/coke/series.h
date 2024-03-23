@@ -16,10 +16,12 @@ private:
 
 using EmptyAwaiter = SeriesAwaiter;
 
+[[nodiscard]]
 inline SeriesAwaiter current_series() {
     return SeriesAwaiter();
 }
 
+[[nodiscard]]
 inline EmptyAwaiter empty() {
     return EmptyAwaiter();
 }

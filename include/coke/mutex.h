@@ -6,9 +6,6 @@
 namespace coke {
 
 class TimedMutex {
-    template<typename Rep, typename Period>
-    using duration = std::chrono::duration<Rep, Period>;
-
 public:
     /**
      * @brief Create a TimedMutex, the uid is automatically obtained from
@@ -60,21 +57,21 @@ public:
      *
      * @pre Current coroutine doesn't owns the mutex.
     */
+    [[nodiscard]]
     Task<int> lock() { return sem.acquire(); }
 
     /**
-     * @brief Lock the mutex, block until success or `time_duration` timeout.
+     * @brief Lock the mutex, block until success or `nsec` timeout.
      *
      * @return See `lock`.
      *
-     * @param time_duration Max time to block, should be an instance of
-     *        std::chrono::duration.
+     * @param nsec Max time to block.
      *
      * @pre Current coroutine doesn't owns the mutex.
     */
-    template<typename Rep, typename Period>
-    Task<int> try_lock_for(const duration<Rep, Period> &time_duration) {
-        return sem.try_acquire_for(time_duration);
+    [[nodiscard]]
+    Task<int> try_lock_for(const NanoSec &nsec) {
+        return sem.try_acquire_for(nsec);
     }
 
 private:

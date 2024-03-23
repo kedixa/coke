@@ -10,7 +10,6 @@ set(SRCS
     redis_impl.cpp
     sleep.cpp
     mysql_impl.cpp
-    future.cpp
     cancelable_timer.cpp
     mutex.cpp
     dag.cpp

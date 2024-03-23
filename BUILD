@@ -9,7 +9,6 @@ cc_library(
         "src/sleep.cpp",
         "src/latch.cpp",
         "src/qps_pool.cpp",
-        "src/future.cpp",
         "src/cancelable_timer.cpp",
         "src/mutex.cpp",
         "src/dag.cpp",

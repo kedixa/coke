@@ -44,6 +44,7 @@ public:
 
 template<typename FUNC, typename... ARGS>
     requires std::invocable<FUNC, ARGS...>
+[[nodiscard]]
 auto go(const std::string &queue, FUNC &&func, ARGS&& ...args) {
     using result_t = std::remove_cvref_t<std::invoke_result_t<FUNC, ARGS...>>;
     auto &&f = std::bind(std::forward<FUNC>(func), std::forward<ARGS>(args)...);
@@ -53,16 +54,19 @@ auto go(const std::string &queue, FUNC &&func, ARGS&& ...args) {
 
 template<typename FUNC, typename... ARGS>
     requires std::invocable<FUNC, ARGS...>
+[[nodiscard]]
 auto go(FUNC &&func, ARGS&& ...args) {
     return go(std::string(detail::DFT_QUEUE), std::forward<FUNC>(func), std::forward<ARGS>(args)...);
 }
 
 // Switch to a thread in the go thread pool with `name`
+[[nodiscard]]
 inline auto switch_go_thread(const std::string &name) {
     return go(name, []{});
 }
 
 // Switch to a thread in the go thread pool with default name
+[[nodiscard]]
 inline auto switch_go_thread() {
     return go(std::string(detail::DFT_QUEUE), []{});
 }

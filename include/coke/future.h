@@ -8,16 +8,18 @@
 #include <chrono>
 
 #include "coke/detail/task.h"
+#include "coke/detail/mutex_table.h"
 #include "coke/sleep.h"
 #include "coke/global.h"
 
 namespace coke {
 
-constexpr int FUTURE_STATE_INVALID  = -1;
+constexpr int FUTURE_STATE_BROKEN   = -1;
 constexpr int FUTURE_STATE_READY    = 0;
 constexpr int FUTURE_STATE_TIMEOUT  = 1;
 constexpr int FUTURE_STATE_ABORTED  = 2;
 
+// TODO Type restrictions can be relaxed.
 template<typename Res>
 concept FutureResType = std::copyable<Res> || std::is_void_v<Res>;
 
@@ -27,69 +29,125 @@ class Future;
 template<FutureResType Res>
 class Promise;
 
-class FutureAwaiter : public BasicAwaiter<int> {
-private:
-    explicit FutureAwaiter(int ret);
-    explicit FutureAwaiter(SubTask *task);
-
-    template<FutureResType T>
-    friend class Future;
-};
-
 namespace detail {
 
 struct FutureStateBase {
 public:
-    FutureStateBase() : ready(false), counter(nullptr) { }
+    FutureStateBase()
+        : is_ready(false), is_broken(false),
+          uid(INVALID_UNIQUE_ID), mtx(get_mutex(this))
+    { }
 
-    /**
-     * Check whether this future is already `ready`. The `ready` state is set by
-     * this->wakeup(FUTURE_STATE_READY), `ready` state can only and must be set once.
-    */
-    bool is_ready() const {
-        std::lock_guard<std::mutex> lg(this->mtx);
-        return this->ready;
+    bool ready() const {
+        std::lock_guard<std::mutex> lg(mtx);
+        return is_ready;
     }
 
-    /**
-     * Wake up the one who is waiting on this future, with state `state`.
-     * The `state` is an integer named FUTURE_STATE_* on the above. The awakened
-     * user needs to check the return value and do the corresponding operation.
-    */
-    void wakeup(int state);
+    bool broken() const {
+        std::lock_guard<std::mutex> lg(mtx);
+        return is_broken;
+    }
 
-    /**
-     * Try to create wait task, if this future is ready or invalid, the function
-     * return nullptr and we should wake up the caller with `state` immediately.
-    */
-    SubTask *create_wait_task(int &state);
+    void set_broken() {
+        std::lock_guard<std::mutex> lg(mtx);
+        is_broken = true;
+        wakeup_unlocked();
+    }
 
-private:
-    bool ready;
-    SubTask *counter;
-    mutable std::mutex mtx;
+    Task<int> wait() {
+        return wait_impl(TimedWaitHelper{});
+    }
+
+    Task<int> wait_for(const NanoSec &nsec) {
+        return wait_impl(TimedWaitHelper{nsec});
+    }
+
+    void wakeup_unlocked() {
+        if (this->uid != INVALID_UNIQUE_ID)
+            cancel_sleep_by_id(uid);
+    }
+
+protected:
+    Task<int> wait_impl(TimedWaitHelper helper) {
+        constexpr NanoSec zero(0);
+
+        std::unique_lock<std::mutex> lk(mtx);
+        if (is_broken)
+            co_return FUTURE_STATE_BROKEN;
+
+        if (is_ready)
+            co_return FUTURE_STATE_READY;
+
+        if (uid == INVALID_UNIQUE_ID)
+            uid = get_unique_id();
+
+        auto dur = helper.time_left();
+        if (dur <= zero)
+            co_return  FUTURE_STATE_TIMEOUT;
+
+        SleepAwaiter s = helper.infinite()
+                         ? sleep(uid, InfiniteDuration{})
+                         : sleep(uid, dur);
+        lk.unlock();
+        int ret = co_await s;
+        lk.lock();
+
+        if (is_broken)
+            co_return FUTURE_STATE_BROKEN;
+        else if (is_ready)
+            co_return FUTURE_STATE_READY;
+        else if (ret == 0)
+            co_return FUTURE_STATE_TIMEOUT;
+        else
+            co_return ret;
+    }
+
+protected:
+    bool is_ready;
+    bool is_broken;
+    uint64_t uid;
+    std::mutex &mtx;
 };
 
 template<typename T>
 class FutureState : public FutureStateBase {
 public:
-    void set_value(const T &value) { opt.emplace(value); }
-    void set_value(T &&value) { opt.emplace(std::move(value)); }
-    T get_value() { return std::move(opt.value()); }
+    void set_value(const T &value) {
+        std::lock_guard<std::mutex> lg(mtx);
+        opt.emplace(value);
+        this->is_ready = true;
+        this->wakeup_unlocked();
+    }
+
+    void set_value(T &&value) {
+        std::lock_guard<std::mutex> lg(mtx);
+        opt.emplace(std::move(value));
+        this->is_ready = true;
+        this->wakeup_unlocked();
+    }
+
+    T &get() { return opt.value(); }
 
 private:
     std::optional<T> opt;
 };
 
 template<>
-class FutureState<void> : public FutureStateBase { };
+class FutureState<void> : public FutureStateBase {
+public:
+    void set_value() {
+        std::lock_guard<std::mutex> lg(mtx);
+        this->is_ready = true;
+        this->wakeup_unlocked();
+    }
+};
 
 } // namespace detail
 
+
 template<FutureResType Res>
 class Future {
-    using state_t = detail::FutureState<Res>;
-    using state_ptr_t = std::shared_ptr<state_t>;
+    using State = detail::FutureState<Res>;
 
 public:
     Future() = default;
@@ -101,81 +159,92 @@ public:
     Future &operator=(const Future &) = delete;
 
     /**
-     * Return whether the state of this Future is valid.
+     * @brief Return whether the state of this Future is valid.
+     *
+     * A default constructed Future is not valid, and a Future get from Promise
+     * is valid.
     */
-    bool valid() const { return state; }
+    bool valid() const { return (bool)state; }
 
     /**
-     * Return whether the state of this Future is ready.
+     * @pre valid() returns true.
+     *
+     * @brief Return whether the state of this Future is ready.
     */
-    bool ready() const { return state && state->is_ready(); }
+    bool ready() const { return state->ready(); }
 
     /**
-     * Blocks until the result becomes available.
+     * @pre valid() returns true.
      *
-     * If `valid()` is false before call wait/wait_for/wait_until, the caller
-     * will always get `FUTURE_STATE_INVALID`.
+     * @brief Return whether the promise destroyed without set value.
+    */
+    bool broken() const { return state->broken(); }
+
+    /**
+     * @pre valid() returns true.
      *
-     * Suppose `valid()` is true, and
-     * 1. after co_await `wait`, caller always get `FUTURE_STATE_READY`.
-     * 2. after co_await `wait_for/wait_until`, caller get
-     *    `FUTURE_STATE_READY` if state is ready before timeout
-     *    `FUTURE_STATE_TIMEOUT` if timeout before state is ready
-     *    `FUTURE_STATE_ABORTED` if timer is aborted by process exit
+     * @brief Blocks until ready() or broken().
+     *
+     * @details
+     * After co_await you may get
+     *    `FUTURE_STATE_BROKEN` if promise destroyed without set value.
+     *    `FUTURE_STATE_READY` if state is ready or broken before timeout.
+     *    `FUTURE_STATE_TIMEOUT` if timeout before state is ready or broken.
+     *    `FUTURE_STATE_ABORTED` if timer is aborted by process exit.
      *
      *    It is the better to ensure that all coroutines finish before
      *    the process exits.
     */
-    FutureAwaiter wait();
+    [[nodiscard]]
+    Task<int> wait() { return state->wait(); }
 
     /**
-     * Blocks until the result becomes available or timeout.
-     * See `wait`.
-    */
-    FutureAwaiter wait_for(std::chrono::nanoseconds ns);
+     * @pre valid() returns true.
+     *
+     * @brief Blocks until ready() or broken() or timeout.
+     *
+     * See Future::wait() for more infomation.
+     */
+    [[nodiscard]]
+    Task<int> wait_for(const NanoSec &nsec) {
+        return state->wait_for(nsec);
+    }
 
     /**
-     * Blocks until the result becomes available or timeout.
-     * See `wait`.
-    */
-    template<typename Clock, typename Duration>
-    FutureAwaiter wait_until(std::chrono::time_point<Clock, Duration> abs_tp);
-
-    /**
-     * Get the value set by coke::Promise, `Future::get` can only be called once
-     * after any of wait/wait_for/wair_until returns FUTURE_STATE_READY.
+     * @pre ready() returns true.
+     *
+     * @brief Gets the value set by the Promise associated with the Future. This
+     *        function can only be called at most once.
+     *
+     * @post The saved value is in an undefined state.
     */
     Res get() {
         if constexpr (!std::is_void_v<Res>)
-            return state->get_value();
+            return std::move(state->get());
     }
 
 private:
-    Future(state_ptr_t ptr) : state(ptr) { }
+    /**
+     * @brief Future can only be created by Promise.
+    */
+    Future(std::shared_ptr<State> ptr) : state(ptr) { }
 
     friend Promise<Res>;
 
-    static coke::Task<> wait_helper(std::chrono::nanoseconds ns, state_ptr_t state) {
-        int ret = co_await coke::sleep(ns);
-        int s = (ret == STATE_SUCCESS) ? FUTURE_STATE_TIMEOUT : FUTURE_STATE_ABORTED;
-
-        // If coke::sleep is aborted, which means this process is terminating,
-        // then future's wait returns FUTURE_STATE_ABORTED and do not call wait any more
-        state->wakeup(s);
-    }
-
 private:
-    state_ptr_t state;
-};
+    std::shared_ptr<State> state;
+}; // class Future
 
 template<FutureResType Res>
 class Promise {
-    using state_t = detail::FutureState<Res>;
-    using state_ptr_t = std::shared_ptr<state_t>;
+    using State = detail::FutureState<Res>;
 
 public:
-    Promise() { state = std::make_shared<state_t>(); }
-    ~Promise() = default;
+    Promise() { state = std::make_shared<State>(); }
+    ~Promise() {
+        if (state && !state->ready())
+            state->set_broken();
+    }
 
     Promise(Promise &&) = default;
     Promise &operator=(Promise &&) = default;
@@ -183,23 +252,38 @@ public:
     Promise(const Promise &) = delete;
     Promise &operator=(const Promise &)  = delete;
 
+    /**
+     * @brief Get the Future associated with this Promise. This function can
+     *        only be called at most once.
+    */
     Future<Res> get_future() { return Future<Res>(state); }
 
-    void set_value(const Res &value);
-    void set_value(Res &&value);
+    /**
+     * @brief Set value and wake up Future. These two `set_value` can only be
+     *        called at most once.
+    */
+    void set_value(const Res &value) { state->set_value(value); }
+
+    /**
+     * @brief Set value and wake up Future. These two `set_value` can only be
+     *        called at most once.
+    */
+    void set_value(Res &&value) { state->set_value(std::move(value)); }
 
 private:
-    state_ptr_t state;
+    std::shared_ptr<State> state;
 };
 
 template<>
 class Promise<void> {
-    using state_t = detail::FutureState<void>;
-    using state_ptr_t = std::shared_ptr<state_t>;
+    using State = detail::FutureState<void>;
 
 public:
-    Promise() { state = std::make_shared<state_t>(); }
-    ~Promise() = default;
+    Promise() { state = std::make_shared<State>(); }
+    ~Promise() {
+        if (state && !state->ready())
+            state->set_broken();
+    }
 
     Promise(Promise &&) = default;
     Promise &operator=(Promise &&) = default;
@@ -207,67 +291,51 @@ public:
     Promise(const Promise &) = delete;
     Promise &operator=(const Promise &)  = delete;
 
+    /**
+     * @brief Get the Future associated with this Promise. This function can
+     *        only be called at most once.
+    */
     Future<void> get_future() { return Future<void>(state); }
 
-    void set_value() {
-        if (state)
-            state->wakeup(FUTURE_STATE_READY);
-    }
+    /**
+     * @brief Set value and wake up Future. This function can only be called at
+     *        most once.
+    */
+    void set_value() { state->set_value(); }
 
 private:
-    state_ptr_t state;
+    std::shared_ptr<State> state;
 };
 
-// Implementation
+namespace detail {
 
-template<FutureResType Res>
-FutureAwaiter Future<Res>::wait() {
-    int s = FUTURE_STATE_INVALID;
-
-    if (state) {
-        SubTask *task = state->create_wait_task(s);
-        if (task)
-            return FutureAwaiter(task);
+template<SimpleType T>
+Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
+    if constexpr (std::is_void_v<T>) {
+        co_await task;
+        promise.set_value();
+    }
+    else {
+        promise.set_value(co_await task);
     }
 
-    return FutureAwaiter(s);
+    co_return;
 }
 
-template<FutureResType Res>
-FutureAwaiter Future<Res>::wait_for(std::chrono::nanoseconds ns) {
-    int s = FUTURE_STATE_INVALID;
-    if (state) {
-        SubTask *task = state->create_wait_task(s);
-        if (task) {
-            wait_helper(ns, state).start();
-            return FutureAwaiter(task);
-        }
-    }
+} // namespace  detail
 
-    return FutureAwaiter(s);
-}
 
-template<FutureResType Res>
-template<typename Clock, typename Duration>
-FutureAwaiter Future<Res>::wait_until(std::chrono::time_point<Clock, Duration> abs_tp) {
-    auto dur = abs_tp - Clock::now();
-    return wait_for(dur);
-}
+/**
+ * @brief Create coke::Future from coke::Task, the task will be started
+ *        immediately.
+*/
+template<SimpleType T>
+Future<T> create_future(Task<T> &&task) {
+    Promise<T> promise;
+    Future<T> future = promise.get_future();
 
-template<FutureResType Res>
-void Promise<Res>::set_value(const Res &value) {
-    if (state) {
-        state->set_value(value);
-        state->wakeup(FUTURE_STATE_READY);
-    }
-}
-
-template<FutureResType Res>
-void Promise<Res>::set_value(Res &&value) {
-    if (state) {
-        state->set_value(std::move(value));
-        state->wakeup(FUTURE_STATE_READY);
-    }
+    detail::detach_task(std::move(promise), std::move(task)).start();
+    return future;
 }
 
 } // namespace coke

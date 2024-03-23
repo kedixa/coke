@@ -4,7 +4,7 @@
 namespace coke {
 
 Task<int> TimedSemaphore::acquire_impl(detail::TimedWaitHelper helper) {
-    constexpr detail::TimedWaitHelper::duration zero(0);
+    constexpr NanoSec zero(0);
 
     std::unique_lock<std::mutex> lk(mtx);
     bool insert_head = false;
@@ -70,7 +70,7 @@ void SharedTimedMutex::unlock() {
 }
 
 Task<int> SharedTimedMutex::lock_impl(detail::TimedWaitHelper helper) {
-    constexpr detail::TimedWaitHelper::duration zero(0);
+    constexpr NanoSec zero(0);
 
     std::unique_lock<std::mutex> lk(mtx);
     bool insert_head = false;
@@ -116,7 +116,7 @@ Task<int> SharedTimedMutex::lock_impl(detail::TimedWaitHelper helper) {
 }
 
 Task<int> SharedTimedMutex::lock_shared_impl(detail::TimedWaitHelper helper) {
-    constexpr detail::TimedWaitHelper::duration zero(0);
+    constexpr NanoSec zero(0);
 
     std::unique_lock<std::mutex> lk(mtx);
     bool insert_head = false;

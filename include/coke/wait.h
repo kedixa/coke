@@ -124,6 +124,7 @@ auto sync_wait(std::vector<A> &&as) {
 
 template<SimpleType T, SimpleType... Ts>
     requires (std::conjunction_v<std::is_same<T, Ts>...> && !std::is_same_v<T, void>)
+[[nodiscard]]
 Task<std::vector<T>> async_wait(Task<T> &&first, Task<Ts>&&... others) {
     std::vector<Task<T>> tasks;
     tasks.reserve(sizeof...(Ts) + 1);
@@ -135,6 +136,7 @@ Task<std::vector<T>> async_wait(Task<T> &&first, Task<Ts>&&... others) {
 
 template<SimpleType... Ts>
     requires std::conjunction_v<std::is_same<void, Ts>...>
+[[nodiscard]]
 Task<> async_wait(Task<> &&first, Task<Ts>&&... others) {
     std::vector<Task<>> tasks;
     tasks.reserve(sizeof...(Ts) + 1);
@@ -145,16 +147,19 @@ Task<> async_wait(Task<> &&first, Task<Ts>&&... others) {
 }
 
 template<SimpleType T>
+[[nodiscard]]
 Task<std::vector<T>> async_wait(std::vector<Task<T>> &&tasks) {
     return detail::async_wait_helper(std::move(tasks));
 }
 
+[[nodiscard]]
 inline Task<> async_wait(std::vector<Task<void>> &&tasks) {
     return detail::async_wait_helper(std::move(tasks));
 }
 
 template<AwaitableType A, AwaitableType... As>
     requires std::conjunction_v<std::is_same<AwaiterResult<A>, AwaiterResult<As>>...>
+[[nodiscard]]
 auto async_wait(A &&first, As&&... others) {
     using return_type = AwaiterResult<A>;
 
@@ -167,6 +172,7 @@ auto async_wait(A &&first, As&&... others) {
 }
 
 template<AwaitableType A>
+[[nodiscard]]
 auto async_wait(std::vector<A> &&as) {
     using return_type = AwaiterResult<A>;
 
