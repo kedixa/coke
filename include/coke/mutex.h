@@ -60,6 +60,7 @@ public:
      *
      * @pre Current coroutine doesn't owns the mutex.
     */
+    [[nodiscard]]
     Task<int> lock() { return sem.acquire(); }
 
     /**
@@ -73,6 +74,7 @@ public:
      * @pre Current coroutine doesn't owns the mutex.
     */
     template<typename Rep, typename Period>
+    [[nodiscard]]
     Task<int> try_lock_for(const Duration<Rep, Period> &time_duration) {
         return sem.try_acquire_for(time_duration);
     }

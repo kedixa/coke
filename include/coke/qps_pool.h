@@ -40,6 +40,7 @@ public:
      * Acquire `count` license from QpsPool, the returned awaitable
      * object should be co awaited immediately.
     */
+    [[nodiscard]]
     AwaiterType get(unsigned count = 1) noexcept {
         return get_if(count, std::chrono::nanoseconds::max());
     }
@@ -50,6 +51,7 @@ public:
      * The awaiter returns `coke::SLEEP_CANCELED` immediately if the license
      * cannot be acquired in `ns`.
     */
+    [[nodiscard]]
     AwaiterType get_if(unsigned count, std::chrono::nanoseconds ns) noexcept;
 
 private:

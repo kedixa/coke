@@ -45,22 +45,26 @@ public:
 };
 
 
+[[nodiscard]]
 inline SleepAwaiter sleep(long sec, long nsec) {
     return SleepAwaiter(sec, nsec);
 }
 
 template<typename Rep, typename Period>
+[[nodiscard]]
 SleepAwaiter sleep(const std::chrono::duration<Rep, Period> &duration) {
     return SleepAwaiter(duration);
 }
 
 template<typename Rep, typename Period>
+[[nodiscard]]
 SleepAwaiter sleep(const std::string &name,
                    const std::chrono::duration<Rep, Period> &duration) {
     return SleepAwaiter(name, duration);
 }
 
 template<typename Rep, typename Period>
+[[nodiscard]]
 SleepAwaiter sleep(uint64_t id,
                    const std::chrono::duration<Rep, Period> &duration,
                    bool insert_head = false)
@@ -68,12 +72,14 @@ SleepAwaiter sleep(uint64_t id,
     return SleepAwaiter(id, duration, insert_head);
 }
 
+[[nodiscard]]
 inline SleepAwaiter sleep(uint64_t id, const InfiniteDuration &inf_duration,
                           bool insert_head = false)
 {
     return SleepAwaiter(id, inf_duration, insert_head);
 }
 
+[[nodiscard]]
 inline SleepAwaiter yield() {
     return SleepAwaiter(0, 0);
 }

@@ -86,6 +86,7 @@ public:
      *
      * @pre Current coroutine doesn't owns all the count.
     */
+    [[nodiscard]]
     Task<int> acquire() { return acquire_impl(detail::TimedWaitHelper{}); }
 
     /**
@@ -99,6 +100,7 @@ public:
      * @pre Current coroutine doesn't owns all the count.
     */
     template<typename Rep, typename Period>
+    [[nodiscard]]
     Task<int> try_acquire_for(const Duration<Rep, Period> &time_duration) {
         using std::chrono::nanoseconds;
         auto nano = std::chrono::duration_cast<nanoseconds>(time_duration);

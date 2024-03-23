@@ -140,6 +140,7 @@ public:
      * @pre Current coroutine doesn't owns the mutex in any mode(shared or
      *      exclusive).
     */
+    [[nodiscard]]
     Task<int> lock() { return lock_impl(detail::TimedWaitHelper{}); }
 
     /**
@@ -155,6 +156,7 @@ public:
      *      exclusive).
     */
     template<typename Rep, typename Period>
+    [[nodiscard]]
     Task<int> try_lock_for(const Duration<Rep, Period> &time_duration) {
         using std::chrono::nanoseconds;
         auto nano = std::chrono::duration_cast<nanoseconds>(time_duration);
@@ -169,6 +171,7 @@ public:
      * @pre Current coroutine doesn't owns the mutex in any mode(shared or
      *      exclusive).
     */
+    [[nodiscard]]
     Task<int> lock_shared() {
         detail::TimedWaitHelper h;
         return lock_shared_impl(h);
@@ -187,6 +190,7 @@ public:
      *      exclusive).
     */
     template<typename Rep, typename Period>
+    [[nodiscard]]
     Task<int> try_lock_shared_for(const Duration<Rep, Period> &time_duration) {
         using std::chrono::nanoseconds;
         auto nano = std::chrono::duration_cast<nanoseconds>(time_duration);

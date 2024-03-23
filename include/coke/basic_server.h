@@ -70,6 +70,7 @@ public:
     */
     TaskType *get_task() { return task; }
 
+    [[nodiscard]]
     AwaiterType reply() {
         // Each ServerContext must reply once
         assert(!replied);
