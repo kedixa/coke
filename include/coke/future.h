@@ -58,7 +58,7 @@ public:
         return wait_impl(TimedWaitHelper{});
     }
 
-    Task<int> wait_for(std::chrono::nanoseconds nsec) {
+    Task<int> wait_for(const NanoSec &nsec) {
         return wait_impl(TimedWaitHelper{nsec});
     }
 
@@ -69,7 +69,7 @@ public:
 
 protected:
     Task<int> wait_impl(TimedWaitHelper helper) {
-        constexpr TimedWaitHelper::Duration zero(0);
+        constexpr NanoSec zero(0);
 
         std::unique_lock<std::mutex> lk(mtx);
         if (is_broken)
@@ -206,7 +206,7 @@ public:
      * See Future::wait() for more infomation.
      */
     [[nodiscard]]
-    Task<int> wait_for(std::chrono::nanoseconds nsec) {
+    Task<int> wait_for(const NanoSec &nsec) {
         return state->wait_for(nsec);
     }
 

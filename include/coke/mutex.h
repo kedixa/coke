@@ -7,9 +7,6 @@ namespace coke {
 
 class TimedMutex {
 public:
-    template<typename Rep, typename Period>
-    using Duration = TimedSemaphore::Duration<Rep, Period>;
-
     /**
      * @brief Create a TimedMutex, the uid is automatically obtained from
      *        `coke::get_unique_id`.
@@ -64,19 +61,17 @@ public:
     Task<int> lock() { return sem.acquire(); }
 
     /**
-     * @brief Lock the mutex, block until success or `time_duration` timeout.
+     * @brief Lock the mutex, block until success or `nsec` timeout.
      *
      * @return See `lock`.
      *
-     * @param time_duration Max time to block, should be an instance of
-     *        std::chrono::duration.
+     * @param nsec Max time to block.
      *
      * @pre Current coroutine doesn't owns the mutex.
     */
-    template<typename Rep, typename Period>
     [[nodiscard]]
-    Task<int> try_lock_for(const Duration<Rep, Period> &time_duration) {
-        return sem.try_acquire_for(time_duration);
+    Task<int> try_lock_for(const NanoSec &nsec) {
+        return sem.try_acquire_for(nsec);
     }
 
 private:

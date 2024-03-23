@@ -42,7 +42,7 @@ public:
     */
     [[nodiscard]]
     AwaiterType get(unsigned count = 1) noexcept {
-        return get_if(count, std::chrono::nanoseconds::max());
+        return get_if(count, NanoSec::max());
     }
 
     /**
@@ -52,7 +52,7 @@ public:
      * cannot be acquired in `ns`.
     */
     [[nodiscard]]
-    AwaiterType get_if(unsigned count, std::chrono::nanoseconds ns) noexcept;
+    AwaiterType get_if(unsigned count, const NanoSec &nsec) noexcept;
 
 private:
     std::mutex mtx;

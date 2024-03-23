@@ -16,9 +16,6 @@ class SharedTimedMutex {
     };
 
 public:
-    template<typename Rep, typename Period>
-    using Duration = std::chrono::duration<Rep, Period>;
-
     using count_type = std::uint32_t;
 
     /**
@@ -145,22 +142,18 @@ public:
 
     /**
      * @brief Lock the mutex for exclusive ownership, block until success or
-     *        `time_duration` timeout.
+     *        `nsec` timeout.
      *
      * @return See `lock`.
      *
-     * @param time_duration Max time to block, should be an instance of
-     *        std::chrono::duration.
+     * @param nsec Max time to block.
      *
      * @pre Current coroutine doesn't owns the mutex in any mode(shared or
      *      exclusive).
     */
-    template<typename Rep, typename Period>
     [[nodiscard]]
-    Task<int> try_lock_for(const Duration<Rep, Period> &time_duration) {
-        using std::chrono::nanoseconds;
-        auto nano = std::chrono::duration_cast<nanoseconds>(time_duration);
-        return lock_impl(detail::TimedWaitHelper(nano));
+    Task<int> try_lock_for(const NanoSec &nsec) {
+        return lock_impl(detail::TimedWaitHelper(nsec));
     }
 
     /**
@@ -173,28 +166,23 @@ public:
     */
     [[nodiscard]]
     Task<int> lock_shared() {
-        detail::TimedWaitHelper h;
-        return lock_shared_impl(h);
+        return lock_shared_impl(detail::TimedWaitHelper{});
     }
 
     /**
      * @brief Lock the mutex for shared ownership, block until success or
-     *        `time_duration` timeout.
+     *        `nsec` timeout.
      *
-     * @param time_duration Max time to block, should be an instance of
-     *        std::chrono::duration.
+     * @param nsec Max time to block.
      *
      * @return See `lock`.
      *
      * @pre Current coroutine doesn't owns the mutex in any mode(shared or
      *      exclusive).
     */
-    template<typename Rep, typename Period>
     [[nodiscard]]
-    Task<int> try_lock_shared_for(const Duration<Rep, Period> &time_duration) {
-        using std::chrono::nanoseconds;
-        auto nano = std::chrono::duration_cast<nanoseconds>(time_duration);
-        return lock_shared_impl(detail::TimedWaitHelper(nano));
+    Task<int> try_lock_shared_for(const NanoSec &nsec) {
+        return lock_shared_impl(detail::TimedWaitHelper(nsec));
     }
 
 protected:

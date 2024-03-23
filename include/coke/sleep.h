@@ -23,25 +23,27 @@ static_assert(SLEEP_ABORTED == TOP_ABORTED);
 */
 struct InfiniteDuration { };
 
+using NanoSec = std::chrono::nanoseconds;
 
 class SleepAwaiter : public BasicAwaiter<int> {
-    static std::chrono::nanoseconds __plus(long sec, long nsec) {
+    static NanoSec __plus(long sec, long nsec) {
         using namespace std::chrono;
         return seconds(sec) + nanoseconds(nsec);
     }
 
 public:
-    SleepAwaiter() { emplace_result(SLEEP_SUCCESS); }
+    struct InnerTag { };
+
+    SleepAwaiter() : SleepAwaiter(InnerTag{}, SLEEP_SUCCESS) { }
     SleepAwaiter(long sec, long nsec) : SleepAwaiter(__plus(sec, nsec)) { }
 
-    SleepAwaiter(std::chrono::nanoseconds nsec);
-    SleepAwaiter(const std::string &name, std::chrono::nanoseconds nsec);
-    SleepAwaiter(uint64_t id, std::chrono::nanoseconds nsec,
-                 bool insert_head=false);
+    SleepAwaiter(const NanoSec &nsec);
+    SleepAwaiter(const std::string &name, const NanoSec &nsec);
+    SleepAwaiter(uint64_t id, const NanoSec &nsec, bool insert_head=false);
     SleepAwaiter(uint64_t id, InfiniteDuration, bool insert_head=false);
 
     // Inner use only
-    explicit SleepAwaiter(int s) { emplace_result(s); }
+    SleepAwaiter(InnerTag, int s) { emplace_result(s); }
 };
 
 
@@ -50,26 +52,21 @@ inline SleepAwaiter sleep(long sec, long nsec) {
     return SleepAwaiter(sec, nsec);
 }
 
-template<typename Rep, typename Period>
 [[nodiscard]]
-SleepAwaiter sleep(const std::chrono::duration<Rep, Period> &duration) {
-    return SleepAwaiter(duration);
+inline SleepAwaiter sleep(const NanoSec &nsec) {
+    return SleepAwaiter(nsec);
 }
 
-template<typename Rep, typename Period>
 [[nodiscard]]
-SleepAwaiter sleep(const std::string &name,
-                   const std::chrono::duration<Rep, Period> &duration) {
-    return SleepAwaiter(name, duration);
+inline
+SleepAwaiter sleep(const std::string &name, const NanoSec &nsec) {
+    return SleepAwaiter(name, nsec);
 }
 
-template<typename Rep, typename Period>
 [[nodiscard]]
-SleepAwaiter sleep(uint64_t id,
-                   const std::chrono::duration<Rep, Period> &duration,
-                   bool insert_head = false)
-{
-    return SleepAwaiter(id, duration, insert_head);
+inline
+SleepAwaiter sleep(uint64_t id, const NanoSec &nsec, bool insert_head = false) {
+    return SleepAwaiter(id, nsec, insert_head);
 }
 
 [[nodiscard]]
@@ -103,20 +100,19 @@ class TimedWaitHelper {
 public:
     using ClockType = std::chrono::steady_clock;
     using TimePoint = ClockType::time_point;
-    using Duration = ClockType::duration;
 
     constexpr static TimePoint max() { return TimePoint::max(); }
     static TimePoint now() { return ClockType::now(); }
 
     TimedWaitHelper() : abs_time(max()) { }
 
-    TimedWaitHelper(const std::chrono::nanoseconds &nano)
-        : abs_time(now() + std::chrono::duration_cast<Duration>(nano))
+    TimedWaitHelper(const NanoSec &nano)
+        : abs_time(now() + nano)
     { }
 
     bool infinite() const { return abs_time == max(); }
 
-    Duration time_left() const { return abs_time - now(); }
+    NanoSec time_left() const { return abs_time - now(); }
 
 private:
     TimePoint abs_time;
