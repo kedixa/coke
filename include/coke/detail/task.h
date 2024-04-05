@@ -35,13 +35,13 @@ private:
     bool detached{false};
 };
 
-template<SimpleType T>
-class Promise;
+template<Cokeable T>
+class CoPromise;
 
 
-template<SimpleType T>
+template<Cokeable T>
 struct FinalAwaiter {
-    using promise_type = Promise<T>;
+    using promise_type = CoPromise<T>;
     using void_handle = std::coroutine_handle<>;
     using handle_type = std::coroutine_handle<promise_type>;
 
@@ -63,9 +63,9 @@ private:
 };
 
 
-template<SimpleType T>
+template<Cokeable T>
 struct TaskAwaiter {
-    using promise_type = Promise<T>;
+    using promise_type = CoPromise<T>;
     using handle_type = std::coroutine_handle<promise_type>;
 
     TaskAwaiter(handle_type hdl) : hdl(hdl) { }
@@ -78,8 +78,8 @@ struct TaskAwaiter {
     }
 
     template<typename U>
-    auto await_suspend(std::coroutine_handle<Promise<U>> h) {
-        Promise<T> &p = hdl.promise();
+    auto await_suspend(std::coroutine_handle<CoPromise<U>> h) {
+        CoPromise<T> &p = hdl.promise();
         p.set_previous_handle(h);
         p.set_series(h.promise().get_series());
         return hdl;
@@ -90,12 +90,12 @@ private:
 };
 
 
-// clang deduce failed if use SimpleType
+// clang deduce failed if use Cokeable
 
 template<typename T=void>
 class Task {
 public:
-    using promise_type = Promise<T>;
+    using promise_type = CoPromise<T>;
     using handle_type = std::coroutine_handle<promise_type>;
 
     Task() { }
@@ -169,9 +169,9 @@ private:
 };
 
 
-template<SimpleType T>
-class Promise : public PromiseBase {
-    using handle_type = std::coroutine_handle<Promise<T>>;
+template<Cokeable T>
+class CoPromise : public PromiseBase {
+    using handle_type = std::coroutine_handle<CoPromise<T>>;
 
 public:
     auto get_return_object() noexcept {
@@ -194,8 +194,8 @@ private:
 
 
 template<>
-class Promise<void> : public PromiseBase {
-    using handle_type = std::coroutine_handle<Promise<void>>;
+class CoPromise<void> : public PromiseBase {
+    using handle_type = std::coroutine_handle<CoPromise<void>>;
 
 public:
     auto get_return_object() noexcept {

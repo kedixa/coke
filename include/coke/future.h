@@ -309,7 +309,7 @@ private:
 
 namespace detail {
 
-template<SimpleType T>
+template<Cokeable T>
 Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
     if constexpr (std::is_void_v<T>) {
         co_await task;
@@ -329,7 +329,7 @@ Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
  * @brief Create coke::Future from coke::Task, the task will be started
  *        immediately.
 */
-template<SimpleType T>
+template<Cokeable T>
 Future<T> create_future(Task<T> &&task) {
     Promise<T> promise;
     Future<T> future = promise.get_future();

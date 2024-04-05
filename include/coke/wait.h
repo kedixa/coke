@@ -11,7 +11,7 @@
 
 namespace coke {
 
-template<SimpleType T>
+template<Cokeable T>
 T sync_wait(Task<T> &&task) {
     T res;
     std::latch lt(1);
@@ -28,7 +28,7 @@ inline void sync_wait(Task<void> &&task) {
     lt.wait();
 }
 
-template<SimpleType T>
+template<Cokeable T>
 std::vector<T> sync_wait(std::vector<Task<T>> &&tasks) {
     std::size_t n = tasks.size();
     std::vector<T> vec(n);
@@ -69,7 +69,7 @@ inline void sync_wait(std::vector<Task<void>> &&tasks) {
     lt.wait();
 }
 
-template<SimpleType T, SimpleType... Ts>
+template<Cokeable T, Cokeable... Ts>
     requires (std::conjunction_v<std::is_same<T, Ts>...> && !std::is_same_v<T, void>)
 std::vector<T> sync_wait(Task<T> &&first, Task<Ts>&&... others) {
     std::vector<Task<T>> tasks;
@@ -80,7 +80,7 @@ std::vector<T> sync_wait(Task<T> &&first, Task<Ts>&&... others) {
     return sync_wait(std::move(tasks));
 }
 
-template<SimpleType... Ts>
+template<Cokeable... Ts>
     requires std::conjunction_v<std::is_same<void, Ts>...>
 void sync_wait(Task<> &&first, Task<Ts>&&... others) {
     std::vector<Task<>> tasks;
@@ -122,7 +122,7 @@ auto sync_wait(std::vector<A> &&as) {
 }
 
 
-template<SimpleType T, SimpleType... Ts>
+template<Cokeable T, Cokeable... Ts>
     requires (std::conjunction_v<std::is_same<T, Ts>...> && !std::is_same_v<T, void>)
 [[nodiscard]]
 Task<std::vector<T>> async_wait(Task<T> &&first, Task<Ts>&&... others) {
@@ -134,7 +134,7 @@ Task<std::vector<T>> async_wait(Task<T> &&first, Task<Ts>&&... others) {
     return detail::async_wait_helper(std::move(tasks));
 }
 
-template<SimpleType... Ts>
+template<Cokeable... Ts>
     requires std::conjunction_v<std::is_same<void, Ts>...>
 [[nodiscard]]
 Task<> async_wait(Task<> &&first, Task<Ts>&&... others) {
@@ -146,7 +146,7 @@ Task<> async_wait(Task<> &&first, Task<Ts>&&... others) {
     return detail::async_wait_helper(std::move(tasks));
 }
 
-template<SimpleType T>
+template<Cokeable T>
 [[nodiscard]]
 Task<std::vector<T>> async_wait(std::vector<Task<T>> &&tasks) {
     return detail::async_wait_helper(std::move(tasks));

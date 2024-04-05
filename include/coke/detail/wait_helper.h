@@ -11,7 +11,7 @@
 
 namespace coke::detail {
 
-template<SimpleType T>
+template<Cokeable T>
 Task<> sync_wait_helper(Task<T> task, T &res, std::latch &lt) {
     res = co_await task;
     lt.count_down();
@@ -23,7 +23,7 @@ inline Task<> sync_wait_helper(Task<void> task, std::latch &lt) {
 }
 
 
-template<SimpleType T>
+template<Cokeable T>
 Task<> async_wait_helper(Task<T> task, T &res, Latch &lt) {
     res = co_await task;
     lt.count_down();
@@ -34,7 +34,7 @@ inline Task<> async_wait_helper(Task<void> task, Latch &lt) {
     lt.count_down();
 }
 
-template<SimpleType T>
+template<Cokeable T>
 Task<std::vector<T>> async_wait_helper(std::vector<Task<T>> tasks) {
     std::size_t n = tasks.size();
     std::vector<T> vec(n);

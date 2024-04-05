@@ -9,14 +9,17 @@
 namespace coke {
 
 /**
- * This concept indicates which types can be use to instantiate
- * coke::Task template. Only SimpleType can be awaited.
+ * Cokeable concept is used to indicate type constraints in coke, such as
+ * Task<T>, Future<T>, BasicAwaiter<T> ...
 */
 template<typename T>
-concept SimpleType = (std::movable<T> &&
-                     std::is_same_v<T, std::remove_cvref_t<T>> &&
-                     !std::is_array_v<T>) ||
-                     std::is_void_v<T>;
+concept Cokeable = (
+    std::is_object_v<T> &&
+    (std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>) &&
+    std::is_destructible_v<T> &&
+    std::is_same_v<T, std::remove_cvref_t<T>> &&
+    !std::is_array_v<T>
+) || std::is_void_v<T>;
 
 /**
  * This concept is used to provide constraints on the parameters of
