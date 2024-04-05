@@ -10,6 +10,7 @@
 #include <getopt.h>
 
 #include "coke/coke.h"
+#include "workflow/WFTaskFactory.h"
 
 using std::chrono::microseconds;
 std::atomic<std::size_t> current;
@@ -20,7 +21,7 @@ constexpr std::size_t pool_size = 10;
 std::string name_pool[pool_size];
 
 std::size_t total{10000};
-int concurrency = 128;
+int concurrency = 32;
 int max_secs_per_test = 5;
 int compute_threads = -1;
 bool yes = false;
@@ -57,6 +58,25 @@ coke::Task<> count_down(uint64_t id, std::chrono::seconds timeout) {
     stop_flag.notify_all();
 }
 
+coke::Task<> bench_wf_go_name(std::size_t max) {
+    std::size_t i;
+
+    auto creater = [i, max](WFRepeaterTask *) mutable -> SubTask * {
+        if (next(i))
+            return WFTaskFactory::create_go_task(name_pool[i%max], do_calculate);
+        return nullptr;
+    };
+
+    coke::GenericAwaiter<void> g;
+    WFRepeaterTask *task = WFTaskFactory::create_repeater_task(creater,
+        [&g](WFRepeaterTask *) {
+            g.done();
+        }
+    );
+    g.take_over(task);
+    co_await g;
+}
+
 coke::Task<> bench_go_name(std::size_t max) {
     std::size_t i;
 
@@ -74,6 +94,18 @@ coke::Task<> bench_switch_name(std::size_t max) {
         co_await coke::switch_go_thread(name);
         do_calculate();
     }
+}
+
+coke::Task<> bench_wf_go_one_name() {
+    return bench_wf_go_name(1);
+}
+
+coke::Task<> bench_wf_go_five_name() {
+    return bench_wf_go_name(5);
+}
+
+coke::Task<> bench_wf_go_ten_name() {
+    return bench_wf_go_name(10);
 }
 
 coke::Task<> bench_go_one_name() {
@@ -165,6 +197,11 @@ int main(int argc, char *argv[]) {
     head();
 
 #define DO_BENCHMARK(func) coke::sync_wait(do_benchmark(#func, bench_ ## func))
+    DO_BENCHMARK(wf_go_one_name);
+    DO_BENCHMARK(wf_go_five_name);
+    DO_BENCHMARK(wf_go_ten_name);
+    delimiter();
+
     DO_BENCHMARK(go_one_name);
     DO_BENCHMARK(go_five_name);
     DO_BENCHMARK(go_ten_name);
@@ -181,7 +218,7 @@ int main(int argc, char *argv[]) {
 void usage(const char *arg0) {
     std::cout << arg0 << " [OPTION]...\n" <<
 R"usage(
-    -c concurrency, start `concurrency` series to benchmark go, default 128
+    -c concurrency, start `concurrency` series to benchmark go, default 32
     -n n,           set compute threads to n, default -1
     -m sec,         run at most `sec` seconds for each case, default 5
     -t total,       run at most `total` timer for each case, default 10000
