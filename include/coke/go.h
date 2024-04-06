@@ -1,74 +1,194 @@
 #ifndef COKE_GO_H
 #define COKE_GO_H
 
-#include <optional>
-#include <functional>
-#include <string>
 #include <string_view>
 
-#include "coke/detail/basic_concept.h"
-#include "coke/detail/awaiter_base.h"
+#include "coke/detail/go_task.h"
 
 namespace coke {
 
-namespace detail {
+// Default ExecQueue name when use coke::go without name
+constexpr std::string_view GO_DEFAULT_QUEUE{"coke:go"};
 
-// Some SSO std::string has 15 chars locally, so use a short and meaningful name
-inline static constexpr std::string_view DFT_QUEUE{"coke:dft-que"};
-
-SubTask *create_go_task(const std::string &queue, std::function<void()> &&func);
-
-} // namespace detail
-
-template<SimpleType R>
-class GoAwaiter : public BasicAwaiter<R> {
+template<typename T>
+class GoAwaiter : public AwaiterBase {
 public:
-    GoAwaiter(const std::string &queue, std::function<R()> func) {
-        AwaiterInfo<R> *info = this->get_info();
+    template<typename FUNC, typename... ARGS>
+        requires std::invocable<FUNC, ARGS...>
+    GoAwaiter(ExecQueue *queue, Executor *executor,
+              FUNC &&func, ARGS&&... args)
+    {
+        std::function<T()> go(
+            [func=std::forward<FUNC>(func), ...args=std::forward<ARGS>(args)]() mutable {
+                return std::invoke(std::forward<std::decay_t<FUNC>>(func),
+                                   std::forward<std::decay_t<ARGS>>(args)...);
+            }
+        );
 
-        auto go = [info, func = std::move(func)] () {
-            auto *awaiter = info->template get_awaiter<GoAwaiter<R>>();
+        auto *task = new detail::GoTask<T>(queue, executor, std::move(go));
+        task->awaiter = this;
 
-            if constexpr (!std::is_same_v<R, void>)
-                awaiter->emplace_result(func());
-            else
-                func();
-
-            awaiter->done();
-        };
-
-        this->set_task(detail::create_go_task(queue, std::move(go)));
+        this->awaiter_ptr = &(task->awaiter);
+        this->res_ptr = &(task->result);
+        this->set_task(task);
     }
+
+    GoAwaiter(GoAwaiter &&that)
+        : AwaiterBase(std::move(that)),
+          awaiter_ptr(that.awaiter_ptr),
+          res_ptr(that.res_ptr)
+    {
+        that.awaiter_ptr = nullptr;
+        that.res_ptr = nullptr;
+
+        if (this->awaiter_ptr)
+            *(this->awaiter_ptr) = this;
+    }
+
+    GoAwaiter &operator= (GoAwaiter &&that) {
+        if (this != &that) {
+            this->AwaiterBase::operator=(std::move(that));
+
+            auto pa = this->awaiter_ptr;
+            this->awaiter_ptr = that.awaiter_ptr;
+            that.awaiter_ptr = pa;
+
+            auto pr = this->res_ptr;
+            this->res_ptr = that.res_ptr;
+            that.res_ptr = pr;
+
+            if (this->awaiter_ptr)
+                *(this->awaiter_ptr) = this;
+
+            if (that.awaiter_ptr)
+                *(that.awaiter_ptr) = &that;
+        }
+
+        return *this;
+    }
+
+    T await_resume() {
+        return std::move(res_ptr->value());
+    }
+
+private:
+    AwaiterBase **awaiter_ptr;
+    std::optional<T> *res_ptr;
+};
+
+template<>
+class GoAwaiter<void> : public AwaiterBase {
+public:
+    template<typename FUNC, typename... ARGS>
+        requires std::invocable<FUNC, ARGS...>
+    GoAwaiter(ExecQueue *queue, Executor *executor,
+              FUNC &&func, ARGS&&... args)
+    {
+        std::function<void()> go(
+            [func=std::forward<FUNC>(func), ...args=std::forward<ARGS>(args)]() mutable {
+                return std::invoke(std::forward<std::decay_t<FUNC>>(func),
+                                   std::forward<std::decay_t<ARGS>>(args)...);
+            }
+        );
+
+        auto *task = new detail::GoTask<void>(queue, executor, std::move(go));
+        task->awaiter = this;
+
+        this->awaiter_ptr = &(task->awaiter);
+        this->set_task(task);
+    }
+
+    GoAwaiter(GoAwaiter &&that)
+        : AwaiterBase(std::move(that)),
+          awaiter_ptr(that.awaiter_ptr)
+    {
+        that.awaiter_ptr = nullptr;
+
+        if (this->awaiter_ptr)
+            *(this->awaiter_ptr) = this;
+    }
+
+    GoAwaiter &operator= (GoAwaiter &&that) {
+        if (this != &that) {
+            this->AwaiterBase::operator=(std::move(that));
+
+            auto pa = this->awaiter_ptr;
+            this->awaiter_ptr = that.awaiter_ptr;
+            that.awaiter_ptr = pa;
+
+            if (this->awaiter_ptr)
+                *(this->awaiter_ptr) = this;
+
+            if (that.awaiter_ptr)
+                *(that.awaiter_ptr) = &that;
+        }
+
+        return *this;
+    }
+
+    void await_resume() { }
+
+private:
+    AwaiterBase **awaiter_ptr;
 };
 
 
 template<typename FUNC, typename... ARGS>
     requires std::invocable<FUNC, ARGS...>
 [[nodiscard]]
-auto go(const std::string &queue, FUNC &&func, ARGS&& ...args) {
+auto go(ExecQueue *queue, Executor *executor,
+        FUNC &&func, ARGS&&... args) {
     using result_t = std::remove_cvref_t<std::invoke_result_t<FUNC, ARGS...>>;
-    auto &&f = std::bind(std::forward<FUNC>(func), std::forward<ARGS>(args)...);
 
-    return GoAwaiter<result_t>(queue, std::move(f));
+    return GoAwaiter<result_t>(queue, executor,
+                               std::forward<FUNC>(func),
+                               std::forward<ARGS>(args)...);
 }
 
 template<typename FUNC, typename... ARGS>
     requires std::invocable<FUNC, ARGS...>
 [[nodiscard]]
-auto go(FUNC &&func, ARGS&& ...args) {
-    return go(std::string(detail::DFT_QUEUE), std::forward<FUNC>(func), std::forward<ARGS>(args)...);
+auto go(const std::string &name,
+        FUNC &&func, ARGS&&... args) {
+    auto *queue = detail::get_exec_queue(name);
+    auto *executor = detail::get_compute_executor();
+
+    return go(queue, executor,
+              std::forward<FUNC>(func),
+              std::forward<ARGS>(args)...);
 }
 
-// Switch to a thread in the go thread pool with `name`
+template<typename FUNC, typename... ARGS>
+    requires std::invocable<FUNC, ARGS...>
+[[nodiscard]]
+auto go(FUNC &&func, ARGS&&... args) {
+    return go(std::string(GO_DEFAULT_QUEUE),
+              std::forward<FUNC>(func),
+              std::forward<ARGS>(args)...);
+}
+
+/**
+ * @brief Switch to a thread with `queue` and `executor`
+*/
+[[nodiscard]]
+inline auto switch_go_thread(ExecQueue *queue, Executor *executor) {
+    return go(queue, executor, []{});
+}
+
+/**
+ * @brief Switch to a thread in the compute thread pool with `name`
+*/
 [[nodiscard]]
 inline auto switch_go_thread(const std::string &name) {
     return go(name, []{});
 }
 
-// Switch to a thread in the go thread pool with default name
+/**
+ * @brief Switch to a thread in the compute thread pool with default name
+*/
 [[nodiscard]]
 inline auto switch_go_thread() {
-    return go(std::string(detail::DFT_QUEUE), []{});
+    return go([]{});
 }
 
 } // namespace coke

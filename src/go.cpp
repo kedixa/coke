@@ -1,16 +1,24 @@
 #include "coke/go.h"
 
-#include "workflow/WFTask.h"
-#include "workflow/WFTaskFactory.h"
+#include "workflow/WFGlobal.h"
 
-namespace coke {
+namespace coke::detail {
 
-namespace detail {
-
-SubTask *create_go_task(const std::string &queue_name, std::function<void()> &&func) {
-    return WFTaskFactory::create_go_task(queue_name, std::move(func));
+ExecQueue *get_exec_queue(const std::string &name) {
+    return WFGlobal::get_exec_queue(name);
 }
 
-} // namespace detail
+Executor *get_compute_executor() {
+    return WFGlobal::get_compute_executor();
+}
 
-} // namespace coke
+SubTask *GoTaskBase::done() {
+    SeriesWork *series = series_of(this);
+
+    awaiter->done();
+
+    delete this;
+    return series->pop();
+}
+
+} // namespace coke::detail
