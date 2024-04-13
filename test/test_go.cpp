@@ -45,7 +45,8 @@ coke::Task<> test_more() {
 
     {
         auto task2 = std::move(task);
-        std::string str = co_await task2;
+        // std::move is not necessary, here is to avoid the bug of gcc 11
+        std::string str = co_await std::move(task2);
 
         EXPECT_EQ(str, std::string(80, 's'));
     }
