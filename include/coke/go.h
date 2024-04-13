@@ -20,124 +20,58 @@ public:
     {
         std::function<T()> go(
             [func=std::forward<FUNC>(func), ...args=std::forward<ARGS>(args)]() mutable {
-                return std::invoke(std::forward<std::decay_t<FUNC>>(func),
-                                   std::forward<std::decay_t<ARGS>>(args)...);
+                return std::invoke(func, std::unwrap_reference_t<ARGS>(args)...);
             }
         );
 
-        auto *task = new detail::GoTask<T>(queue, executor, std::move(go));
-        task->awaiter = this;
+        this->go_task = new detail::GoTask<T>(queue, executor, std::move(go));
+        go_task->set_awaiter(this);
 
-        this->awaiter_ptr = &(task->awaiter);
-        this->res_ptr = &(task->result);
-        this->set_task(task);
+        this->set_task(go_task);
     }
 
     GoAwaiter(GoAwaiter &&that)
         : AwaiterBase(std::move(that)),
-          awaiter_ptr(that.awaiter_ptr),
-          res_ptr(that.res_ptr)
+          go_task(that.go_task)
     {
-        that.awaiter_ptr = nullptr;
-        that.res_ptr = nullptr;
+        that.go_task = nullptr;
 
-        if (this->awaiter_ptr)
-            *(this->awaiter_ptr) = this;
+        if (this->go_task)
+            this->go_task->set_awaiter(this);
     }
 
     GoAwaiter &operator= (GoAwaiter &&that) {
         if (this != &that) {
             this->AwaiterBase::operator=(std::move(that));
 
-            auto pa = this->awaiter_ptr;
-            this->awaiter_ptr = that.awaiter_ptr;
-            that.awaiter_ptr = pa;
+            detail::GoTask<T> *task = this->go_task;
+            this->go_task = that.go_task;
+            that.go_task = task;
 
-            auto pr = this->res_ptr;
-            this->res_ptr = that.res_ptr;
-            that.res_ptr = pr;
+            if (this->go_task)
+                this->go_task->set_awaiter(this);
 
-            if (this->awaiter_ptr)
-                *(this->awaiter_ptr) = this;
-
-            if (that.awaiter_ptr)
-                *(that.awaiter_ptr) = &that;
+            if (that.go_task)
+                that.go_task->set_awaiter(&that);
         }
 
         return *this;
     }
 
     T await_resume() {
-        return std::move(res_ptr->value());
+        if constexpr (!std::is_same_v<T, void>)
+            return std::move(go_task->get_result());
     }
 
 private:
-    AwaiterBase **awaiter_ptr;
-    std::optional<T> *res_ptr;
-};
-
-template<>
-class GoAwaiter<void> : public AwaiterBase {
-public:
-    template<typename FUNC, typename... ARGS>
-        requires std::invocable<FUNC, ARGS...>
-    GoAwaiter(ExecQueue *queue, Executor *executor,
-              FUNC &&func, ARGS&&... args)
-    {
-        std::function<void()> go(
-            [func=std::forward<FUNC>(func), ...args=std::forward<ARGS>(args)]() mutable {
-                return std::invoke(std::forward<std::decay_t<FUNC>>(func),
-                                   std::forward<std::decay_t<ARGS>>(args)...);
-            }
-        );
-
-        auto *task = new detail::GoTask<void>(queue, executor, std::move(go));
-        task->awaiter = this;
-
-        this->awaiter_ptr = &(task->awaiter);
-        this->set_task(task);
-    }
-
-    GoAwaiter(GoAwaiter &&that)
-        : AwaiterBase(std::move(that)),
-          awaiter_ptr(that.awaiter_ptr)
-    {
-        that.awaiter_ptr = nullptr;
-
-        if (this->awaiter_ptr)
-            *(this->awaiter_ptr) = this;
-    }
-
-    GoAwaiter &operator= (GoAwaiter &&that) {
-        if (this != &that) {
-            this->AwaiterBase::operator=(std::move(that));
-
-            auto pa = this->awaiter_ptr;
-            this->awaiter_ptr = that.awaiter_ptr;
-            that.awaiter_ptr = pa;
-
-            if (this->awaiter_ptr)
-                *(this->awaiter_ptr) = this;
-
-            if (that.awaiter_ptr)
-                *(that.awaiter_ptr) = &that;
-        }
-
-        return *this;
-    }
-
-    void await_resume() { }
-
-private:
-    AwaiterBase **awaiter_ptr;
+    detail::GoTask<T> *go_task;
 };
 
 
 template<typename FUNC, typename... ARGS>
     requires std::invocable<FUNC, ARGS...>
 [[nodiscard]]
-auto go(ExecQueue *queue, Executor *executor,
-        FUNC &&func, ARGS&&... args) {
+auto go(ExecQueue *queue, Executor *executor, FUNC &&func, ARGS&&... args) {
     using result_t = std::remove_cvref_t<std::invoke_result_t<FUNC, ARGS...>>;
 
     return GoAwaiter<result_t>(queue, executor,
@@ -148,8 +82,7 @@ auto go(ExecQueue *queue, Executor *executor,
 template<typename FUNC, typename... ARGS>
     requires std::invocable<FUNC, ARGS...>
 [[nodiscard]]
-auto go(const std::string &name,
-        FUNC &&func, ARGS&&... args) {
+auto go(const std::string &name, FUNC &&func, ARGS&&... args) {
     auto *queue = detail::get_exec_queue(name);
     auto *executor = detail::get_compute_executor();
 

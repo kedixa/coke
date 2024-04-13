@@ -28,10 +28,13 @@ public:
     int get_state() const { return this->state; }
     int get_error() const { return this->error; }
 
+    AwaiterBase *get_awaiter() const { return awaiter; }
+    void set_awaiter(AwaiterBase *awaiter) { this->awaiter = awaiter; }
+
 private:
     virtual SubTask *done() override;
 
-public:
+protected:
     AwaiterBase *awaiter;
 };
 
@@ -39,36 +42,43 @@ template<typename T>
 class GoTask : public GoTaskBase {
 public:
     GoTask(ExecQueue *queue, Executor *executor,
-           std::function<T()> &&go)
-        : GoTaskBase(queue, executor), go(std::move(go))
+           std::function<T()> &&func)
+        : GoTaskBase(queue, executor), func(std::move(func))
     { }
 
-    std::optional<T> result;
+    void set_function(std::function<T()> func) { this->func = std::move(func); }
+
+    T &get_result() { return result.value(); }
 
 private:
     virtual void execute() override {
-        if (go)
-            result.emplace(go());
+        if (func)
+            result.emplace(func());
     }
 
-    std::function<T()> go;
+private:
+    std::function<T()> func;
+    std::optional<T> result;
 };
 
 template<>
 class GoTask<void> : public GoTaskBase {
 public:
     GoTask(ExecQueue *queue, Executor *executor,
-           std::function<void()> &&go)
-        : GoTaskBase(queue, executor), go(std::move(go))
+           std::function<void()> &&func)
+        : GoTaskBase(queue, executor), func(std::move(func))
     { }
+
+    void set_function(std::function<void()> func) { this->func = std::move(func); }
 
 private:
     virtual void execute() override {
-        if (go)
-            go();
+        if (func)
+            func();
     }
 
-    std::function<void()> go;
+private:
+    std::function<void()> func;
 };
 
 } // namespace coke::detail
