@@ -19,6 +19,7 @@ set(ALL_TESTS
     test_shared_mutex
     test_dag
     test_concept
+    test_parallel
 )
 
 include (../cmake/find-workflow.cmake)
