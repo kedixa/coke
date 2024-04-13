@@ -21,3 +21,13 @@ def create_example_target(example_name, extra_deps = None):
         srcs = [example_name + ".cpp"],
         deps = ["//:common"] + extra_deps
     )
+
+def create_benchmark_target(name, extra_deps = None):
+    if extra_deps == None:
+        extra_deps = []
+
+    cc_binary(
+        name = name,
+        srcs = [name + ".cpp"],
+        deps = ["//:common"] + extra_deps,
+    )

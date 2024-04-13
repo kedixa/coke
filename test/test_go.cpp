@@ -9,6 +9,62 @@ int add(int a, int b) { return a + b; }
 template<typename T>
 T ref(T &a, T b) { a = b; return b; }
 
+template<typename T>
+void swap(T &a, T &b) {
+    std::string c(std::move(a));
+    a = std::move(b);
+    b = std::move(c);
+}
+
+struct Callable {
+    Callable() { }
+    Callable(const std::string &s) : s(s) { }
+
+    int operator()() & { return 1; }
+    int operator()() && { return 2; }
+
+    std::string call(const std::string &t) {
+        return s + t;
+    }
+
+    std::string s;
+};
+
+coke::Task<> test_more() {
+    Callable callable;
+
+    int ret1 = co_await coke::go(callable);
+    int ret2 = co_await coke::go(Callable{});
+
+    // always call as lvalue
+    EXPECT_EQ(ret1, 1);
+    EXPECT_EQ(ret2, 1);
+
+    Callable callable2(std::string(50, 's'));
+    auto task = coke::go(&Callable::call, &callable2, std::string(30, 's'));
+
+    {
+        auto task2 = std::move(task);
+        // std::move is not necessary, here is to avoid the bug of gcc 11
+        std::string str = co_await std::move(task2);
+
+        EXPECT_EQ(str, std::string(80, 's'));
+    }
+
+    std::string a(100, 'a');
+    std::string b(100, 'b');
+
+    co_await coke::go(swap<std::string>, std::ref(a), std::ref(b));
+
+    EXPECT_EQ(a, std::string(100, 'b'));
+    EXPECT_EQ(b, std::string(100, 'a'));
+
+    co_await coke::switch_go_thread("name");
+
+    EXPECT_EQ(a, std::string(100, 'b'));
+    EXPECT_EQ(b, std::string(100, 'a'));
+}
+
 TEST(GO, simple) {
     coke::sync_wait(
         coke::go(simple),
@@ -26,6 +82,10 @@ TEST(GO, ref) {
     std::vector<int> b{1, 2, 3, 4};
     coke::sync_wait(coke::go(ref<std::vector<int>>, std::ref(a), b));
     EXPECT_EQ(a, b);
+}
+
+TEST(GO, more) {
+    coke::sync_wait(test_more());
 }
 
 int main(int argc, char *argv[]) {

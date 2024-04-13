@@ -1,15 +1,4 @@
-cc_binary(
-    name = "bench_timer",
-    srcs = ["bench_timer.cpp"],
-    deps = [
-        "//:common",
-    ],
-)
+load("//:build.bzl", "create_benchmark_target")
 
-cc_binary(
-    name = "bench_go",
-    srcs = ["bench_go.cpp"],
-    deps = [
-        "//:common",
-    ],
-)
+create_benchmark_target("bench_timer")
+create_benchmark_target("bench_go")

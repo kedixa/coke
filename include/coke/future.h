@@ -19,14 +19,10 @@ constexpr int FUTURE_STATE_READY    = 0;
 constexpr int FUTURE_STATE_TIMEOUT  = 1;
 constexpr int FUTURE_STATE_ABORTED  = 2;
 
-// TODO Type restrictions can be relaxed.
-template<typename Res>
-concept FutureResType = std::copyable<Res> || std::is_void_v<Res>;
-
-template<FutureResType Res>
+template<Cokeable Res>
 class Future;
 
-template<FutureResType Res>
+template<Cokeable Res>
 class Promise;
 
 namespace detail {
@@ -145,7 +141,7 @@ public:
 } // namespace detail
 
 
-template<FutureResType Res>
+template<Cokeable Res>
 class Future {
     using State = detail::FutureState<Res>;
 
@@ -235,7 +231,7 @@ private:
     std::shared_ptr<State> state;
 }; // class Future
 
-template<FutureResType Res>
+template<Cokeable Res>
 class Promise {
     using State = detail::FutureState<Res>;
 
@@ -309,7 +305,7 @@ private:
 
 namespace detail {
 
-template<SimpleType T>
+template<Cokeable T>
 Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
     if constexpr (std::is_void_v<T>) {
         co_await task;
@@ -329,7 +325,7 @@ Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
  * @brief Create coke::Future from coke::Task, the task will be started
  *        immediately.
 */
-template<SimpleType T>
+template<Cokeable T>
 Future<T> create_future(Task<T> &&task) {
     Promise<T> promise;
     Future<T> future = promise.get_future();

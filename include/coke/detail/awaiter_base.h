@@ -65,33 +65,43 @@ public:
         // `*this` maybe destroyed after suspend
     }
 
-protected:
     /**
-     * `suspend` will be called in `await_suspend`.
-     * series: the coroutine is running on this series now.
-     * is_new: this is the first awaiter in this coroutine,
-     *         this->subtask is the first task of series,
-     *         series is not running now.
+     * @brief This function is only for developers, we make it public just
+     *        for convenience, and users should not called it directly.
+     *        When this->subtask finishes, call this->done() to wake up the
+     *        coroutine.
+     *
+     * @pre this->subtask is done.
     */
-    virtual void suspend(void *series, bool is_new = false);
-
-    /**
-     * This function will be called when this->subtask finishes.
-     * Since we are in the callback function of subtask at this time,
-     * we temporarily prohibit this function from throwing an exception.
-    */
-    virtual void done() noexcept {
+    virtual void done() {
         subtask = nullptr;
         hdl.resume();
     }
 
+protected:
     /**
-     * `set_task` can be called at most once, if not, this awaiter
-     * will return true in `await_ready` and wait nothing.
-     * 
-     * task:    A SubTask which will call this->done in it's callback.
-     * in_series: Whether task is already in series, for example
-     *          reply_task is in server's series.
+     * @brief The `suspend` will be called in `await_suspend`, child classes
+     *        can override this function to do something else.
+     *
+     * @param series The coroutine is running on this series.
+     *
+     * @param is_new Whether this is the first awaiter in this coroutine. If
+     *        `is_new` is true, this->subtask is the first task of the series,
+     *        and the series is not started now.
+    */
+    virtual void suspend(void *series, bool is_new = false);
+
+    /**
+     * @brief Set `subtask` to this awaiter, `set_task` can be called at most
+     *        once, if not, co_await this awaiter will do nothing.
+     *
+     * @param subtask An instance of SubTask's child class.
+     *
+     * @param in_series Whether `subtask` is already in current series, if true,
+     *        it will not push back to series again, for example, reply_task is
+     *        in the server's series.
+     *        It is bad behavious if `in_series` is true but not in current
+     *        coroutine's series.
     */
     void set_task(SubTask *subtask, bool in_series = false) noexcept {
         this->subtask = subtask;
@@ -104,10 +114,10 @@ protected:
     bool in_series{false};
 };
 
-template<SimpleType T>
+template<Cokeable T>
 class BasicAwaiter;
 
-template<SimpleType T>
+template<Cokeable T>
 struct AwaiterInfo {
     AwaiterInfo(AwaiterBase *ptr) : ptr(ptr) { }
     AwaiterInfo(const AwaiterBase &) = delete;
@@ -142,7 +152,7 @@ private:
     AwaiterBase *ptr = nullptr;
 };
 
-template<SimpleType T>
+template<Cokeable T>
 class BasicAwaiter : public AwaiterBase {
 public:
     BasicAwaiter() : info(new AwaiterInfo<T>(this)) { }
