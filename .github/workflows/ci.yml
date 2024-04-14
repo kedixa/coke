@@ -29,7 +29,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y libgtest-dev valgrind
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build With GCC
       env:
         CC: ${{ matrix.compiler.cc }}
@@ -52,8 +52,8 @@ jobs:
         apt install -y software-properties-common
         add-apt-repository ppa:ubuntu-toolchain-r/test
         apt install -y gcc-11 g++-11 libgtest-dev libssl-dev git cmake
-    - uses: actions/checkout@v3
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
         repository: sogou/workflow
         ref: ${{ env.wf_tag }}
@@ -75,8 +75,8 @@ jobs:
     - name: Prepare
       run: |
         sudo dnf install -y gcc gcc-c++ openssl openssl-devel gtest gtest-devel valgrind git cmake
-    - uses: actions/checkout@v3
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
         repository: sogou/workflow
         ref: ${{ env.wf_tag }}
