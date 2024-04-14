@@ -12,10 +12,9 @@
 #include "coke/coke.h"
 #include "workflow/WFTaskFactory.h"
 
-using std::chrono::microseconds;
-std::atomic<std::size_t> current;
-std::atomic<bool> stop_flag;
-std::atomic<long long> global_total;
+alignas(64) std::atomic<bool> stop_flag;
+alignas(64) std::atomic<std::size_t> current;
+alignas(64) std::atomic<long long> global_total;
 
 constexpr std::size_t pool_size = 10;
 std::string name_pool[pool_size];
@@ -96,47 +95,29 @@ coke::Task<> bench_switch_name(std::size_t max) {
     }
 }
 
-coke::Task<> bench_wf_go_one_name() {
-    return bench_wf_go_name(1);
-}
+coke::Task<> bench_wf_go_one_name() { return bench_wf_go_name(1); }
 
-coke::Task<> bench_wf_go_five_name() {
-    return bench_wf_go_name(5);
-}
+coke::Task<> bench_wf_go_five_name() { return bench_wf_go_name(5); }
 
-coke::Task<> bench_wf_go_ten_name() {
-    return bench_wf_go_name(10);
-}
+coke::Task<> bench_wf_go_ten_name() { return bench_wf_go_name(10); }
 
-coke::Task<> bench_go_one_name() {
-    return bench_go_name(1);
-}
+coke::Task<> bench_go_one_name() { return bench_go_name(1); }
 
-coke::Task<> bench_go_five_name() {
-    return bench_go_name(5);
-}
+coke::Task<> bench_go_five_name() { return bench_go_name(5); }
 
-coke::Task<> bench_go_ten_name() {
-    return bench_go_name(10);
-}
+coke::Task<> bench_go_ten_name() { return bench_go_name(10); }
 
-coke::Task<> bench_switch_one_name() {
-    return bench_switch_name(1);
-}
+coke::Task<> bench_switch_one_name() { return bench_switch_name(1); }
 
-coke::Task<> bench_switch_five_name() {
-    return bench_switch_name(5);
-}
+coke::Task<> bench_switch_five_name() { return bench_switch_name(5); }
 
-coke::Task<> bench_switch_ten_name() {
-    return bench_switch_name(10);
-}
+coke::Task<> bench_switch_ten_name() { return bench_switch_name(10); }
 
 
 // helper
 
 void head();
-void delimiter();
+void delimiter(char c = ' ');
 void usage(const char *arg0);
 int parse_args(int, char *[]);
 
@@ -263,10 +244,10 @@ int parse_args(int argc, char *argv[]) {
     return 0;
 }
 
-void delimiter() {
-    std::cout << "| " << std::string(16, '-')
-        << " | " << std::string(8, '-')
-        << " | " << std::string(14, '-')
+void delimiter(char c) {
+    std::cout << "| " << std::string(16, c)
+        << " | " << std::string(8, c)
+        << " | " << std::string(14, c)
         << " |" << std::endl;
 }
 
@@ -276,5 +257,5 @@ void head() {
         << " | " << std::setw(14) << "go per sec"
         << " |" << std::endl;
 
-    delimiter();
+    delimiter('-');
 }

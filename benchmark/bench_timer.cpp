@@ -14,8 +14,9 @@
 #include "workflow/WFTaskFactory.h"
 
 using std::chrono::microseconds;
-std::atomic<std::size_t> current;
-std::atomic<bool> stop_flag;
+
+alignas(64) std::atomic<bool> stop_flag;
+alignas(64) std::atomic<std::size_t> current;
 
 constexpr std::size_t pool_size = 10;
 std::string name_pool[pool_size];
@@ -209,17 +210,11 @@ coke::Task<> bench_pool_name(std::size_t max) {
     co_return;
 }
 
-coke::Task<> bench_one_name() {
-    return bench_pool_name(1);
-}
+coke::Task<> bench_one_name() { return bench_pool_name(1); }
 
-coke::Task<> bench_two_name() {
-    return bench_pool_name(2);
-}
+coke::Task<> bench_two_name() { return bench_pool_name(2); }
 
-coke::Task<> bench_ten_name() {
-    return bench_pool_name(10);
-}
+coke::Task<> bench_ten_name() { return bench_pool_name(10); }
 
 coke::Task<> bench_name_one_by_one() {
     auto sleep = std::chrono::seconds(10);
@@ -345,17 +340,11 @@ coke::Task<> bench_pool_id(std::size_t max) {
     co_return;
 }
 
-coke::Task<> bench_one_id() {
-    return bench_pool_id(1);
-}
+coke::Task<> bench_one_id() { return bench_pool_id(1); }
 
-coke::Task<> bench_two_id() {
-    return bench_pool_id(2);
-}
+coke::Task<> bench_two_id() { return bench_pool_id(2); }
 
-coke::Task<> bench_ten_id() {
-    return bench_pool_id(10);
-}
+coke::Task<> bench_ten_id() { return bench_pool_id(10); }
 
 coke::Task<> bench_id_one_by_one() {
     auto sleep = std::chrono::seconds(10);
@@ -376,7 +365,7 @@ coke::Task<> bench_id_one_by_one() {
 // helper
 
 void head();
-void delimiter();
+void delimiter(char c = ' ');
 void usage(const char *arg0);
 int parse_args(int, char *[]);
 
@@ -528,10 +517,10 @@ int parse_args(int argc, char *argv[]) {
     return 0;
 }
 
-void delimiter() {
-    std::cout << "| " << std::string(16, '-')
-        << " | " << std::string(8, '-')
-        << " | " << std::string(14, '-')
+void delimiter(char c) {
+    std::cout << "| " << std::string(16, c)
+        << " | " << std::string(8, c)
+        << " | " << std::string(14, c)
         << " |" << std::endl;
 }
 
@@ -541,5 +530,5 @@ void head() {
         << " | " << std::setw(14) << "sleep per sec"
         << " |" << std::endl;
 
-    delimiter();
+    delimiter('-');
 }

@@ -1,0 +1,72 @@
+name: Benchmark on label 'do-benchmark'
+
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [labeled]
+
+jobs:
+  bench-coke:
+    name: Coke Benchmark
+    runs-on: ubuntu-22.04
+    if: (contains('["issues", "pull_request"]', github.event_name) && github.event.label.name == 'do-benchmark' && github.actor == 'kedixa')
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Build and benchmark
+      run: |
+        bazel build //benchmark/...
+
+        (echo "# Benchmark"
+        echo "The benchmark runs on Github Actions"
+        echo ""
+
+        echo "## Environment"
+        echo "\`\`\`"
+        lscpu
+        echo ""
+        lsmem
+        echo "\`\`\`"
+        echo ""
+
+        echo "## Go"
+        echo "Bench command \`bench_go -c 64 -n 8 -m 60 -t 2000000 -y\`"
+        echo ""
+        ./bazel-bin/benchmark/bench_go -c 64 -n 8 -m 60 -t 2000000 -y
+        echo ""
+
+        echo "## Timer"
+        echo "Bench command \`bench_timer -c 4096 -h 12 -p 6 -m 60 -t 2000000 -y\`"
+        echo ""
+        ./bazel-bin/benchmark/bench_timer -c 4096 -h 12 -p 6 -m 60 -t 2000000 -y
+        echo ""
+
+        echo "## Dag"
+        echo "Bench command \`bench_graph -g 10 -n 128 -t 500 -k 3 -y\`"
+        echo ""
+        ./bazel-bin/benchmark/bench_graph -g 10 -n 128 -t 500 -k 3 -y
+        echo ""
+
+        ) > bench.md
+
+    - name: Comment
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs/promises')
+          const data = await fs.readFile('./bench.md', 'utf-8')
+
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            repo: context.repo.repo,
+            owner: context.repo.owner,
+            body: data
+          });
+
+          await github.rest.issues.removeLabel({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            name: 'do-benchmark',
+          });
