@@ -26,8 +26,8 @@ jobs:
           openssl openssl-devel \
           clang git cmake valgrind
         dnf --enablerepo=powertools install -y gtest-devel
-    - uses: actions/checkout@v3
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
         repository: sogou/workflow
         ref: ${{ env.wf_tag }}
