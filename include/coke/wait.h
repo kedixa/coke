@@ -14,7 +14,7 @@ namespace coke {
 template<Cokeable T>
 T sync_wait(Task<T> &&task) {
     T res;
-    std::latch lt(1);
+    SyncLatch lt(1);
 
     detail::sync_wait_helper(std::move(task), res, lt).start();
     lt.wait();
@@ -22,7 +22,7 @@ T sync_wait(Task<T> &&task) {
 }
 
 inline void sync_wait(Task<void> &&task) {
-    std::latch lt(1);
+    SyncLatch lt(1);
 
     detail::sync_wait_helper(std::move(task), lt).start();
     lt.wait();
@@ -32,7 +32,7 @@ template<Cokeable T>
 std::vector<T> sync_wait(std::vector<Task<T>> &&tasks) {
     std::size_t n = tasks.size();
     std::vector<T> vec(n);
-    std::latch lt(n);
+    SyncLatch lt(n);
 
     for (std::size_t i = 0; i < n; i++)
         detail::sync_wait_helper(std::move(tasks[i]), vec[i], lt).start();
@@ -48,7 +48,7 @@ std::vector<T> sync_wait(std::vector<Task<T>> &&tasks) {
 inline
 std::vector<bool> sync_wait(std::vector<Task<bool>> &&tasks) {
     std::size_t n = tasks.size();
-    std::latch lt(n);
+    SyncLatch lt(n);
     // `n` == 0 is also valid
     std::unique_ptr<bool []> vec = std::make_unique<bool []>(n);
 
@@ -61,7 +61,7 @@ std::vector<bool> sync_wait(std::vector<Task<bool>> &&tasks) {
 
 inline void sync_wait(std::vector<Task<void>> &&tasks) {
     std::size_t n = tasks.size();
-    std::latch lt(n);
+    SyncLatch lt(n);
 
     for (std::size_t i = 0; i < n; i++)
         detail::sync_wait_helper(std::move(tasks[i]), lt).start();

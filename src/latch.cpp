@@ -69,4 +69,12 @@ void Latch::wake_up(std::vector<SubTask *> tasks) noexcept {
     }
 }
 
+void SyncLatch::wait() const noexcept {
+    if (!lt.try_wait()) {
+        int cookie = WFGlobal::sync_operation_begin();
+        lt.wait();
+        WFGlobal::sync_operation_end(cookie);
+    }
+}
+
 } // namespace coke
