@@ -41,9 +41,9 @@ jobs:
         echo ""
 
         echo "## Timer"
-        echo "Bench command \`bench_timer -c 4096 -h 12 -p 6 -m 60 -t 2000000 -y\`"
+        echo "Bench command \`bench_timer -c 4096 -h 12 -p 6 -g 8 -m 60 -t 2000000 -y\`"
         echo ""
-        ./bazel-bin/benchmark/bench_timer -c 4096 -h 12 -p 6 -m 60 -t 2000000 -y
+        ./bazel-bin/benchmark/bench_timer -c 4096 -h 12 -p 6 -g 8 -m 60 -t 2000000 -y
         echo ""
 
         echo "## Dag"

@@ -27,6 +27,7 @@ int concurrency = 4096;
 int max_secs_per_test = 5;
 int handler_threads = 12;
 int poller_threads = 6;
+int compute_threads = -1;
 bool yes = false;
 
 // Not sure if it's thread safe but it runs fine so far.
@@ -80,9 +81,7 @@ coke::Task<> bench_wf_repeat() {
         }
         return nullptr;
     };
-    auto callback = [&] (WFRepeaterTask *) {
-        g.done();
-    };
+    auto callback = [&] (WFRepeaterTask *) { g.done(); };
 
     auto *rep = WFTaskFactory::create_repeater_task(create, callback);
     g.take_over(rep);
@@ -99,28 +98,20 @@ coke::Task<> bench_default_timer() {
     }
 }
 
-coke::Task<> bench_dismiss_timer() {
-    std::mt19937_64 mt(current_msec());
+coke::Task<> bench_yield() {
     std::size_t i;
 
-    co_await coke::switch_go_thread();
-
     while (next(i)) {
-        auto awaiter = coke::sleep(microseconds(dist(mt)));
-        (void)awaiter;
+        co_await coke::yield();
     }
 }
 
-coke::Task<> bench_coke_cost() {
+coke::Task<> bench_timer_in_task() {
     std::mt19937_64 mt(current_msec());
-    std::size_t i, j = 0;
+    std::size_t i;
 
     while (next(i)) {
-        // switch threads every 64 times to avoid stack overflow
-        if (j++ % 64 == 0)
-            co_await coke::yield();
-        else
-            co_await coke::SleepAwaiter();
+        co_await detach(coke::sleep(microseconds(dist(mt))));
     }
 }
 
@@ -147,20 +138,6 @@ coke::Task<> bench_cancel_by_name() {
         auto awaiter = coke::sleep(name, microseconds(dist(mt)));
         coke::cancel_sleep_by_name(name);
         co_await awaiter;
-    }
-}
-
-coke::Task<> bench_dismiss_by_name() {
-    std::mt19937_64 mt(current_msec());
-    std::size_t i;
-    std::string name;
-
-    co_await coke::switch_go_thread();
-
-    while (next(i)) {
-        name = std::to_string(i);
-        auto awaiter = coke::sleep(name, microseconds(dist(mt)));
-        (void)awaiter;
     }
 }
 
@@ -253,19 +230,6 @@ coke::Task<> bench_cancel_by_id() {
         auto awaiter = coke::SleepAwaiter(id, microseconds(dist(mt)));
         coke::cancel_sleep_by_id(id);
         co_await awaiter;
-    }
-}
-
-coke::Task<> bench_dismiss_by_id() {
-    std::mt19937_64 mt(current_msec());
-    std::size_t id, i;
-
-    co_await coke::switch_go_thread();
-
-    while (next(i)) {
-        id = coke::get_unique_id();
-        auto awaiter = coke::SleepAwaiter(id, microseconds(dist(mt)));
-        (void)awaiter;
     }
 }
 
@@ -414,6 +378,7 @@ int main(int argc, char *argv[]) {
     coke::GlobalSettings gs;
     gs.poller_threads = poller_threads;
     gs.handler_threads = handler_threads;
+    gs.compute_threads = compute_threads;
     coke::library_init(gs);
 
     coke::sync_wait(warm_up());
@@ -429,13 +394,12 @@ int main(int argc, char *argv[]) {
 #define DO_BENCHMARK(func) coke::sync_wait(do_benchmark(#func, bench_ ## func))
     DO_BENCHMARK(wf_repeat);
     DO_BENCHMARK(default_timer);
-    DO_BENCHMARK(dismiss_timer);
-    DO_BENCHMARK(coke_cost);
+    DO_BENCHMARK(yield);
+    DO_BENCHMARK(timer_in_task);
     delimiter();
 
     DO_BENCHMARK(timer_by_name);
     DO_BENCHMARK(cancel_by_name);
-    DO_BENCHMARK(dismiss_by_name);
     DO_BENCHMARK(detach_by_name);
     DO_BENCHMARK(detach3_by_name);
     DO_BENCHMARK(one_name);
@@ -448,7 +412,6 @@ int main(int argc, char *argv[]) {
 
     DO_BENCHMARK(timer_by_id);
     DO_BENCHMARK(cancel_by_id);
-    DO_BENCHMARK(dismiss_by_id);
     DO_BENCHMARK(detach_by_id);
     DO_BENCHMARK(detach3_by_id);
     DO_BENCHMARK(detach_inf_by_id);
@@ -472,6 +435,7 @@ R"usage(
                     each timer sleep about 500us
     -h n,           set handler threads to n, default 12
     -p n,           set poller threads to n, default 6
+    -g n,           set compute threads to n, default -1
     -m sec,         run at most `sec` seconds for each case, default 5
     -t total,       run at most `total` timer for each case, default 10000
     -y              skip showing arguments before start benchmark
@@ -482,7 +446,7 @@ R"usage(
 int parse_args(int argc, char *argv[]) {
     int copt;
 
-    const char *optstr = "c:h:m:t:p:y";
+    const char *optstr = "c:g:h:m:t:p:y";
     while ((copt = getopt(argc, argv, optstr)) != -1) {
         switch (copt) {
         case 'c': concurrency = std::atoi(optarg); break;
@@ -490,6 +454,7 @@ int parse_args(int argc, char *argv[]) {
         case 'm': max_secs_per_test = std::atoi(optarg); break;
         case 't': total = std::atoll(optarg); break;
         case 'p': poller_threads = std::atoi(optarg); break;
+        case 'g': compute_threads = std::atoi(optarg); break;
         case 'y': yes = true; break;
 
         case '?': usage(argv[0]); return 0;
@@ -506,6 +471,7 @@ int parse_args(int argc, char *argv[]) {
         << "\nmax_secs_per_test: " << max_secs_per_test
         << "\nhandler_threads: " << handler_threads
         << "\npoller_threads: " << poller_threads
+        << "\ncompute_threads: " << compute_threads
         << "\n\nContinue (y/N)?: ";
     std::cout.flush();
 
