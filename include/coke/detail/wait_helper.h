@@ -12,12 +12,12 @@
 namespace coke::detail {
 
 template<Cokeable T>
-Task<> sync_wait_helper(Task<T> task, T &res, std::latch &lt) {
+Task<> sync_wait_helper(Task<T> task, T &res, SyncLatch &lt) {
     res = co_await task;
     lt.count_down();
 }
 
-inline Task<> sync_wait_helper(Task<void> task, std::latch &lt) {
+inline Task<> sync_wait_helper(Task<void> task, SyncLatch &lt) {
     co_await task;
     lt.count_down();
 }

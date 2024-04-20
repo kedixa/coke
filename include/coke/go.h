@@ -30,6 +30,15 @@ public:
         this->set_task(go_task);
     }
 
+    // only for switch_go_thread
+    GoAwaiter(ExecQueue *queue, Executor *executor)
+        requires std::is_same_v<T, void>
+    {
+        this->go_task = new detail::GoTask<T>(queue, executor, nullptr);
+        go_task->set_awaiter(this);
+        this->set_task(go_task);
+    }
+
     GoAwaiter(GoAwaiter &&that)
         : AwaiterBase(std::move(that)),
           go_task(that.go_task)
@@ -105,7 +114,7 @@ auto go(FUNC &&func, ARGS&&... args) {
 */
 [[nodiscard]]
 inline auto switch_go_thread(ExecQueue *queue, Executor *executor) {
-    return go(queue, executor, []{});
+    return GoAwaiter<void>(queue, executor);
 }
 
 /**
@@ -113,7 +122,9 @@ inline auto switch_go_thread(ExecQueue *queue, Executor *executor) {
 */
 [[nodiscard]]
 inline auto switch_go_thread(const std::string &name) {
-    return go(name, []{});
+    auto *queue = detail::get_exec_queue(name);
+    auto *executor = detail::get_compute_executor();
+    return  switch_go_thread(queue, executor);
 }
 
 /**
@@ -121,7 +132,7 @@ inline auto switch_go_thread(const std::string &name) {
 */
 [[nodiscard]]
 inline auto switch_go_thread() {
-    return go([]{});
+    return switch_go_thread(std::string(GO_DEFAULT_QUEUE));
 }
 
 } // namespace coke

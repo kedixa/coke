@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <mutex>
+#include <latch>
 
 #include "coke/detail/awaiter_base.h"
 
@@ -80,6 +81,18 @@ private:
     std::mutex mtx;
     long expected;
     std::vector<SubTask *> tasks;
+};
+
+class SyncLatch final {
+public:
+    explicit SyncLatch(long n) : lt(n) { }
+
+    void count_down(long n = 1) { lt.count_down(n); }
+
+    void wait() const noexcept;
+
+private:
+    std::latch lt;
 };
 
 } // namespace coke
