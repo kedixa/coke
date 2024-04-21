@@ -55,7 +55,7 @@ void show_result(const coke::RedisResult &res) {
     }
 }
 
-coke::Task<> redis_cli(coke::RedisClient &cli, int repeat, long sec, long nsec) {
+coke::Task<> redis_cli(coke::RedisClient &cli, int repeat, double interval) {
     coke::RedisResult res;
     std::string cmd;
     std::vector<std::string> args;
@@ -69,7 +69,7 @@ coke::Task<> redis_cli(coke::RedisClient &cli, int repeat, long sec, long nsec) 
         for (int i = 0; i < repeat; i++) {
             res = co_await cli.request(cmd, args);
             show_result(res);
-            co_await coke::sleep(sec, nsec);
+            co_await coke::sleep(interval);
         }
     }
 }
@@ -90,8 +90,7 @@ void usage(const char *arg0) {
 int main(int argc, char *argv[]) {
     coke::RedisClientParams params;
     int repeat = 0, copt;
-    long interval_sec = 0, interval_nsec = 0;
-    double d = 0.0;
+    double interval = 0.0;
 
     while ((copt = getopt(argc, argv, optstr)) != -1) {
         switch (copt) {
@@ -100,7 +99,7 @@ int main(int argc, char *argv[]) {
         case 'a': params.password.assign(optarg); break;
         case 'n': params.db = std::atoi(optarg); break;
         case 'r': repeat = std::atoi(optarg); break;
-        case 'i': d = std::atof(optarg); break;
+        case 'i': interval = std::atof(optarg); break;
         default: usage(argv[0]); return 1;
         }
     }
@@ -110,20 +109,18 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Switch interval to seconds and nano seconds
-    if (d > 0) {
-        interval_sec = static_cast<long>(std::floor(d));
-        interval_nsec = static_cast<long>((d - interval_sec) * 1000 * 1000 * 1000);
-    }
+    if (interval < 0.0)
+        interval = 0.0;
 
     if (repeat < 1)
         repeat = 1;
 
     readline_init();
-    prompt_str.assign(params.host).append(":").append(std::to_string(params.port)).append("> ");
+    prompt_str.assign(params.host) .append(":")
+              .append(std::to_string(params.port)) .append("> ");
 
     coke::RedisClient cli(params);
-    coke::sync_wait(redis_cli(cli, repeat, interval_sec, interval_nsec));
+    coke::sync_wait(redis_cli(cli, repeat, interval));
 
     readline_deinit();
 

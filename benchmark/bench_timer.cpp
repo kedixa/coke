@@ -57,13 +57,13 @@ coke::Task<> count_down(uint64_t id, std::chrono::seconds timeout) {
     stop_flag.notify_all();
 }
 
-coke::Task<> detach(coke::SleepAwaiter awaiter) {
+template<typename Awaiter>
+coke::Task<> detach(Awaiter awaiter) {
     co_await awaiter;
 }
 
-coke::Task<> detach3(coke::SleepAwaiter a,
-                     coke::SleepAwaiter b,
-                     coke::SleepAwaiter c) {
+template<typename Awaiter>
+coke::Task<> detach3(Awaiter a, Awaiter b, Awaiter c) {
     co_await coke::async_wait(std::move(a), std::move(b), std::move(c));
 }
 
@@ -227,7 +227,7 @@ coke::Task<> bench_cancel_by_id() {
 
     while (next(i)) {
         id = coke::get_unique_id();
-        auto awaiter = coke::SleepAwaiter(id, microseconds(dist(mt)));
+        auto awaiter = coke::sleep(id, microseconds(dist(mt)));
         coke::cancel_sleep_by_id(id);
         co_await awaiter;
     }

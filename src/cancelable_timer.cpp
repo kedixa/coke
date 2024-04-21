@@ -6,8 +6,9 @@
 #include <new>
 
 #include "coke/detail/constant.h"
-#include "coke/sleep.h"
-#include "workflow/WFTaskFactory.h"
+#include "coke/detail/timer_task.h"
+#include "workflow/WFTask.h" // WFT_STATE_XXX
+#include "workflow/WFGlobal.h"
 
 namespace coke::detail {
 
@@ -49,7 +50,7 @@ struct TimerMapLock final : public std::lock_guard<std::mutex> {
 };
 
 
-class CancelInterface : public WFTimerTask {
+class CancelInterface : public TimerTask {
 public:
     using ListIter = CancelableTimerMap::ListIter;
     using MapIter = CancelableTimerMap::MapIter;
@@ -58,8 +59,8 @@ public:
     static constexpr auto release = std::memory_order_release;
     static constexpr auto acq_rel = std::memory_order_acq_rel;
 
-    CancelInterface(CommScheduler *scheduler, timer_callback_t &&cb)
-        : WFTimerTask(scheduler, std::move(cb)),
+    CancelInterface(CommScheduler *scheduler, const NanoSec &nsec)
+        : TimerTask(scheduler, nsec),
           timer_map(nullptr), in_map(false)
     { }
 
@@ -99,11 +100,9 @@ protected:
 
 class CancelableTimer : public CancelInterface {
 public:
-    CancelableTimer(time_t seconds, long nanoseconds,
-                    CommScheduler *scheduler, timer_callback_t &&cb)
-        : CancelInterface(scheduler, std::move(cb)),
-          canceled(false), switched(false), dispatch_done(false),
-          seconds(seconds), nanoseconds(nanoseconds)
+    CancelableTimer(CommScheduler *scheduler, const NanoSec &nsec)
+        : CancelInterface(scheduler, nsec),
+          canceled(false), switched(false), dispatch_done(false)
     { }
 
     virtual ~CancelableTimer() = default;
@@ -117,12 +116,6 @@ public:
     virtual int cancel_timer_in_map() override;
 
 protected:
-    virtual int duration(struct timespec *value) override {
-        value->tv_sec = seconds;
-        value->tv_nsec = nanoseconds;
-        return 0;
-    }
-
     virtual void dispatch() override;
     virtual void handle(int state, int error) override;
     virtual SubTask *done() override;
@@ -131,28 +124,19 @@ private:
     std::atomic<bool> canceled;
     std::atomic<bool> switched;
     std::atomic<bool> dispatch_done;
-
-    time_t seconds;
-    long nanoseconds;
 };
 
 
 class InfiniteTimer : public CancelInterface {
 public:
-    InfiniteTimer(CommScheduler *scheduler, timer_callback_t &&cb)
-        : CancelInterface(scheduler, std::move(cb)),
+    InfiniteTimer(CommScheduler *scheduler)
+        : CancelInterface(scheduler, NanoSec(0)),
           flag(false)
     { }
 
     ~InfiniteTimer() = default;
 
 protected:
-    virtual int duration(struct timespec *value) override {
-        value->tv_sec = 0;
-        value->tv_nsec = 0;
-        return 0;
-    }
-
     virtual void dispatch() override {
         if (flag.exchange(true, acq_rel)) {
             if (this->scheduler->sleep(this) < 0)
@@ -166,7 +150,7 @@ protected:
             error = ECANCELED;
         }
 
-        this->WFTimerTask::handle(state, error);
+        this->TimerTask::handle(state, error);
     }
 
     virtual int cancel_timer_in_map() override {
@@ -243,14 +227,12 @@ void CancelableTimer::dispatch() {
     int ret;
     bool c = canceled.load(acquire);
 
-    if (c) {
-        seconds = 0;
-        nanoseconds = 0;
-    }
+    if (c)
+        nsec = NanoSec(0);
 
     ret = this->scheduler->sleep(this);
     if (ret >= 0 && !c && switched.exchange(true, acq_rel))
-        this->WFTimerTask::cancel();
+        this->TimerTask::cancel();
 
     // sync with done
     dispatch_done.store(true, release);
@@ -275,14 +257,13 @@ void CancelableTimer::handle(int state, int error) {
         }
     }
 
-    this->WFTimerTask::handle(state, error);
+    this->TimerTask::handle(state, error);
 }
 
 SubTask *CancelableTimer::done() {
     SeriesWork *series = series_of(this);
 
-    if (this->callback)
-        this->callback(this);
+    this->awaiter->done();
 
     // dispatch should finish before delete this
     dispatch_done.wait(false, acquire);
@@ -300,41 +281,32 @@ int CancelableTimer::cancel_timer_in_map() {
 
     // sync with dispatch
     if (switched.exchange(true, acq_rel))
-        ret = this->WFTimerTask::cancel();
+        ret = this->TimerTask::cancel();
 
     // sync with handle and destructor
     in_map.store(false, release);
     return ret;
 }
 
+
+TimerTask *create_timer(uint64_t id, const NanoSec &nsec, bool insert_head)
+{
+    auto *timer_map = CancelableTimerMap::get_instance(id);
+    auto *task = new CancelableTimer(WFGlobal::get_scheduler(), nsec);
+    timer_map->add_task(id, task, insert_head);
+    return task;
+}
+
+TimerTask *create_infinite_timer(uint64_t id, bool insert_head) {
+    auto *timer_map = CancelableTimerMap::get_instance(id);
+    auto *task = new InfiniteTimer(WFGlobal::get_scheduler());
+    timer_map->add_task(id, task, insert_head);
+    return task;
+}
+
 } // namespace coke::detail
 
-
 namespace coke {
-
-WFTimerTask *create_cancelable_timer(uint64_t id, bool insert_head,
-                                     time_t seconds, long nanoseconds,
-                                     timer_callback_t callback)
-{
-    auto *timer_map = detail::CancelableTimerMap::get_instance(id);
-    auto *task = new detail::CancelableTimer(seconds, nanoseconds,
-                                             WFGlobal::get_scheduler(),
-                                             std::move(callback));
-    timer_map->add_task(id, task, insert_head);
-    return task;
-}
-
-
-WFTimerTask *create_infinite_timer(uint64_t id, bool insert_head,
-                                   timer_callback_t callback)
-{
-    auto *timer_map = detail::CancelableTimerMap::get_instance(id);
-    auto *task = new detail::InfiniteTimer(WFGlobal::get_scheduler(),
-                                           std::move(callback));
-    timer_map->add_task(id, task, insert_head);
-    return task;
-}
-
 
 std::size_t cancel_sleep_by_id(uint64_t id, std::size_t max) {
     auto *timer_map = detail::CancelableTimerMap::get_instance(id);

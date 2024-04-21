@@ -1,26 +1,26 @@
+#include "coke/detail/timer_task.h"
 #include "coke/sleep.h"
 
 #include "workflow/WFTaskFactory.h"
 
 namespace coke {
 
-WFTimerTask *create_cancelable_timer(uint64_t, bool, time_t, long,
-                                     timer_callback_t);
-
-WFTimerTask *create_infinite_timer(uint64_t, bool, timer_callback_t);
-
-
-static int get_sleep_state(WFTimerTask *task) {
-    switch (task->get_state()) {
+static int get_sleep_state(int state, int error) {
+    switch (state) {
     case WFT_STATE_SUCCESS: return SLEEP_SUCCESS;
     case WFT_STATE_ABORTED: return SLEEP_ABORTED;
     case WFT_STATE_SYS_ERROR:
-        if (task->get_error() == ECANCELED)
+        if (error == ECANCELED)
             return SLEEP_CANCELED;
         [[fallthrough]];
     default:
-        return -task->get_error();
+        return -error;
     }
+}
+
+static NanoSec to_nsec(double sec) {
+    auto dur = std::chrono::duration<double>(sec);
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(dur);
 }
 
 static std::pair<time_t, long> split_nano(const NanoSec &nano) {
@@ -33,21 +33,130 @@ static std::pair<time_t, long> split_nano(const NanoSec &nano) {
         return {(time_t)(cnt / NANO), (long)(cnt % NANO)};
 }
 
-SleepAwaiter::SleepAwaiter(const NanoSec &nano) {
-    auto cb = [info = this->get_info()](WFTimerTask *task) {
-        auto *awaiter = info->get_awaiter<SleepAwaiter>();
-        awaiter->emplace_result(get_sleep_state(task));
-        awaiter->done();
-    };
 
-    auto [sec, nsec] = split_nano(nano);
-    set_task(WFTaskFactory::create_timer_task(sec, nsec, cb));
+namespace detail {
+
+SleepBase::SleepBase(SleepBase &&that)
+    : AwaiterBase(std::move(that)),
+      timer(that.timer), result(that.result)
+{
+    that.timer = nullptr;
+    that.result = -1;
+
+    TimerTask *this_timer = (TimerTask *)this->timer;
+    if (this_timer)
+        this_timer->set_awaiter(this);
 }
 
-SleepAwaiter::SleepAwaiter(const std::string &name, const NanoSec &nano) {
+SleepBase &SleepBase::operator=(SleepBase &&that) {
+    if (this != &that) {
+        AwaiterBase::operator=(std::move(that));
+
+        int r = this->result;
+        this->result = that.result;
+        that.result = r;
+
+        TimerTask *this_timer = (TimerTask *)that.timer;
+        TimerTask *that_timer = (TimerTask *)this->timer;
+
+        that.timer = that_timer;
+        this->timer = this_timer;
+
+        if (this_timer)
+            this_timer->set_awaiter(this);
+
+        if (that_timer)
+            that_timer->set_awaiter(&that);
+    }
+
+    return *this;
+}
+
+int SleepBase::await_resume() {
+    TimerTask *this_timer = (TimerTask *)this->timer;
+
+    if (this_timer)
+        return this_timer->get_result();
+
+    return result;
+}
+
+int TimerTask::get_result() {
+    return get_sleep_state(this->state, this->error);
+}
+
+void YieldTask::handle(int state, int error) {
+    if (state == WFT_STATE_SYS_ERROR && error == ECANCELED) {
+        state = WFT_STATE_SUCCESS;
+        error = 0;
+    }
+
+    return this->TimerTask::handle(state, error);
+}
+
+TimerTask *create_timer(const NanoSec &nsec) {
+    CommScheduler *s = WFGlobal::get_scheduler();
+    return new TimerTask(s, nsec);
+}
+
+TimerTask *create_yield_timer() {
+    CommScheduler *s = WFGlobal::get_scheduler();
+    return new YieldTask(s);
+}
+
+} // namespace coke::detail
+
+
+SleepAwaiter::SleepAwaiter(const NanoSec &nsec) {
+    auto *time_task = detail::create_timer(nsec);
+    time_task->set_awaiter(this);
+    this->timer = time_task;
+    this->set_task(time_task);
+}
+
+SleepAwaiter::SleepAwaiter(double sec)
+    : SleepAwaiter(to_nsec(sec))
+{ }
+
+SleepAwaiter::SleepAwaiter(uint64_t id, const NanoSec &nsec, bool insert_head) {
+    auto *time_task = detail::create_timer(id, nsec, insert_head);
+    time_task->set_awaiter(this);
+    this->timer = time_task;
+    this->set_task(time_task);
+}
+
+SleepAwaiter::SleepAwaiter(uint64_t id, double sec, bool insert_head)
+    : SleepAwaiter(id, to_nsec(sec), insert_head)
+{ }
+
+SleepAwaiter::SleepAwaiter(uint64_t id,
+                           const InfiniteDuration &,
+                           bool insert_head)
+{
+    auto *time_task = detail::create_infinite_timer(id, insert_head);
+    time_task->set_awaiter(this);
+    this->timer = time_task;
+    this->set_task(time_task);
+}
+
+SleepAwaiter::SleepAwaiter(ImmediateTag, int state) {
+    this->result = state;
+}
+
+SleepAwaiter::SleepAwaiter(YieldTag) {
+    auto *time_task = detail::create_yield_timer();
+    time_task->set_awaiter(this);
+    this->timer = time_task;
+    this->set_task(time_task);
+}
+
+
+WFSleepAwaiter::WFSleepAwaiter(const std::string &name, const NanoSec &nano) {
     auto cb = [info = this->get_info()](WFTimerTask *task) {
-        auto *awaiter = info->get_awaiter<SleepAwaiter>();
-        awaiter->emplace_result(get_sleep_state(task));
+        auto *awaiter = info->get_awaiter<WFSleepAwaiter>();
+        int state = task->get_state();
+        int error = task->get_error();
+        awaiter->emplace_result(get_sleep_state(state, error));
         awaiter->done();
     };
 
@@ -57,27 +166,6 @@ SleepAwaiter::SleepAwaiter(const std::string &name, const NanoSec &nano) {
 
 void cancel_sleep_by_name(const std::string &name, std::size_t max) {
     return WFTaskFactory::cancel_by_name(name, max);
-}
-
-SleepAwaiter::SleepAwaiter(uint64_t id, const NanoSec &nano, bool insert_head) {
-    auto cb = [info = this->get_info()](WFTimerTask *task) {
-        auto *awaiter = info->get_awaiter<SleepAwaiter>();
-        awaiter->emplace_result(get_sleep_state(task));
-        awaiter->done();
-    };
-
-    auto [sec, nsec] = split_nano(nano);
-    set_task(create_cancelable_timer(id, insert_head, sec, nsec, cb));
-}
-
-SleepAwaiter::SleepAwaiter(uint64_t id, InfiniteDuration, bool insert_head) {
-    auto cb = [info = this->get_info()](WFTimerTask *task) {
-        auto *awaiter = info->get_awaiter<SleepAwaiter>();
-        awaiter->emplace_result(get_sleep_state(task));
-        awaiter->done();
-    };
-
-    set_task(create_infinite_timer(id, insert_head, cb));
 }
 
 } // namespace coke
