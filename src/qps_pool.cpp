@@ -58,7 +58,7 @@ QpsPool::get_if(unsigned count, const NanoSec &nsec) noexcept {
             return AwaiterType(nano);
         }
         else {
-            return AwaiterType(SleepAwaiter::InnerTag{}, SLEEP_CANCELED);
+            return AwaiterType(SleepAwaiter::ImmediateTag{}, SLEEP_CANCELED);
         }
     }
     else {
