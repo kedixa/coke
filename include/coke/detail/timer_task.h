@@ -1,6 +1,8 @@
 #ifndef COKE_DETAIL_TIMER_TASK_H
 #define COKE_DETAIL_TIMER_TASK_H
 
+#include <atomic>
+
 #include "coke/detail/sleep_base.h"
 
 #include "workflow/Workflow.h"
@@ -57,11 +59,51 @@ protected:
     NanoSec nsec;
 };
 
+class YieldTask : public TimerTask {
+public:
+    YieldTask(CommScheduler *scheduler)
+        : TimerTask(scheduler, std::chrono::seconds(1)),
+          ref(2)
+    { }
+
+    virtual void dispatch() override {
+        if (this->scheduler->sleep(this) >= 0)
+            this->cancel();
+        else
+            this->handle(SS_STATE_ERROR, errno);
+
+        this->dec_ref();
+    }
+
+protected:
+    virtual void handle(int state, int error) override;
+
+    virtual SubTask *done() override {
+        SeriesWork *series = series_of(this);
+
+        awaiter->done();
+
+        this->dec_ref();
+        return series->pop();
+    }
+
+private:
+    void dec_ref() {
+        if (ref.fetch_sub(1, std::memory_order_acq_rel) == 1)
+            delete this;
+    }
+
+private:
+    std::atomic<int> ref;
+};
+
 TimerTask *create_timer(const NanoSec &nsec);
 
 TimerTask *create_timer(uint64_t id, const NanoSec &nsec, bool insert_head);
 
 TimerTask *create_infinite_timer(uint64_t id, bool insert_head);
+
+TimerTask *create_yield_timer();
 
 } // namespace coke::detail
 

@@ -29,6 +29,7 @@ static_assert(SLEEP_ABORTED == TOP_ABORTED);
 class SleepAwaiter : public detail::SleepBase {
 public:
     struct ImmediateTag { };
+    struct YieldTag { };
 
     /**
      * @brief Create a SleepAwaiter that returns SLEEP_SUCCESS immediately,
@@ -82,6 +83,7 @@ public:
 
     // Inner use only
     SleepAwaiter(ImmediateTag, int state);
+    SleepAwaiter(YieldTag);
 };
 
 
@@ -126,7 +128,7 @@ SleepAwaiter sleep(long sec, long nsec) {
 }
 
 [[nodiscard]]
-inline SleepAwaiter yield() { return SleepAwaiter(NanoSec(0)); }
+inline SleepAwaiter yield() { return SleepAwaiter(SleepAwaiter::YieldTag{}); }
 
 std::size_t cancel_sleep_by_id(uint64_t id, std::size_t max);
 

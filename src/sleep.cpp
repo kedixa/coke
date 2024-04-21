@@ -85,9 +85,23 @@ int TimerTask::get_result() {
     return get_sleep_state(this->state, this->error);
 }
 
+void YieldTask::handle(int state, int error) {
+    if (state == WFT_STATE_SYS_ERROR && error == ECANCELED) {
+        state = WFT_STATE_SUCCESS;
+        error = 0;
+    }
+
+    return this->TimerTask::handle(state, error);
+}
+
 TimerTask *create_timer(const NanoSec &nsec) {
     CommScheduler *s = WFGlobal::get_scheduler();
     return new TimerTask(s, nsec);
+}
+
+TimerTask *create_yield_timer() {
+    CommScheduler *s = WFGlobal::get_scheduler();
+    return new YieldTask(s);
 }
 
 } // namespace coke::detail
@@ -127,6 +141,13 @@ SleepAwaiter::SleepAwaiter(uint64_t id,
 
 SleepAwaiter::SleepAwaiter(ImmediateTag, int state) {
     this->result = state;
+}
+
+SleepAwaiter::SleepAwaiter(YieldTag) {
+    auto *time_task = detail::create_yield_timer();
+    time_task->set_awaiter(this);
+    this->timer = time_task;
+    this->set_task(time_task);
 }
 
 
