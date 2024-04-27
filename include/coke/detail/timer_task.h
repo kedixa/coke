@@ -63,14 +63,20 @@ class YieldTask : public TimerTask {
 public:
     YieldTask(CommScheduler *scheduler)
         : TimerTask(scheduler, std::chrono::seconds(1)),
-          ref(2)
+          cancel_done(false), ref(2)
     { }
 
     virtual void dispatch() override {
-        if (this->scheduler->sleep(this) >= 0)
+        if (this->scheduler->sleep(this) >= 0) {
             this->cancel();
-        else
+
+            cancel_done.store(true, std::memory_order_release);
+            cancel_done.notify_one();
+        }
+        else {
+            cancel_done.store(true, std::memory_order_relaxed);
             this->handle(SS_STATE_ERROR, errno);
+        }
 
         this->dec_ref();
     }
@@ -83,17 +89,23 @@ protected:
 
         awaiter->done();
 
+        // sync with dispatch, this->cancel must finish before this,
+        // because poller_del_timer need to read data from poller_node
+        if (cancel_done.load(std::memory_order_acquire) == false)
+            cancel_done.wait(false, std::memory_order_acquire);
+
         this->dec_ref();
+
         return series->pop();
     }
 
-private:
     void dec_ref() {
         if (ref.fetch_sub(1, std::memory_order_acq_rel) == 1)
             delete this;
     }
 
 private:
+    std::atomic<bool> cancel_done;
     std::atomic<int> ref;
 };
 

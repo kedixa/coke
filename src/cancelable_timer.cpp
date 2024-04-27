@@ -55,13 +55,14 @@ public:
     using ListIter = CancelableTimerMap::ListIter;
     using MapIter = CancelableTimerMap::MapIter;
 
+    static constexpr auto relaxed = std::memory_order_relaxed;
     static constexpr auto acquire = std::memory_order_acquire;
     static constexpr auto release = std::memory_order_release;
     static constexpr auto acq_rel = std::memory_order_acq_rel;
 
     CancelInterface(CommScheduler *scheduler, const NanoSec &nsec)
         : TimerTask(scheduler, nsec),
-          timer_map(nullptr), in_map(false)
+          timer_map(nullptr), ref(2), in_map(false), cancel_done(false)
     { }
 
     virtual ~CancelInterface() {
@@ -78,6 +79,19 @@ public:
     */
     virtual int cancel_timer_in_map() = 0;
 
+    virtual SubTask *done() override {
+        SeriesWork *series = series_of(this);
+
+        this->awaiter->done();
+
+        if (cancel_done.load(acquire) == false)
+            cancel_done.wait(false, acquire);
+
+        this->dec_ref();
+
+        return series->pop();
+    }
+
     /**
      * Set the location where the timer is placed. It must be called within the
      * timer map lock and should be called immediately after construction.
@@ -89,20 +103,27 @@ public:
         in_map.store(true, release);
     }
 
+    void dec_ref() {
+        if (ref.fetch_sub(1, acq_rel) == 1)
+            delete this;
+    }
+
 protected:
     ListIter liter;
     MapIter miter;
     CancelableTimerMap *timer_map;
 
+    std::atomic<int> ref;
     std::atomic<bool> in_map;
+    std::atomic<bool> cancel_done;
 };
 
 
-class CancelableTimer : public CancelInterface {
+class CancelableTimer final : public CancelInterface {
 public:
     CancelableTimer(CommScheduler *scheduler, const NanoSec &nsec)
         : CancelInterface(scheduler, nsec),
-          canceled(false), switched(false), dispatch_done(false)
+          switched(false), canceled(false)
     { }
 
     virtual ~CancelableTimer() = default;
@@ -118,19 +139,17 @@ public:
 protected:
     virtual void dispatch() override;
     virtual void handle(int state, int error) override;
-    virtual SubTask *done() override;
 
 private:
-    std::atomic<bool> canceled;
     std::atomic<bool> switched;
-    std::atomic<bool> dispatch_done;
+    bool canceled;
 };
 
 
-class InfiniteTimer : public CancelInterface {
+class InfiniteTimer final : public CancelInterface {
 public:
     InfiniteTimer(CommScheduler *scheduler)
-        : CancelInterface(scheduler, NanoSec(0)),
+        : CancelInterface(scheduler, std::chrono::seconds(1)),
           flag(false)
     { }
 
@@ -139,8 +158,18 @@ public:
 protected:
     virtual void dispatch() override {
         if (flag.exchange(true, acq_rel)) {
-            if (this->scheduler->sleep(this) < 0)
+            if (this->scheduler->sleep(this) >= 0) {
+                this->cancel();
+
+                cancel_done.store(true, release);
+                cancel_done.notify_one();
+            }
+            else {
+                cancel_done.store(true, relaxed);
                 this->handle(SS_STATE_ERROR, errno);
+            }
+
+            this->dec_ref();
         }
     }
 
@@ -156,7 +185,7 @@ protected:
     virtual int cancel_timer_in_map() override {
         // `in_map` can be modified in advance because InfiniteTimer can only be
         // canceled and no race conditions will occur.
-        this->in_map.store(false, release);
+        this->in_map.store(false, relaxed);
         this->dispatch();
         return 0;
     }
@@ -224,31 +253,25 @@ void CancelableTimerMap::del_task_unlocked(MapIter miter, ListIter liter) {
 
 
 void CancelableTimer::dispatch() {
-    int ret;
-    bool c = canceled.load(acquire);
+    int ret = this->scheduler->sleep(this);
 
-    if (c)
-        nsec = NanoSec(0);
-
-    ret = this->scheduler->sleep(this);
-    if (ret >= 0 && !c && switched.exchange(true, acq_rel))
-        this->TimerTask::cancel();
-
-    // sync with done
-    dispatch_done.store(true, release);
-    dispatch_done.notify_all();
-
-    if (ret < 0)
+    if (ret < 0) {
+        cancel_done.store(true, relaxed);
         this->handle(SS_STATE_ERROR, errno);
+    }
+    else {
+        if (switched.exchange(true, acq_rel))
+            this->TimerTask::cancel();
+
+        cancel_done.store(true, release);
+        cancel_done.notify_one();
+    }
+
+    this->dec_ref();
 }
 
 
 void CancelableTimer::handle(int state, int error) {
-    if (state == WFT_STATE_SUCCESS && canceled.load(acquire)) {
-        state = WFT_STATE_SYS_ERROR;
-        error = ECANCELED;
-    }
-
     if (in_map.load(acquire)) {
         TimerMapLock lk(timer_map);
         if (in_map.load(acquire)) {
@@ -257,31 +280,26 @@ void CancelableTimer::handle(int state, int error) {
         }
     }
 
+    // when canceled before callback, it will always be canceled
+    if (state == WFT_STATE_SUCCESS && canceled) {
+        state = WFT_STATE_SYS_ERROR;
+        error = ECANCELED;
+    }
+
     this->TimerTask::handle(state, error);
-}
-
-SubTask *CancelableTimer::done() {
-    SeriesWork *series = series_of(this);
-
-    this->awaiter->done();
-
-    // dispatch should finish before delete this
-    dispatch_done.wait(false, acquire);
-
-    delete this;
-    return series->pop();
 }
 
 
 int CancelableTimer::cancel_timer_in_map() {
     int ret = 0;
-
-    // sync with dispatch and handle
-    canceled.store(true, release);
+    canceled = true;
 
     // sync with dispatch
-    if (switched.exchange(true, acq_rel))
+    if (switched.exchange(true, acq_rel)) {
+        // this cancel is protected by `in_map`, so `cancel_done` is not needed
+        cancel_done.store(true, relaxed);
         ret = this->TimerTask::cancel();
+    }
 
     // sync with handle and destructor
     in_map.store(false, release);
