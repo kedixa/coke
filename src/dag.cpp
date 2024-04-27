@@ -112,7 +112,7 @@ void dag_dump(std::ostream &os,
 
     os << "\n";
 
-    for (std::size_t i = 0; i < n; i++) {
+    for (dag_index_t i = 0; i < n; i++) {
         if (!outs[i].empty()) {
             os << "    " << GetName(i) << " -> {";
 
