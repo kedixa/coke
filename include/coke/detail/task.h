@@ -4,6 +4,7 @@
 #include <coroutine>
 #include <memory>
 #include <optional>
+#include <exception>
 
 #include "coke/detail/basic_concept.h"
 
@@ -15,6 +16,8 @@ class PromiseBase {
 
 public:
     PromiseBase() = default;
+    PromiseBase(const PromiseBase &) = delete;
+    PromiseBase(PromiseBase &&) = delete;
     virtual ~PromiseBase() { }
 
     void set_context(std::shared_ptr<void> ctx) noexcept { context = ctx; }
@@ -27,6 +30,11 @@ public:
 
     void set_detached(bool detached) noexcept { this->detached = detached; }
     bool get_detached() const noexcept { return detached; }
+
+    void unhandled_exception() { eptr = std::current_exception(); }
+
+protected:
+    std::exception_ptr eptr{nullptr};
 
 private:
     std::shared_ptr<void> context;
@@ -72,8 +80,10 @@ struct TaskAwaiter {
 
     bool await_ready() noexcept { return false; }
 
-    T await_resume() noexcept {
-        if constexpr (!std::is_same_v<T, void>)
+    T await_resume() {
+        if constexpr (std::is_same_v<T, void>)
+            return hdl.promise().value();
+        else
             return std::move(hdl.promise().value());
     }
 
@@ -99,13 +109,16 @@ public:
     using handle_type = std::coroutine_handle<promise_type>;
 
     Task() { }
-    Task(Task &&t) : hdl(t.hdl) { t.hdl = nullptr; }
+    Task(Task &&that) : hdl(that.hdl) { that.hdl = nullptr; }
     ~Task() { if (hdl) hdl.destroy(); }
 
-    Task &operator=(Task &&t) noexcept {
-        auto h = hdl;
-        hdl = t.hdl;
-        t.hdl = h;
+    Task &operator=(Task &&that) noexcept {
+        if (this != &that) {
+            auto h = this->hdl;
+            this->hdl = that.hdl;
+            that.hdl = h;
+        }
+
         return *this;
     }
 
@@ -152,7 +165,7 @@ public:
      *
      * The following method will save callable object in ctx, avoid the problem
      * of captured content being released.
-     *  coke::detach_call([=]() -> coke::Task<> { ... });
+     *  coke::make_task([=]() -> coke::Task<> { ... });
      * 
      * There may be a better way, welcome to discuss.
     */
@@ -180,13 +193,24 @@ public:
 
     auto initial_suspend() noexcept { return std::suspend_always{}; }
     auto final_suspend() noexcept { return FinalAwaiter<T>(get_detached()); }
-    void return_value(T t) noexcept { result.emplace(std::move(t)); }
 
-    // I'm sorry that exception cannot escape in coroutine now.
-    // Maybe consider this issue in the future.
-    [[noreturn]] void unhandled_exception() { std::terminate(); }
+    void return_value(const T &t)
+        noexcept(std::is_nothrow_copy_constructible_v<T>)
+    {
+        result.emplace(t);
+    }
 
-    T &value() & noexcept { return result.value(); }
+    void return_value(T &&t)
+        noexcept(std::is_nothrow_move_constructible_v<T>)
+    {
+        result.emplace(std::move(t));
+    }
+
+    T &value() & {
+        if (eptr)
+            std::rethrow_exception(eptr);
+        return result.value();
+    }
 
 private:
     std::optional<T> result;
@@ -206,7 +230,10 @@ public:
     auto final_suspend() noexcept { return FinalAwaiter<void>(get_detached()); }
     void return_void() noexcept { }
 
-    [[noreturn]] void unhandled_exception() { std::terminate(); }
+    void value() {
+        if (eptr)
+            std::rethrow_exception(eptr);
+    }
 };
 
 
@@ -236,7 +263,7 @@ template<typename T>
 constexpr inline bool is_task_v = detail::task_helper<T>::value;
 
 /**
- * If T is coke::Tak<U>, then task_inner_t is U
+ * If T is coke::Task<U>, then task_inner_t is U
 */
 template<typename T>
 using task_inner_t = typename detail::task_helper<T>::inner_type;
