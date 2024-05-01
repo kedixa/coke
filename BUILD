@@ -41,6 +41,7 @@ cc_library(
         "include/coke/shared_mutex.h",
         "include/coke/sleep.h",
         "include/coke/wait.h",
+        "include/coke/make_task.h",
     ],
     includes = ["include"],
     deps = [
