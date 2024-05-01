@@ -27,6 +27,11 @@ coke::Task<void> create_void_task() {
     co_return;
 }
 
+coke::Task<> create_exception_task() {
+    co_await coke::yield();
+    throw std::runtime_error("this is an exception");
+}
+
 coke::Task<> test_async_future() {
     {
         std::string str(100, 'a'), result;
@@ -59,6 +64,29 @@ coke::Task<> test_async_future() {
         EXPECT_TRUE(fut.ready());
         EXPECT_FALSE(fut.broken());
         fut.get();
+    }
+
+    {
+        coke::Future<void> fut = coke::create_future(create_exception_task());
+
+        int ret;
+        bool has_exception = false;
+
+        do {
+            ret = co_await fut.wait_for(milliseconds(100));
+        } while (ret == coke::FUTURE_STATE_NOTSET);
+
+        EXPECT_EQ(ret, coke::FUTURE_STATE_EXCEPTION);
+        EXPECT_TRUE(fut.has_exception());
+
+        try {
+            fut.get();
+        }
+        catch (const std::runtime_error &) {
+            has_exception = true;
+        }
+
+        EXPECT_TRUE(has_exception);
     }
 }
 
