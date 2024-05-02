@@ -1,6 +1,5 @@
 #include <atomic>
 #include <iostream>
-#include <iomanip>
 #include <random>
 #include <string>
 #include <vector>
@@ -332,7 +331,7 @@ coke::Task<> do_benchmark(const char *name, bench_func_t func) {
         std::vector<coke::Task<>> tasks;
         current = 0;
 
-        for (int i = 0; i < concurrency; i++)
+        for (int j = 0; j < concurrency; j++)
             tasks.emplace_back(func());
 
         start = current_msec();
@@ -349,14 +348,13 @@ coke::Task<> do_benchmark(const char *name, bench_func_t func) {
     data_distribution(costs, mean, stddev);
     tps = 1.0e3 * current / (mean + 1e-9);
 
-    std::cout.precision(2);
-    std::cout << std::fixed;
     table_line(std::cout, width, name, total_cost, run_times,
                mean, stddev, (long)tps);
 }
 
 int main(int argc, char *argv[]) {
     OptionParser args;
+
     args.add_integral(concurrency, 'c', "concurrency", false,
                       "start these series to do benchmark", 4096);
     args.add_integral(max_secs_per_test, 'm', "max-secs", false,
@@ -384,6 +382,9 @@ int main(int argc, char *argv[]) {
     gs.handler_threads = handler_threads;
     gs.compute_threads = compute_threads;
     coke::library_init(gs);
+
+    std::cout.precision(2);
+    std::cout.setf(std::ios_base::fixed, std::ios_base::floatfield);
 
     coke::sync_wait(warm_up());
 

@@ -1,5 +1,4 @@
 #include <iostream>
-#include <iomanip>
 #include <vector>
 #include <utility>
 
@@ -323,8 +322,6 @@ coke::Task<> do_benchmark(const char *name, bench_func_t func) {
     data_distribution(costs, mean, stddev);
     tps = 1.0e3 * total / (mean + 1e-9);
 
-    std::cout.precision(2);
-    std::cout << std::fixed;
     table_line(std::cout, width, name, total_cost, run_times,
                mean, stddev, (long)tps);
 }
@@ -359,6 +356,9 @@ int main(int argc, char *argv[]) {
     gs.handler_threads = handler_threads;
     gs.poller_threads = poller_threads;
     coke::library_init(gs);
+
+    std::cout.precision(2);
+    std::cout.setf(std::ios_base::fixed, std::ios_base::floatfield);
 
     coke::sync_wait(warm_up());
 

@@ -108,7 +108,7 @@ coke::Task<> do_benchmark(const char *name, bench_func_t func) {
         current = 0;
         global_total = 0;
 
-        for (int i = 0; i < concurrency; i++)
+        for (int j = 0; j < concurrency; j++)
             tasks.emplace_back(func());
 
         start = current_msec();
@@ -125,8 +125,6 @@ coke::Task<> do_benchmark(const char *name, bench_func_t func) {
     data_distribution(costs, mean, stddev);
     tps = 1.0e3 * current / (mean + 1e-9);
 
-    std::cout.precision(2);
-    std::cout << std::fixed;
     table_line(std::cout, width, name, total_cost, run_times,
                mean, stddev, (long)tps);
 }
@@ -155,6 +153,9 @@ int main(int argc, char *argv[]) {
     coke::GlobalSettings gs;
     gs.compute_threads = compute_threads;
     coke::library_init(gs);
+
+    std::cout.precision(2);
+    std::cout.setf(std::ios_base::fixed, std::ios_base::floatfield);
 
     coke::sync_wait(warm_up());
 
