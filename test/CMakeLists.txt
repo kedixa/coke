@@ -20,6 +20,7 @@ set(ALL_TESTS
     test_dag
     test_concept
     test_parallel
+    test_exception
 )
 
 include (../cmake/find-workflow.cmake)
