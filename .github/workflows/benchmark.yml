@@ -52,6 +52,12 @@ jobs:
         ./bazel-bin/benchmark/bench_graph --num-nodes 128 --total 500 --group-size 10 --task-per-node 3 --max-secs 60 --times 5 --handler 12 --poller 6 -y
         echo ""
 
+        echo "## Exception"
+        echo "Bench command \`bench_exception --concurrency 4096 --total 200000 --max-secs 60 --times 5 --handler 12 --poller 6 -y\`"
+        echo ""
+        ./bazel-bin/benchmark/bench_exception --concurrency 4096 --total 200000 --max-secs 60 --times 5 --handler 12 --poller 6 -y
+        echo ""
+
         ) > bench.md
 
     - name: Comment

@@ -4,6 +4,7 @@ set(ALL_BENCHMARK
     bench_timer
     bench_go
     bench_graph
+    bench_exception
 )
 
 include (../cmake/find-workflow.cmake)

@@ -17,3 +17,4 @@ cc_library(
 create_benchmark_target("bench_timer")
 create_benchmark_target("bench_go")
 create_benchmark_target("bench_graph")
+create_benchmark_target("bench_exception")
