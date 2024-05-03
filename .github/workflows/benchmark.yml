@@ -35,21 +35,27 @@ jobs:
         echo ""
 
         echo "## Go"
-        echo "Bench command \`bench_go -c 64 -n 8 -m 60 -t 2000000 -y\`"
+        echo "Bench command \`bench_go --concurrency 64 --compute 8 --max-secs 60 --total 200000 --times 5 -y\`"
         echo ""
-        ./bazel-bin/benchmark/bench_go -c 64 -n 8 -m 60 -t 2000000 -y
+        ./bazel-bin/benchmark/bench_go --concurrency 64 --compute 8 --max-secs 60 --total 200000 --times 5 -y
         echo ""
 
         echo "## Timer"
-        echo "Bench command \`bench_timer -c 4096 -h 12 -p 6 -g 8 -m 60 -t 2000000 -y\`"
+        echo "Bench command \`bench_timer --concurrency 4096 --handler 12 --poller 6 --compute 8 --max-secs 60 --total 200000 --times 5 -y\`"
         echo ""
-        ./bazel-bin/benchmark/bench_timer -c 4096 -h 12 -p 6 -g 8 -m 60 -t 2000000 -y
+        ./bazel-bin/benchmark/bench_timer --concurrency 4096 --handler 12 --poller 6 --compute 8 --max-secs 60 --total 200000 --times 5 -y
         echo ""
 
         echo "## Dag"
-        echo "Bench command \`bench_graph -g 10 -n 128 -t 500 -k 3 -y\`"
+        echo "Bench command \`bench_graph --num-nodes 128 --total 500 --group-size 10 --task-per-node 3 --max-secs 60 --times 5 --handler 12 --poller 6 -y\`"
         echo ""
-        ./bazel-bin/benchmark/bench_graph -g 10 -n 128 -t 500 -k 3 -y
+        ./bazel-bin/benchmark/bench_graph --num-nodes 128 --total 500 --group-size 10 --task-per-node 3 --max-secs 60 --times 5 --handler 12 --poller 6 -y
+        echo ""
+
+        echo "## Exception"
+        echo "Bench command \`bench_exception --concurrency 4096 --total 200000 --max-secs 60 --times 5 --handler 12 --poller 6 -y\`"
+        echo ""
+        ./bazel-bin/benchmark/bench_exception --concurrency 4096 --total 200000 --max-secs 60 --times 5 --handler 12 --poller 6 -y
         echo ""
 
         ) > bench.md

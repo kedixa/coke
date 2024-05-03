@@ -6,8 +6,9 @@
 #include <memory>
 #include <latch>
 
-#include "coke/global.h"
 #include "coke/detail/wait_helper.h"
+#include "coke/global.h"
+#include "coke/make_task.h"
 
 namespace coke {
 
@@ -182,6 +183,13 @@ auto async_wait(std::vector<A> &&as) {
         tasks.emplace_back(make_task_from_awaitable(std::move(as[i])));
 
     return detail::async_wait_helper(std::move(tasks));
+}
+
+template<typename FUNC, typename... ARGS>
+auto sync_call(FUNC &&func, ARGS&&... args) {
+    return sync_wait(
+        make_task(std::forward<FUNC>(func), std::forward<ARGS>(args)...)
+    );
 }
 
 } // namespace coke

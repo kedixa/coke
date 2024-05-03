@@ -29,5 +29,9 @@ def create_benchmark_target(name, extra_deps = None):
     cc_binary(
         name = name,
         srcs = [name + ".cpp"],
-        deps = ["//:common"] + extra_deps,
+        deps = [
+            "//:common",
+            "//benchmark:bench_common",
+            "//benchmark:option_parser",
+        ] + extra_deps,
     )
