@@ -68,7 +68,7 @@ protected:
     template<typename Callable>
     bool set_once(Callable &&func, int new_state) {
         bool set_succ = false;
-        std::call_once(once_flag, func, &set_succ);
+        std::call_once(once_flag, std::forward<Callable>(func), &set_succ);
 
         if (set_succ) {
             state.store(new_state, release);

@@ -25,6 +25,7 @@ data_distribution(const std::vector<long long> &data,
     if (data.empty()) {
         mean = 0.0;
         stddev = 0.0;
+        return;
     }
 
     double total = std::accumulate(data.begin(), data.end(), 0LL);

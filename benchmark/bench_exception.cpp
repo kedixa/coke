@@ -43,7 +43,7 @@ coke::Task<> recursive_yield(int depth, std::mt19937_64 &mt, int p) {
         co_await recursive_yield(depth-1, mt, p);
 }
 
-coke::Task<> do_test(int dpt, std::mt19937_64 &&mt, int p) {
+coke::Task<> do_test(int dpt, std::mt19937_64 mt, int p) {
     long long i;
 
     while (next(i)) {
