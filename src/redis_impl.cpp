@@ -12,17 +12,33 @@ namespace coke {
 RedisClient::RedisClient(const RedisClientParams &p)
     : params(p)
 {
-    std::string password;
+    std::string username, password, host;
+    username = StringUtil::url_encode_component(params.username);
     password = StringUtil::url_encode_component(params.password);
 
     url.assign(params.use_ssl ? "rediss://" : "redis://");
 
-    if (!password.empty())
-        url.append(":").append(password).append("@");
+    if (!(username.empty() && password.empty()))
+        url.append(username).append(":").append(password).append("@");
 
-    url.append(params.host).append(":")
-       .append(std::to_string(params.port))
-       .append("/").append(std::to_string(params.db));
+    if (params.host.find(':') != std::string::npos &&
+        params.host.front() != '[' && params.host.back() != ']')
+    {
+        // XXX we didn't encode % in ipv6 because URIParser doesn't decode it.
+        host.reserve(params.host.size() + 2);
+        host.append("[").append(params.host).append("]");
+    }
+    else
+        host = params.host;
+
+    url.append(host);
+
+    if (params.port != 0)
+        url.append(":").append(std::to_string(params.port));
+
+    url.append("/").append(std::to_string(params.db));
+
+    URIParser::parse(url, uri);
 }
 
 RedisClient::AwaiterType
@@ -38,7 +54,7 @@ RedisClient::request(const std::string &command,
 RedisClient::AwaiterType RedisClient::create_task(ReqType *req) noexcept {
     WFRedisTask *task;
 
-    task = WFTaskFactory::create_redis_task(url, params.retry_max, nullptr);
+    task = WFTaskFactory::create_redis_task(uri, params.retry_max, nullptr);
     if (req)
         *(task->get_req()) = std::move(*req);
 

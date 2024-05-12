@@ -116,8 +116,16 @@ int main(int argc, char *argv[]) {
         repeat = 1;
 
     readline_init();
-    prompt_str.assign(params.host) .append(":")
-              .append(std::to_string(params.port)) .append("> ");
+
+    if (params.host.find(':') != std::string::npos)
+        prompt_str.append("[").append(params.host).append("]");
+    else
+        prompt_str.append(params.host);
+
+    if (params.port)
+        prompt_str.append(":").append(std::to_string(params.port));
+
+    prompt_str.append("> ");
 
     coke::RedisClient cli(params);
     coke::sync_wait(redis_cli(cli, repeat, interval));

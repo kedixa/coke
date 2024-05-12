@@ -22,6 +22,7 @@ cc_library(
         "src/cancelable_timer.cpp",
         "src/mutex.cpp",
         "src/dag.cpp",
+        "src/condition.cpp",
     ],
     hdrs = [
         "include/coke/basic_server.h",
@@ -42,6 +43,7 @@ cc_library(
         "include/coke/sleep.h",
         "include/coke/wait.h",
         "include/coke/make_task.h",
+        "include/coke/condition.h",
     ],
     includes = ["include"],
     deps = [

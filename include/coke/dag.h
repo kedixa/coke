@@ -77,7 +77,7 @@ protected:
 
 template<typename T>
 class DagContext : public DagContextBase {
-    using node_func_t = dag_node_func<T>::type;
+    using node_func_t = typename dag_node_func<T>::type;
 public:
     DagContext(dag_index_t cnt, T &data) : DagContextBase(cnt), data(data)
     { }
@@ -91,7 +91,7 @@ private:
 
 template<>
 class DagContext<void> : public DagContextBase {
-    using node_func_t = dag_node_func<void>::type;
+    using node_func_t = typename dag_node_func<void>::type;
 public:
     DagContext(dag_index_t cnt) : DagContextBase(cnt)
     { }
@@ -114,7 +114,7 @@ void dag_dump(std::ostream &os,
 
 
 template<typename T>
-using dag_node_func_t = detail::dag_node_func<T>::type;
+using dag_node_func_t = typename detail::dag_node_func<T>::type;
 
 template<typename T>
 class DagBuilder;
@@ -422,10 +422,10 @@ private:
 */
 
 template<typename T>
-using DagNodeGroup = DagNodeRef<T>::NodeGroup;
+using DagNodeGroup = typename DagNodeRef<T>::NodeGroup;
 
 template<typename T>
-using DagNodeVector = DagNodeRef<T>::NodeVector;
+using DagNodeVector = typename DagNodeRef<T>::NodeVector;
 
 template<typename T>
 DagNodeRef<T> operator> (DagNodeRef<T> l, DagNodeRef<T> r) {

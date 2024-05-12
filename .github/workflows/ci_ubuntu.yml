@@ -1,3 +1,5 @@
+name: CI on Ubuntu
+
 on:
   push:
     branches:
@@ -11,6 +13,40 @@ env:
   wf_tag: v0.11.3
 
 jobs:
+  build-ubuntu-2404:
+    name: ubuntu-24.04
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        compiler:
+        - cc: gcc-13
+          cxx: g++-13
+          opts: ""
+        - cc: gcc-14
+          cxx: g++-14
+          opts: ""
+        - cc: clang-16
+          cxx: clang-16
+          opts: ""
+
+    if: False
+    steps:
+    - name: Prepare
+      run: |
+        sudo apt update
+        sudo apt install -y libgtest-dev valgrind
+    - uses: actions/checkout@v4
+    - name: Build
+      env:
+        CC: ${{ matrix.compiler.cc }}
+        CXX: ${{ matrix.compiler.cxx }}
+        BAZEL_OPTS: ${{ matrix.compiler.opts }}
+      run: |
+        echo ${CC} ${CXX}
+        bazel build ... ${BAZEL_OPTS}
+        bazel test ... ${BAZEL_OPTS}
+        bazel test ... ${BAZEL_OPTS} --config=memcheck
+
   build-ubuntu-2204:
     name: ubuntu-22.04
     runs-on: ubuntu-22.04
@@ -23,6 +59,9 @@ jobs:
         - cc: gcc-12
           cxx: g++-12
           opts: ""
+        - cc: clang-15
+          cxx: clang-15
+          opts: ""
 
     steps:
     - name: Prepare
@@ -30,12 +69,13 @@ jobs:
         sudo apt update
         sudo apt install -y libgtest-dev valgrind
     - uses: actions/checkout@v4
-    - name: Build With GCC
+    - name: Build
       env:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}
         BAZEL_OPTS: ${{ matrix.compiler.opts }}
       run: |
+        echo ${CC} ${CXX}
         bazel build ... ${BAZEL_OPTS}
         bazel test ... ${BAZEL_OPTS}
         bazel test ... ${BAZEL_OPTS} --config=memcheck
@@ -63,27 +103,7 @@ jobs:
         export CC=gcc-11 CXX=g++-11
         cmake -S workflow -B build.workflow -D CMAKE_CXX_STANDARD=20
         make -C workflow -j 8
-        cmake -S . -B build.cmake -D Workflow_DIR=workflow -D COKE_ENABLE_TEST=1 -D COKE_ENABLE_EXAMPLE=1 -D COKE_ENABLE_BENCHMARK=1
-        make -C build.cmake -j 8 all test
-
-  build-fedora:
-    name: fedora-38
-    runs-on: ubuntu-22.04
-    container:
-      image: fedora:38
-    steps:
-    - name: Prepare
-      run: |
-        sudo dnf install -y gcc gcc-c++ openssl openssl-devel gtest gtest-devel valgrind git cmake
-    - uses: actions/checkout@v4
-    - uses: actions/checkout@v4
-      with:
-        repository: sogou/workflow
-        ref: ${{ env.wf_tag }}
-        path: workflow
-    - name: Build
-      run: |
-        cmake -S workflow -B build.workflow -D CMAKE_CXX_STANDARD=20
-        make -C workflow -j 8
-        cmake -S . -B build.cmake -D Workflow_DIR=workflow -D COKE_ENABLE_TEST=1 -D COKE_ENABLE_EXAMPLE=1 -D COKE_ENABLE_BENCHMARK=1
+        cmake -S . -B build.cmake -D Workflow_DIR=workflow \
+          -D COKE_ENABLE_TEST=1 -D COKE_ENABLE_EXAMPLE=1 \
+          -D COKE_ENABLE_BENCHMARK=1
         make -C build.cmake -j 8 all test

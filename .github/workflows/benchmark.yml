@@ -23,39 +23,59 @@ jobs:
         bazel build //benchmark/...
 
         (echo "# Benchmark"
-        echo "The benchmark runs on Github Actions"
+        echo "The benchmark runs on Github Actions."
         echo ""
 
         echo "## Environment"
+        echo "<details><summary>Details</summary> <p>"
+        echo ""
         echo "\`\`\`"
         lscpu
         echo ""
         lsmem
         echo "\`\`\`"
         echo ""
+        echo "</p> </details>"
+        echo ""
 
         echo "## Go"
         echo "Bench command \`bench_go --concurrency 64 --compute 8 --max-secs 60 --total 200000 --times 5 -y\`"
         echo ""
+        echo "<details><summary>Details</summary> <p>"
+        echo ""
         ./bazel-bin/benchmark/bench_go --concurrency 64 --compute 8 --max-secs 60 --total 200000 --times 5 -y
+        echo ""
+        echo "</p> </details>"
         echo ""
 
         echo "## Timer"
         echo "Bench command \`bench_timer --concurrency 4096 --handler 12 --poller 6 --compute 8 --max-secs 60 --total 200000 --times 5 -y\`"
         echo ""
+        echo "<details><summary>Details</summary> <p>"
+        echo ""
         ./bazel-bin/benchmark/bench_timer --concurrency 4096 --handler 12 --poller 6 --compute 8 --max-secs 60 --total 200000 --times 5 -y
+        echo ""
+        echo "</p> </details>"
         echo ""
 
         echo "## Dag"
         echo "Bench command \`bench_graph --num-nodes 128 --total 500 --group-size 10 --task-per-node 3 --max-secs 60 --times 5 --handler 12 --poller 6 -y\`"
         echo ""
+        echo "<details><summary>Details</summary> <p>"
+        echo ""
         ./bazel-bin/benchmark/bench_graph --num-nodes 128 --total 500 --group-size 10 --task-per-node 3 --max-secs 60 --times 5 --handler 12 --poller 6 -y
+        echo ""
+        echo "</p> </details>"
         echo ""
 
         echo "## Exception"
         echo "Bench command \`bench_exception --concurrency 4096 --total 200000 --max-secs 60 --times 5 --handler 12 --poller 6 -y\`"
         echo ""
+        echo "<details><summary>Details</summary> <p>"
+        echo ""
         ./bazel-bin/benchmark/bench_exception --concurrency 4096 --total 200000 --max-secs 60 --times 5 --handler 12 --poller 6 -y
+        echo ""
+        echo "</p> </details>"
         echo ""
 
         ) > bench.md

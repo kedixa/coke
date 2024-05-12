@@ -8,6 +8,7 @@
 #include "coke/network.h"
 
 #include "workflow/RedisMessage.h"
+#include "workflow/URIParser.h"
 
 namespace coke {
 
@@ -27,6 +28,7 @@ struct RedisClientParams {
     int port                = 6379;
     int db                  = 0;
     std::string host;
+    std::string username;
     std::string password;
 };
 
@@ -50,6 +52,7 @@ protected:
 protected:
     RedisClientParams params;
     std::string url;
+    ParsedURI uri;
 };
 
 } // namespace coke
