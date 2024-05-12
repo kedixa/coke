@@ -40,7 +40,7 @@ void do_calculate() {
 }
 
 coke::Task<> bench_wf_go_name(int max) {
-    long long i;
+    long long i = 0;
 
     auto creater = [i, max](WFRepeaterTask *) mutable -> SubTask * {
         if (next(i))

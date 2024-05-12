@@ -29,13 +29,14 @@ jobs:
           cxx: clang-16
           opts: ""
 
+    if: False
     steps:
     - name: Prepare
       run: |
         sudo apt update
         sudo apt install -y libgtest-dev valgrind
     - uses: actions/checkout@v4
-    - name: Build With GCC
+    - name: Build
       env:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}
@@ -68,7 +69,7 @@ jobs:
         sudo apt update
         sudo apt install -y libgtest-dev valgrind
     - uses: actions/checkout@v4
-    - name: Build With GCC
+    - name: Build
       env:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}

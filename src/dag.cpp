@@ -76,10 +76,16 @@ bool dag_check(const std::vector<std::vector<dag_index_t>> &outs,
 struct GetLabel {
     dag_index_t id;
     const std::string &name;
+
+    GetLabel(dag_index_t id, const std::string &name)
+        : id(id), name(name)
+    { }
 };
 
 struct GetName {
     dag_index_t id;
+
+    GetName(dag_index_t id) : id(id) { }
 };
 
 std::ostream &operator<< (std::ostream &os, const GetLabel &x) {
