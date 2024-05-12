@@ -38,7 +38,10 @@ public:
     using AwaiterType = MySQLAwaiter;
 
 public:
-    explicit MySQLClient(const MySQLClientParams &params) : MySQLClient(params, false, 0) { }
+    explicit MySQLClient(const MySQLClientParams &params)
+        : MySQLClient(params, false, 0)
+    { }
+
     virtual ~MySQLClient() = default;
 
     /**
@@ -58,7 +61,8 @@ public:
     AwaiterType request(const std::string &query);
 
 protected:
-    MySQLClient(const MySQLClientParams &params, bool unique_conn, std::size_t conn_id);
+    MySQLClient(const MySQLClientParams &params,
+                bool unique_conn, std::size_t conn_id);
 
 protected:
     bool unique_conn;
@@ -88,7 +92,8 @@ public:
     static std::size_t get_unique_id();
 
 public:
-    explicit MySQLConnection(const MySQLClientParams &params, std::size_t conn_id)
+    explicit MySQLConnection(const MySQLClientParams &params,
+                             std::size_t conn_id)
         : MySQLClient(params, true, conn_id)
     { }
 

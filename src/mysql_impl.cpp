@@ -9,10 +9,11 @@
 
 namespace coke {
 
-MySQLClient::MySQLClient(const MySQLClientParams &p, bool unique_conn, std::size_t conn_id)
+MySQLClient::MySQLClient(const MySQLClientParams &p,
+                         bool unique_conn, std::size_t conn_id)
     : unique_conn(unique_conn), conn_id(conn_id), params(p)
 {
-    std::string username, password, dbname;
+    std::string username, password, dbname, host;
     username = StringUtil::url_encode_component(params.username);
     password = StringUtil::url_encode_component(params.password);
     dbname = StringUtil::url_encode_component(params.dbname);
@@ -24,12 +25,23 @@ MySQLClient::MySQLClient(const MySQLClientParams &p, bool unique_conn, std::size
         params.retry_max = 0;
 
     if (!username.empty() || !password.empty())
-        url.append(username).append(":")
-           .append(password).append("@");
+        url.append(username).append(":").append(password).append("@");
 
-    url.append(params.host).append(":")
-       .append(std::to_string(params.port)).append("/")
-       .append(dbname);
+    if (params.host.find(':') != std::string::npos &&
+        params.host.front() != '[' && params.host.back() != ']')
+    {
+        host.reserve(params.host.size() + 2);
+        host.append("[").append(params.host).append("]");
+    }
+    else
+        host = params.host;
+
+    url.append(host);
+
+    if (params.port != 0)
+        url.append(":").append(std::to_string(params.port));
+
+    url.append("/").append(dbname);
 
     std::size_t pos = url.size();
     if (!params.character_set.empty())
