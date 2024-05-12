@@ -1,7 +1,6 @@
+name: CI on CentOS Stream 8
+
 on:
-  pull_request:
-    branches:
-    - master
   workflow_dispatch:
 
 env:
