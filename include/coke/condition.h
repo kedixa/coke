@@ -80,16 +80,16 @@ public:
      * @brief If any coroutines are waiting on *this, calling notify_one
      *        unblocks one of them.
     */
-    void notify_one() { notify_n(1); }
+    void notify_one() { notify(1); }
 
     /**
-     * @brief If any coroutines are waiting on *this, calling notify_n
+     * @brief If any coroutines are waiting on *this, calling notify
      *        unblocks n of them.
      *
      * @param n The number of coroutines waiting on *this to wakeup, if less
      *        than n, wakeup all.
     */
-    void notify_n(std::size_t n) { cancel_sleep_by_id(uid, n); }
+    void notify(std::size_t n) { cancel_sleep_by_id(uid, n); }
 
     /**
      * @brief If any coroutines are waiting on *this, calling notify_all
