@@ -59,6 +59,18 @@ const char *get_error_string(int state, int error) {
     return WFGlobal::get_error_string(state, error);
 }
 
+bool prevent_recursive_stack(bool clear) {
+    constexpr std::size_t N = 1024;
+    static thread_local std::size_t recursive_count = 0;
+
+    if (clear) {
+        recursive_count = 0;
+        return false;
+    }
+
+    return (++recursive_count) % N == 0;
+}
+
 void *AwaiterBase::create_series(SubTask *first) {
     return Workflow::create_series_work(first, nullptr);
 }

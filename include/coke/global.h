@@ -87,6 +87,17 @@ uint64_t get_unique_id();
 
 constexpr uint64_t INVALID_UNIQUE_ID = 0;
 
+/**
+ * Some coroutines do not call asynchronous procedures, but perform synchronous
+ * operations and then co_return. If do that all the time in a thread, some
+ * compilers may implement it as a recursive operation. Call this function
+ * where this situation may occur, if returns true, manually switch the thread
+ * with coke::yield(), or other async operations.
+ *
+ * @param clear Reset recursive count to zero and return false.
+*/
+bool prevent_recursive_stack(bool clear = false);
+
 } // namespace coke
 
 #endif // COKE_GLOBAL_H
