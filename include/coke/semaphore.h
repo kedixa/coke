@@ -1,3 +1,21 @@
+/**
+ * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Authors: kedixa (https://github.com/kedixa)
+*/
+
 #ifndef COKE_SEMAPHORE_H
 #define COKE_SEMAPHORE_H
 
@@ -47,9 +65,8 @@ public:
     /**
      * @brief Try to acquire a count.
      *
-     * @return Return true if acquire success, else false.
-     *
      * @pre Current coroutine doesn't owns all the counts.
+     * @return Return true if acquire success, else false.
     */
     bool try_acquire() {
         std::lock_guard<std::mutex> lg(mtx);
@@ -76,12 +93,8 @@ public:
     /**
      * @brief Acquire a count, block until success.
      *
-     * @return An awaitable object that needs to be awaited immediately. The
-     *         await result is an integer, which may be coke::TOP_SUCCESS,
-     *         coke::TOP_TIMEOUT(for try_acquire_for), coke::TOP_ABORTED or any
-     *         negative number. See `coke/global.h` for more description.
-     *
      * @pre Current coroutine doesn't owns all the count.
+     * @return See try_acquire_for but ignore coke::TOP_TIMEOUT.
     */
     [[nodiscard]]
     Task<int> acquire() { return acquire_impl(detail::TimedWaitHelper{}); }
@@ -89,11 +102,14 @@ public:
     /**
      * @brief Acquire a count, block until success or `nsec` timeout.
      *
-     * @return See `acquire`.
-     *
-     * @param nsec Max time to block.
-     *
      * @pre Current coroutine doesn't owns all the count.
+     * @param nsec Max time to block.
+     * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
+     * @retval coke::TOP_SUCCESS If acquire success.
+     * @retval coke::TOP_TIMEOUT If wait timeout.
+     * @retval coke::TOP_ABORTED If process exit.
+     * @retval Negative integer to indicate system error, almost never happens.
+     * @see coke/global.h
     */
     [[nodiscard]]
     Task<int> try_acquire_for(const NanoSec &nsec) {

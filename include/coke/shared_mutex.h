@@ -1,3 +1,21 @@
+/**
+ * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Authors: kedixa (https://github.com/kedixa)
+*/
+
 #ifndef COKE_SHARED_MUTEX_H
 #define COKE_SHARED_MUTEX_H
 
@@ -60,10 +78,9 @@ public:
     /**
      * @brief Try to lock the mutex for exclusive ownership.
      *
-     * @return Return true if lock success, else false.
-     *
      * @pre Current coroutine doesn't owns the mutex in any mode(shared or
      *      exclusive).
+     * @return Return true if lock success, else false.
     */
     bool try_lock() {
         std::lock_guard<std::mutex> lg(mtx);
@@ -79,10 +96,9 @@ public:
     /**
      * @brief Try to lock the mutex for shared ownership.
      *
-     * @return Return true if lock success, else false.
-     *
      * @pre Current coroutine doesn't owns the mutex in any mode(shared or
      *      exclusive).
+     * @return Return true if lock success, else false.
     */
     bool try_lock_shared() {
         std::lock_guard<std::mutex> lg(mtx);
@@ -99,11 +115,10 @@ public:
     /**
      * @brief Try to upgrade the mutex from shared to exclusive ownership.
      *
+     * @pre Current coroutine already has shared ownership.
      * @return If upgrade success, return true and current coroutine has
      *         exclusive ownership, else return false and current coroutine
      *         has shared ownership, just like before calling `try_upgrade`.
-     *
-     * @pre Current coroutine already has shared ownership.
     */
     bool try_upgrade() {
         std::lock_guard<std::mutex> lg(mtx);
@@ -128,14 +143,9 @@ public:
     /**
      * @brief Lock the mutex for exclusive ownership, block until success.
      *
-     * @return An awaitable object that needs to be awaited immediately. The
-     *         await result is an integer, which may be coke::TOP_SUCCESS,
-     *         coke::TOP_TIMEOUT(for try_lock_for and try_lock_shared_for),
-     *         coke::TOP_ABORTED or any negative number. See `coke/global.h`
-     *         for more description.
-     *
      * @pre Current coroutine doesn't owns the mutex in any mode(shared or
      *      exclusive).
+     * @return See try_lock_for but ignore coke::TOP_TIMEOUT.
     */
     [[nodiscard]]
     Task<int> lock() { return lock_impl(detail::TimedWaitHelper{}); }
@@ -144,12 +154,15 @@ public:
      * @brief Lock the mutex for exclusive ownership, block until success or
      *        `nsec` timeout.
      *
-     * @return See `lock`.
-     *
-     * @param nsec Max time to block.
-     *
      * @pre Current coroutine doesn't owns the mutex in any mode(shared or
      *      exclusive).
+     * @param nsec Max time to block.
+     * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
+     * @retval coke::TOP_SUCCESS If lock success.
+     * @retval coke::TOP_TIMEOUT If `nsec` timeout.
+     * @retval coke::TOP_ABORTED If process exit.
+     * @retval Negative integer to indicate system error, almost never happens.
+     * @see coke/global.h
     */
     [[nodiscard]]
     Task<int> try_lock_for(const NanoSec &nsec) {
@@ -159,10 +172,9 @@ public:
     /**
      * @brief Lock the mutex for shared ownership, block until success.
      *
-     * @return See `lock`.
-     *
      * @pre Current coroutine doesn't owns the mutex in any mode(shared or
      *      exclusive).
+     * @return See try_lock_for but ignore coke::TOP_TIMEOUT.
     */
     [[nodiscard]]
     Task<int> lock_shared() {
@@ -173,12 +185,11 @@ public:
      * @brief Lock the mutex for shared ownership, block until success or
      *        `nsec` timeout.
      *
-     * @param nsec Max time to block.
-     *
-     * @return See `lock`.
-     *
      * @pre Current coroutine doesn't owns the mutex in any mode(shared or
      *      exclusive).
+     * @param nsec Max time to block.
+     * @return See try_lock_for.
+     *
     */
     [[nodiscard]]
     Task<int> try_lock_shared_for(const NanoSec &nsec) {

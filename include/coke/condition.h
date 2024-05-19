@@ -1,3 +1,21 @@
+/**
+ * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Authors: kedixa (https://github.com/kedixa)
+*/
+
 #ifndef COKE_CONDITION_H
 #define COKE_CONDITION_H
 
@@ -23,11 +41,8 @@ public:
     /**
      * @brief Blocks the current coroutine until the condition is awakened.
      *
-     * @return An awaitable object that needs to be awaited immediately. The
-     *         await result is an integer, which is almost always
-     *         coke::TOP_SUCCESS, unless the sleep task fail, this
-     *         will return coke::TOP_ABORTED or any negative numbers. See
-     *         `coke/global.h` for more description.
+     * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
+     *         See wait_for but ignore coke::TOP_TIMEOUT.
     */
     [[nodiscard]]
     Task<int> wait(std::unique_lock<std::mutex> &lock) { 
@@ -36,9 +51,10 @@ public:
 
     /**
      * @brief Blocks the current coroutine until the condition is awakened and
-     *        pred() returns true. pred
+     *        pred() returns true.
      *
-     * @return Same as wait(lock);
+     * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
+     *         See wait_for but ignore coke::TOP_TIMEOUT.
     */
     [[nodiscard]]
     Task<int> wait(std::unique_lock<std::mutex> &lock,
@@ -47,15 +63,15 @@ public:
     }
 
     /**
-     * @brief Blocks the current coroutine until the condition is awakened or
+     * @brief Blocks the current coroutine until the condition is awakened, or
      *        `nsec` timeout.
      *
-     * @return An awaitable object that needs to be awaited immediately. The
-     *         await result is an integer, which may be
-     *         coke::TOP_SUCCESS if wake up before timeout,
-     *         coke::TOP_TIMEOUT if wait timeout,
-     *         coke::TOP_ABORTED if process exit,
-     *         any negative numbers if there are system errors.
+     * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
+     * @retval coke::TOP_SUCCESS If awakened before timeout.
+     * @retval coke::TOP_TIMEOUT If wait timeout.
+     * @retval coke::TOP_ABORTED If process exit.
+     * @retval Negative integer to indicate system error, almost never happens.
+     * @see coke/global.h
     */
     [[nodiscard]]
     Task<int> wait_for(std::unique_lock<std::mutex> &lock,
@@ -67,8 +83,9 @@ public:
      * @brief Blocks the current coroutine until the condition is (awakened and
      *        pred returns true) or `nsec` timeout.
      *
-     * @return Same as wait_for(lock, nsec), but coke::TOP_SUCCESS is returned
-     *         only if `pred` returns true.
+     * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
+     *         See wait_for(lock, nsec), but coke::TOP_SUCCESS is returned
+     *         only if `pred()` returns true.
      */
     [[nodiscard]]
     Task<int> wait_for(std::unique_lock<std::mutex> &lock, const NanoSec &nsec,

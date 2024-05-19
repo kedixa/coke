@@ -1,3 +1,21 @@
+/**
+ * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Authors: kedixa (https://github.com/kedixa)
+*/
+
 #ifndef COKE_MUTEX_H
 #define COKE_MUTEX_H
 
@@ -50,12 +68,9 @@ public:
     /**
      * @brief Lock the mutex, block until success.
      *
-     * @return An awaitable object that needs to be awaited immediately. The
-     *         await result is an integer, which may be coke::TOP_SUCCESS,
-     *         coke::TOP_TIMEOUT(for try_lock_for), coke::TOP_ABORTED or any
-     *         negative number. See `coke/global.h` for more description.
-     *
      * @pre Current coroutine doesn't owns the mutex.
+     * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
+     *         See try_lock_for but ignore coke::TOP_TIMEOUT.
     */
     [[nodiscard]]
     Task<int> lock() { return sem.acquire(); }
@@ -63,11 +78,14 @@ public:
     /**
      * @brief Lock the mutex, block until success or `nsec` timeout.
      *
-     * @return See `lock`.
-     *
-     * @param nsec Max time to block.
-     *
      * @pre Current coroutine doesn't owns the mutex.
+     * @param nsec Max time to block.
+     * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
+     * @retval coke::TOP_SUCCESS If lock success.
+     * @retval coke::TOP_TIMEOUT If `nsec` timeout.
+     * @retval coke::TOP_ABORTED If process exit.
+     * @retval Negative integer to indicate system error, almost never happens.
+     * @see coke/global.h
     */
     [[nodiscard]]
     Task<int> try_lock_for(const NanoSec &nsec) {

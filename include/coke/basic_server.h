@@ -1,3 +1,21 @@
+/**
+ * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Authors: kedixa (https://github.com/kedixa)
+*/
+
 #ifndef COKE_BASIC_SERVER_H
 #define COKE_BASIC_SERVER_H
 
@@ -38,7 +56,8 @@ class ServerContext {
     using AwaiterType = NetworkReplyAwaiter;
 
 public:
-    ServerContext(TaskType *task) : replied(false), task(task)
+    ServerContext(TaskType *task)
+        : replied(false), task(task)
     { }
 
     ServerContext(ServerContext &&c) {
@@ -63,10 +82,9 @@ public:
     long long get_seqid() { return task->get_seq(); }
 
     /**
-     * `get_task` returns the `WFNetworkTask *` owned by this ServerContext,
-     * to make it easier to use low level functions such as task->get_connection.
-     *
-     * Read the documentation in detail to learn about lifecycle related issues.
+     * @brief Returns the server task owned by this ServerContext, make it
+     *        easier to use its member functions such as task->get_connection.
+     * @attention Make sure you understand the workflow task's lifecycle.
     */
     TaskType *get_task() { return task; }
 

@@ -1,3 +1,21 @@
+/**
+ * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Authors: kedixa (https://github.com/kedixa)
+*/
+
 #ifndef COKE_FILEIO_H
 #define COKE_FILEIO_H
 
@@ -8,8 +26,8 @@
 namespace coke {
 
 /**
- * Return value type of file input and output operations.
- * When `state` is not coke::STATE_SUCCESS, `error` means system error code errno.
+ * @brief Return value type of file input and output operations.
+ * When `state` is not coke::STATE_SUCCESS, `error` means system error errno.
  * When file io success, `nbytes` indicates the number of bytes read or written.
 */
 struct FileResult {

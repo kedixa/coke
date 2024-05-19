@@ -1,3 +1,21 @@
+/**
+ * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Authors: kedixa (https://github.com/kedixa)
+*/
+
 #ifndef COKE_GENERIC_AWAITER_H
 #define COKE_GENERIC_AWAITER_H
 
@@ -43,16 +61,16 @@ public:
     GenericAwaiter() = default;
 
     /**
-     * GenericAwaiter can neither be copied nor moved. This is to avoid
-     * co_await with the new awaiter object, but call set_result or done
-     * with the old object(which is already in unknown state if moved).
+     * @brief GenericAwaiter can neither be copied nor moved. See BasicAwaiter
+     *        if you need a movable awaiter.
     */
     GenericAwaiter(GenericAwaiter &&) = delete;
 
     void await_resume() { }
 
     /**
-     * GenericAwaiter::done should be called EXACTLY ONCE.
+     * @brief Resume the coroutine, usually call it on task's callback.
+     * @attention GenericAwaiter::done should be called EXACTLY ONCE.
     */
     void done() noexcept override {
         AwaiterBase::done();
@@ -61,6 +79,12 @@ public:
     void set_result() { }
     void emplace_result() { }
 
+    /**
+     * @brief Take over ownership of `task`. Do not perform other operations on
+     *        task after calling take_over.
+     * @attention If continue to operate the task after take_over, make sure
+     *            you understand the life cycle of the workflow task.
+    */
     void take_over(SubTask *task) {
         set_task(task, false);
     }
@@ -72,16 +96,14 @@ public:
     GenericAwaiter() = default;
 
     /**
-     * GenericAwaiter can neither be copied nor moved. This is to avoid
-     * co_await with the new awaiter object, but call set_result or done
-     * with the old object(which is already in unknown state if moved).
+     * @brief GenericAwaiter can neither be copied nor moved. See BasicAwaiter
+     *        if you need a movable awaiter.
     */
     GenericAwaiter(GenericAwaiter &&) = delete;
 
     /**
-     * Save result into GenericAwaiter.
-     * emplace_result should be called before done.
-     * Set or emplace result should be called EXACTLY ONCE.
+     * @brief Set result into GenericAwaiter.
+     * @attention Set or emplace result should be called EXACTLY ONCE.
     */
     template<typename... ARGS>
         requires std::is_constructible_v<T, ARGS...>
@@ -98,21 +120,26 @@ public:
     }
 
     /**
-     * Wake up coroutine which is wating on *this.
-     * GenericAwaiter::done should be called EXACTLY ONCE.
+     * @brief Resume the coroutine, usually call it on task's callback.
+     * @attention GenericAwaiter::done should be called EXACTLY ONCE.
     */
     void done() noexcept override {
         AwaiterBase::done();
     }
 
     /**
-     * Take over ownership of `task`, after take_over, any operation on task
-     * lead to undefined behavior.
+     * @brief Take over ownership of `task`. Do not perform other operations on
+     *        task after calling take_over.
+     * @attention If continue to operate the task after take_over, make sure
+     *            you understand the life cycle of the workflow task.
     */
     virtual void take_over(SubTask *task) {
         set_task(task, false);
     }
 
+    /**
+     * @brief Return the co_await result set by emplace_result/set_result.
+    */
     T await_resume() {
         return std::move(opt.value());
     }

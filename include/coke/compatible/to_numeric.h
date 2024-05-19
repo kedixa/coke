@@ -1,3 +1,21 @@
+/**
+ * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Authors: kedixa (https://github.com/kedixa)
+*/
+
 #ifndef COKE_COMPATIBLE_TO_NUMERIC_H
 #define COKE_COMPATIBLE_TO_NUMERIC_H
 
@@ -8,7 +26,10 @@
 namespace coke::comp {
 
 /**
- * to_numeric: Convert string to numeric, used by mysql_utils.h
+ * @brief Convert string to numeric, used by mysql_utils.h.
+ *
+ * This function is implemented here for compatibility, because some versions of
+ * clang do not yet implement std::from_chars with float and double.
 */
 template<typename T>
 std::errc to_numeric(const std::string_view &data, T &value) noexcept {
@@ -20,8 +41,6 @@ std::errc to_numeric(const std::string_view &data, T &value) noexcept {
         return std::errc::invalid_argument;
     return r.ec;
 }
-
-// clang does not yet support the float and double forms of from_chars
 
 #ifndef __cpp_lib_to_chars
 template<typename T>
