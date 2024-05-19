@@ -44,6 +44,27 @@ inline ParallelAwaiter wait_parallel(ParallelWork *parallel) {
     return ParallelAwaiter(parallel);
 }
 
+using SeriesCreater = SeriesWork * (*)(SubTask *);
+/**
+ * @brief Set a new series creater and return the old one.
+ *
+ * This function must be called exactly before any coroutine is created.
+ *
+ * @param creater An instance of SeriesCreater which don't throw any exceptions.
+ *        If creater is nullptr, default series creater is set.
+ * @return Previous series creater, if this is the first call, default series
+ *         creater is returned.
+*/
+SeriesCreater set_series_creater(SeriesCreater creater) noexcept;
+
+/**
+ * @brief Get current series creater.
+ *
+ * @return Same as the param of last call to `set_series_creater`, if it is
+ *         never called, return default series creater.
+*/
+SeriesCreater get_series_creater() noexcept;
+
 } // namespace coke
 
 #endif // COKE_SERIES_H

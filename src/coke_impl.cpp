@@ -71,8 +71,28 @@ bool prevent_recursive_stack(bool clear) {
     return (++recursive_count) % N == 0;
 }
 
-void *AwaiterBase::create_series(SubTask *first) {
+SeriesWork *default_series_creater(SubTask *first) {
     return Workflow::create_series_work(first, nullptr);
+}
+
+static SeriesCreater coke_series_creater = default_series_creater;
+
+SeriesCreater set_series_creater(SeriesCreater creater) noexcept {
+    SeriesCreater old = coke_series_creater;
+    if (creater == nullptr)
+        coke_series_creater = default_series_creater;
+    else
+        coke_series_creater = creater;
+
+    return old;
+}
+
+SeriesCreater get_series_creater() noexcept {
+    return coke_series_creater;
+}
+
+void *AwaiterBase::create_series(SubTask *first) {
+    return coke_series_creater(first);
 }
 
 uint64_t get_unique_id() {
