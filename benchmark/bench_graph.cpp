@@ -201,7 +201,7 @@ auto coke_create_flower(RootFunc &&root_func, NodeFunc &&node_func) {
 }
 
 auto wf_timer_creater(WFGraphTask *g) {
-    auto &x = g->create_graph_node(WFTaskFactory::create_timer_task(0, 0, nullptr));
+    auto &x = g->create_graph_node(WFTaskFactory::create_go_task("", []{}));
     return &x;
 }
 
@@ -209,7 +209,7 @@ auto wf_creater(WFGraphTask *g) {
     auto *c = WFTaskFactory::create_repeater_task(
         [i=0](WFRepeaterTask *) mutable -> SubTask * {
             if (i++ < task_per_node) {
-                return WFTaskFactory::create_timer_task(0, 0, nullptr);
+                return WFTaskFactory::create_go_task("", []{});
             }
             return nullptr;
         },
@@ -220,11 +220,11 @@ auto wf_creater(WFGraphTask *g) {
     return &x;
 }
 
-coke::Task<> coke_yield_func() { co_await coke::yield(); }
+coke::Task<> coke_yield_func() { co_await coke::switch_go_thread(""); }
 
 coke::Task<> coke_func() {
     for (int i = 0; i < task_per_node; i++) {
-        co_await coke::yield();
+        co_await coke::switch_go_thread("");
     }
 }
 
