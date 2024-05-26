@@ -112,4 +112,4 @@ scl enable gcc-toolset-12 "make -j 8"
 
 
 ## LICENSE
-TODO
+Apache 2.0

@@ -1,3 +1,21 @@
+/**
+ * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Authors: kedixa (https://github.com/kedixa)
+*/
+
 #include <atomic>
 
 #include "coke/detail/awaiter_base.h"
@@ -59,8 +77,40 @@ const char *get_error_string(int state, int error) {
     return WFGlobal::get_error_string(state, error);
 }
 
-void *AwaiterBase::create_series(SubTask *first) {
+bool prevent_recursive_stack(bool clear) {
+    constexpr std::size_t N = 1024;
+    static thread_local std::size_t recursive_count = 0;
+
+    if (clear) {
+        recursive_count = 0;
+        return false;
+    }
+
+    return (++recursive_count) % N == 0;
+}
+
+SeriesWork *default_series_creater(SubTask *first) {
     return Workflow::create_series_work(first, nullptr);
+}
+
+static SeriesCreater coke_series_creater = default_series_creater;
+
+SeriesCreater set_series_creater(SeriesCreater creater) noexcept {
+    SeriesCreater old = coke_series_creater;
+    if (creater == nullptr)
+        coke_series_creater = default_series_creater;
+    else
+        coke_series_creater = creater;
+
+    return old;
+}
+
+SeriesCreater get_series_creater() noexcept {
+    return coke_series_creater;
+}
+
+void *AwaiterBase::create_series(SubTask *first) {
+    return coke_series_creater(first);
 }
 
 uint64_t get_unique_id() {

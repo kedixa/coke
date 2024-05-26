@@ -44,6 +44,8 @@ cc_library(
         "include/coke/wait.h",
         "include/coke/make_task.h",
         "include/coke/condition.h",
+        "include/coke/queue_common.h",
+        "include/coke/queue.h",
     ],
     includes = ["include"],
     deps = [

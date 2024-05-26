@@ -1,3 +1,21 @@
+/**
+ * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Authors: kedixa (https://github.com/kedixa)
+*/
+
 #include <iostream>
 #include <vector>
 #include <utility>
@@ -183,7 +201,7 @@ auto coke_create_flower(RootFunc &&root_func, NodeFunc &&node_func) {
 }
 
 auto wf_timer_creater(WFGraphTask *g) {
-    auto &x = g->create_graph_node(WFTaskFactory::create_timer_task(0, 0, nullptr));
+    auto &x = g->create_graph_node(WFTaskFactory::create_go_task("", []{}));
     return &x;
 }
 
@@ -191,7 +209,7 @@ auto wf_creater(WFGraphTask *g) {
     auto *c = WFTaskFactory::create_repeater_task(
         [i=0](WFRepeaterTask *) mutable -> SubTask * {
             if (i++ < task_per_node) {
-                return WFTaskFactory::create_timer_task(0, 0, nullptr);
+                return WFTaskFactory::create_go_task("", []{});
             }
             return nullptr;
         },
@@ -202,11 +220,11 @@ auto wf_creater(WFGraphTask *g) {
     return &x;
 }
 
-coke::Task<> coke_yield_func() { co_await coke::yield(); }
+coke::Task<> coke_yield_func() { co_await coke::switch_go_thread(""); }
 
 coke::Task<> coke_func() {
     for (int i = 0; i < task_per_node; i++) {
-        co_await coke::yield();
+        co_await coke::switch_go_thread("");
     }
 }
 

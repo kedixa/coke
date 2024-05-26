@@ -78,6 +78,16 @@ jobs:
         echo "</p> </details>"
         echo ""
 
+        echo "## Queue"
+        echo "Bench command \`bench_queue --concurrency 10 --total 1000000 --max-secs 60 --times 5 --que-size 1000 --batch-size 10 --handler 12 --poller 6 -y\`"
+        echo ""
+        echo "<details><summary>Details</summary> <p>"
+        echo ""
+        ./bazel-bin/benchmark/bench_queue --concurrency 10 --total 1000000 --max-secs 60 --times 5 --que-size 1000 --batch-size 10 --handler 12 --poller 6 -y
+        echo ""
+        echo "</p> </details>"
+        echo ""
+
         ) > bench.md
 
     - name: Comment
