@@ -19,6 +19,9 @@
 #ifndef COKE_MAKE_TASK_H
 #define COKE_MAKE_TASK_H
 
+#include <functional>
+#include <memory>
+
 #include "coke/detail/task.h"
 
 namespace coke {
