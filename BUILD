@@ -11,6 +11,12 @@ cc_library(
 )
 
 cc_library(
+    name = "tools",
+    hdrs = glob(["include/coke/tools/*.h"]),
+    includes = ["include"],
+)
+
+cc_library(
     name = "common",
     srcs = [
         "src/coke_impl.cpp",
