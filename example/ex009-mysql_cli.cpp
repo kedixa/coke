@@ -2,9 +2,9 @@
 #include <iomanip>
 #include <string>
 #include <vector>
-#include <getopt.h>
 
 #include "coke/coke.h"
+#include "coke/tools/option_parser.h"
 #include "coke/mysql_client.h"
 #include "coke/mysql_utils.h"
 
@@ -12,7 +12,6 @@
 
 constexpr const char *first_prompt = "mysql> ";
 constexpr const char *other_prompt = "    -> ";
-const char *optstr = "h:p:P:u:";
 
 /**
  * This example implements a simple mysql-cli, read commands from standard input,
@@ -141,35 +140,37 @@ coke::Task<> mysql_cli(const coke::MySQLClientParams &params) {
     std::cout << "Bye" << std::endl;
 }
 
-void usage(const char *arg0) {
-    std::cout << "Usage: " << arg0 << " [options]... dbname\n";
-    std::cout << R"(
-        -h host         Mysql server hostname.
-        -P port         Mysql server port, default 3306.
-        -u user         Mysql user name.
-        -p password     Mysql password for user.
-
-        dbname          Database to use.
-    )" << std::endl;
-}
-
 int main(int argc, char *argv[]) {
-    int copt;
+    coke::OptionParser args;
     coke::MySQLClientParams params;
     params.port = 3306;
 
-    while ((copt = getopt(argc, argv, optstr)) != -1) {
-        switch (copt) {
-        case 'h': params.host.assign(optarg); break;
-        case 'p': params.password.assign(optarg); break;
-        case 'P': params.port = std::atoi(optarg); break;
-        case 'u': params.username.assign(optarg); break;
-        default: usage(argv[0]); return 1;
-        }
+    args.add_string(params.host, 'h', "host", true)
+        .set_description("Mysql server hostname.");
+    args.add_integer(params.port, 'P', "port")
+        .set_default(3306)
+        .set_description("Mysql server port");
+    args.add_string(params.username, 'u', "user", true)
+        .set_description("Mysql user name");
+    args.add_string(params.password, 'p', "password")
+        .set_description("Mysql password for user.");
+    args.set_help_flag(coke::NULL_SHORT_NAME, "help");
+    args.set_extra_prompt("db_name");
+
+    std::string err;
+    int ret = args.parse(argc, argv, err);
+    if (ret < 0) {
+        std::cerr << err << std::endl;
+        return 1;
+    }
+    else if (ret > 0) {
+        args.usage(std::cout);
+        return 0;
     }
 
-    if (optind < argc)
-        params.dbname.assign(argv[optind]);
+    auto ext = args.get_extra_args();
+    if (!ext.empty())
+        params.dbname.assign(ext[0]);
 
     const char *miss = nullptr;
     if (params.host.empty()) miss = "host";
@@ -177,8 +178,8 @@ int main(int argc, char *argv[]) {
     else if (params.dbname.empty()) miss = "dbname";
 
     if (miss) {
-        std::cout << "Missing " << miss << " in command line args" << std::endl;
-        usage(argv[0]);
+        std::cerr << "Missing " << miss << " in command line args" << std::endl;
+        args.usage(std::cout);
         return 1;
     }
 
