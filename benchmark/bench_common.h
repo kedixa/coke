@@ -25,6 +25,8 @@
 #include <iomanip>
 #include <vector>
 
+#include "coke/tools/option_parser.h"
+
 inline long long current_msec() {
     auto dur = std::chrono::steady_clock::now().time_since_epoch();
     auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(dur);
@@ -82,8 +84,8 @@ void table_line(std::ostream &os, const std::vector<int> &width,
     os << std::endl;
 }
 
-template<typename T>
-int parse_args(T &args, int argc, char *argv[], bool *yes) {
+int parse_args(coke::OptionParser &args,
+               int argc, char *argv[], bool *yes) {
     std::string error;
     int ret = args.parse(argc, argv, error);
     if (ret < 0) {

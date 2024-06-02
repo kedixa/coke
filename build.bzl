@@ -32,6 +32,5 @@ def create_benchmark_target(name, extra_deps = None):
         deps = [
             "//:common",
             "//benchmark:bench_common",
-            "//benchmark:option_parser",
         ] + extra_deps,
     )
