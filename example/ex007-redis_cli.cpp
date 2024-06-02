@@ -5,15 +5,14 @@
 #include <vector>
 #include <cstring>
 #include <cmath>
-#include <getopt.h>
 
 #include "coke/coke.h"
+#include "coke/tools/option_parser.h"
 #include "coke/redis_client.h"
 #include "coke/redis_utils.h"
 #include "readline_helper.h"
 
 std::string prompt_str;
-const char *optstr = "h:p:a:r:i:n:";
 
 /**
  * This example implements a simple redis-cli, read commands from standard input,
@@ -74,39 +73,40 @@ coke::Task<> redis_cli(coke::RedisClient &cli, int repeat, double interval) {
     }
 }
 
-void usage(const char *arg0) {
-    std::cout << "Usage: " << arg0 << " [options]...\n";
-    std::cout << R"(
-        -h hostname     Server hostname.
-        -p port         Server port, default 6379.
-        -a password     Password to use when connecting to the server.
-        -n db           Database number.
-        -r repeat       Execute N times for each command.
-        -i interval     Waits interval seconds after each command.
-                        It is possible to specify sub-second times like -i 0.1.
-    )" << std::endl;
-}
-
 int main(int argc, char *argv[]) {
     coke::RedisClientParams params;
-    int repeat = 0, copt;
+    int repeat = 0;
     double interval = 0.0;
 
-    while ((copt = getopt(argc, argv, optstr)) != -1) {
-        switch (copt) {
-        case 'h': params.host.assign(optarg); break;
-        case 'p': params.port = std::atoi(optarg); break;
-        case 'a': params.password.assign(optarg); break;
-        case 'n': params.db = std::atoi(optarg); break;
-        case 'r': repeat = std::atoi(optarg); break;
-        case 'i': interval = std::atof(optarg); break;
-        default: usage(argv[0]); return 1;
-        }
-    }
+    coke::OptionParser args;
 
-    if (params.host.empty()) {
-        usage(argv[0]);
+    args.add_string(params.host, 'h', "host", true)
+        .set_description("Redis server hostname.");
+    args.add_integer(params.port, 'p', "port")
+        .set_default(6379)
+        .set_description("Redis server port.");
+    args.add_string(params.password, 'a', "password")
+        .set_description("Password to use when connection to redis server.");
+    args.add_integer(params.db, 'n', "database")
+        .set_default(0)
+        .set_description("Database number.");
+    args.add_integer(repeat, 'r', "repeat")
+        .set_default(1)
+        .set_description("Times to execute for each command.");
+    args.add_floating(interval, 'i', "interval")
+        .set_default(0.0)
+        .set_description("Wait interval seconds after each command.");
+    args.set_help_flag(coke::NULL_SHORT_NAME, "help");
+
+    std::string err;
+    int ret = args.parse(argc, argv, err);
+    if (ret < 0) {
+        std::cerr << err << std::endl;
         return 1;
+    }
+    else if (ret > 0) {
+        args.usage(std::cout);
+        return 0;
     }
 
     if (interval < 0.0)
@@ -131,6 +131,5 @@ int main(int argc, char *argv[]) {
     coke::sync_wait(redis_cli(cli, repeat, interval));
 
     readline_deinit();
-
     return 0;
 }
