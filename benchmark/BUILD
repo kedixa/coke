@@ -1,17 +1,11 @@
 load("//:build.bzl", "create_benchmark_target")
 
 cc_library(
-    name = "option_parser",
-    hdrs = [
-        "option_parser.h",
-    ],
-)
-
-cc_library(
     name = "bench_common",
     hdrs = [
         "bench_common.h",
     ],
+    deps = ["//:tools"],
 )
 
 create_benchmark_target("bench_timer")

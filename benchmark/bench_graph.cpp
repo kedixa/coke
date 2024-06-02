@@ -20,9 +20,7 @@
 #include <vector>
 #include <utility>
 
-#include "option_parser.h"
 #include "bench_common.h"
-
 #include "coke/coke.h"
 #include "coke/dag.h"
 #include "workflow/WFTaskFactory.h"
@@ -345,25 +343,33 @@ coke::Task<> do_benchmark(const char *name, bench_func_t func) {
 }
 
 int main(int argc, char *argv[]) {
-    OptionParser args;
+    coke::OptionParser args;
 
-    args.add_integral(total, 't', "total", false,
-                      "run total graphs for each benchmark", 500);
-    args.add_integral(num_nodes, 'n', "num-nodes", false,
-                      "number of nodes in each graph", 128);
-    args.add_integral(times, 0, "times", false,
-                      "run these times for each benchmark", 1);
-    args.add_integral(group_size, 'g', "group-size", false,
-                      "number of nodes in each group in net graph", 10);
-    args.add_integral(task_per_node, 'p', "task-per-node", false,
-                      "number of tasks in each node", 3);
-    args.add_integral(max_secs_per_test, 'm', "max-secs", false,
-                      "max seconds for each benchmark", 5);
-    args.add_integral(poller_threads, 0, "poller", false,
-                      "number of poller threads", 6);
-    args.add_integral(handler_threads, 0, "handler", false,
-                      "number of handler threads", 20);
-    args.add_flag(yes, 'y', "yes", "skip showing options before start");
+    args.add_integer(max_secs_per_test, 'm', "max-secs")
+        .set_default(5)
+        .set_description("Max seconds for each benchmark");
+    args.add_integer(total, 't', "total")
+        .set_default(500)
+        .set_description("Total tasks in each benchmark");
+    args.add_integer(num_nodes, 'n', "num-nodes")
+        .set_default(128)
+        .set_description("Number of nodes in each graph");
+    args.add_integer(group_size, 'g', "group-size")
+        .set_default(10)
+        .set_description("Number of nodes in each group of net graph");
+    args.add_integer(task_per_node, 'p', "task-per-node")
+        .set_default(3)
+        .set_description("Number of tasks in each node");
+    args.add_integer(times, coke::NULL_SHORT_NAME, "times")
+        .set_default(1)
+        .set_description("The number of times each benchmark run");
+    args.add_integer(poller_threads, coke::NULL_SHORT_NAME, "poller")
+        .set_default(6)
+        .set_description("Number of poller threads");
+    args.add_integer(handler_threads, coke::NULL_SHORT_NAME, "handler")
+        .set_default(20)
+        .set_description("Number of handler threads");
+    args.add_flag(yes, 'y', "yes").set_description("Skip asking before start");
     args.set_help_flag('h', "help");
 
     int ret = parse_args(args, argc, argv, &yes);

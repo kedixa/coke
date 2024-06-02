@@ -2,9 +2,7 @@
 #include <vector>
 #include <utility>
 
-#include "option_parser.h"
 #include "bench_common.h"
-
 #include "coke/coke.h"
 
 std::vector<int> width{16, 8, 6, 8, 6, 10};
@@ -172,25 +170,33 @@ coke::Task<> do_benchmark(const char *name, bench_func_t func) {
 }
 
 int main(int argc, char *argv[]) {
-    OptionParser args;
+    coke::OptionParser args;
 
-    args.add_integral(total, 't', "total", false,
-                      "push/pop total elements with container", 1000000);
-    args.add_integral(concurrency, 'c', "concurrency", false,
-                      "start these coroutines to push or pop", 10);
-    args.add_integral(times, 0, "times", false,
-                      "run these times for each benchmark", 1);
-    args.add_integral(que_size, 'q', "que-size", false,
-                      "max elements in queue", 1000);
-    args.add_integral(batch_size, 'b', "batch-size", false,
-                      "batch size for push/pop range", 10);
-    args.add_integral(max_secs_per_test, 'm', "max-secs", false,
-                      "max seconds for each benchmark", 5);
-    args.add_integral(poller_threads, 0, "poller", false,
-                      "number of poller threads", 6);
-    args.add_integral(handler_threads, 0, "handler", false,
-                      "number of handler threads", 20);
-    args.add_flag(yes, 'y', "yes", "skip showing options before start");
+    args.add_integer(concurrency, 'c', "concurrency")
+        .set_default(1024)
+        .set_description("The number of concurrent during benchmark");
+    args.add_integer(max_secs_per_test, 'm', "max-secs")
+        .set_default(5)
+        .set_description("Max seconds for each benchmark");
+    args.add_integer(total, 't', "total")
+        .set_default(100000)
+        .set_description("Total tasks in each benchmark");
+    args.add_integer(times, coke::NULL_SHORT_NAME, "times")
+        .set_default(1)
+        .set_description("The number of times each benchmark run");
+    args.add_integer(que_size, 'q', "que-size")
+        .set_default(1000)
+        .set_description("Max elements in queue");
+    args.add_integer(batch_size, 'b', "batch-size")
+        .set_default(10)
+        .set_description("Batch size for push/pop by range");
+    args.add_integer(poller_threads, coke::NULL_SHORT_NAME, "poller")
+        .set_default(6)
+        .set_description("Number of poller threads");
+    args.add_integer(handler_threads, coke::NULL_SHORT_NAME, "handler")
+        .set_default(20)
+        .set_description("Number of handler threads");
+    args.add_flag(yes, 'y', "yes").set_description("Skip asking before start");
     args.set_help_flag('h', "help");
 
     int ret = parse_args(args, argc, argv, &yes);
