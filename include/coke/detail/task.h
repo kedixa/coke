@@ -38,7 +38,11 @@ public:
     PromiseBase() = default;
     PromiseBase(const PromiseBase &) = delete;
     PromiseBase(PromiseBase &&) = delete;
-    virtual ~PromiseBase() { }
+    virtual ~PromiseBase() {
+        // Do not allow unhandled exceptions to escape.
+        if (eptr)
+            std::terminate();
+    }
 
     void set_context(std::shared_ptr<void> ctx) noexcept { context = ctx; }
 
@@ -52,6 +56,15 @@ public:
     bool get_detached() const noexcept { return detached; }
 
     void unhandled_exception() { eptr = std::current_exception(); }
+
+    void raise_exception() {
+        if (eptr) {
+            std::exception_ptr tmp(std::move(eptr));
+            eptr = nullptr;
+
+            std::rethrow_exception(tmp);
+        }
+    }
 
 protected:
     std::exception_ptr eptr{nullptr};
@@ -123,7 +136,7 @@ private:
 // clang deduce failed if use Cokeable
 
 template<typename T=void>
-class Task {
+class [[nodiscard]] Task {
 public:
     using promise_type = CoPromise<T>;
     using handle_type = std::coroutine_handle<promise_type>;
@@ -149,25 +162,25 @@ public:
     [[nodiscard]]
     TaskAwaiter<T> operator co_await() noexcept { return TaskAwaiter<T>{hdl}; }
 
-    /**
-     * Start and detach this task, without waiting.
-    */
-    void start() {
-        handle_type h = hdl;
-        hdl = nullptr;
+    [[deprecated("Use coke::detach() instead")]]
+    void start() { detach(); }
 
-        h.promise().set_detached(true);
-        h.resume();
-    }
+    [[deprecated("Use coke::detach_on_series() instead")]]
+    void start_on_series(void *series) { detach_on_series(series); }
 
     /**
-     * Start and detach this task on `series`, without waiting.
-     * series is already started before calling this, this function
-     * is mostly used when we are in server's process.
+     * @brief Inner only, see coke::detach.
+     * Start and detach this coke::Task coroutine.
     */
-    void start_on_series(void *series) {
-        handle_type h = hdl;
-        hdl = nullptr;
+    void detach() { detach_on_series(nullptr); }
+
+    /**
+     * @brief Inner only, see coke::detach_on_series in coke/series.h.
+     * Start and detach this coke::Task coroutine on running series.
+    */
+    void detach_on_series(void *series) {
+        handle_type h = this->hdl;
+        this->hdl = nullptr;
 
         h.promise().set_series(series);
         h.promise().set_detached(true);
@@ -175,6 +188,8 @@ public:
     }
 
     /**
+     * @brief Set context to this coke::Task.
+     *
      * `ctx` is a type-erased object, may be useful in the following scenarios:
      *
      *  std::string s = "Hello";
@@ -227,8 +242,7 @@ public:
     }
 
     T &value() & {
-        if (eptr)
-            std::rethrow_exception(eptr);
+        raise_exception();
         return result.value();
     }
 
@@ -250,22 +264,19 @@ public:
     auto final_suspend() noexcept { return FinalAwaiter<void>(get_detached()); }
     void return_void() noexcept { }
 
-    void value() {
-        if (eptr)
-            std::rethrow_exception(eptr);
-    }
+    void value() { raise_exception(); }
 };
 
 
 template<typename T>
-struct task_helper {
+struct TaskHelper {
     constexpr static bool value = false;
 };
 
 
 template<typename T>
-struct task_helper<Task<T>> {
-    using inner_type = T;
+struct TaskHelper<Task<T>> {
+    using RetType = T;
     constexpr static bool value = true;
 };
 
@@ -280,13 +291,23 @@ using detail::Task;
  * @brief Check whether T is coke::Task type.
 */
 template<typename T>
-constexpr inline bool is_task_v = detail::task_helper<T>::value;
+constexpr inline bool is_task_v = detail::TaskHelper<T>::value;
 
 /**
  * If T is coke::Task<U>, then task_inner_t is U
 */
 template<typename T>
-using task_inner_t = typename detail::task_helper<T>::inner_type;
+using TaskRetType = typename detail::TaskHelper<T>::RetType;
+
+/**
+ * @brief Detach the coke::Task. Each valid coke::Task can be co awaited,
+ *        detached, detached on series, detached on new series at most once.
+ * @param task Valid coke::Task object.
+*/
+template<Cokeable T>
+void detach(Task<T> &&task) {
+    task.detach();
+}
 
 } // namespace coke
 
