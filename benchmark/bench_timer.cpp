@@ -150,7 +150,7 @@ coke::Task<> bench_detach_by_name() {
     while (next(i)) {
         name = std::to_string(i);
         auto awaiter = coke::sleep(name, microseconds(dist(mt)));
-        detach(std::move(awaiter)).start();
+        detach(std::move(awaiter)).detach();
 
         coke::cancel_sleep_by_name(name);
     }
@@ -169,7 +169,7 @@ coke::Task<> bench_detach3_by_name() {
         auto b = coke::sleep(name, microseconds(dist(mt)));
         auto c = coke::sleep(name, microseconds(dist(mt)));
 
-        detach3(std::move(a), std::move(b), std::move(c)).start();
+        detach3(std::move(a), std::move(b), std::move(c)).detach();
 
         coke::cancel_sleep_by_name(name);
     }
@@ -244,7 +244,7 @@ coke::Task<> bench_detach_by_id() {
     while (next(i)) {
         id = coke::get_unique_id();
         auto awaiter = coke::sleep(id, microseconds(dist(mt)));
-        detach(std::move(awaiter)).start();
+        detach(std::move(awaiter)).detach();
         coke::cancel_sleep_by_id(id);
     }
 }
@@ -262,7 +262,7 @@ coke::Task<> bench_detach3_by_id() {
         auto b = coke::sleep(id, microseconds(dist(mt)));
         auto c = coke::sleep(id, microseconds(dist(mt)));
 
-        detach3(std::move(a), std::move(b), std::move(c)).start();
+        detach3(std::move(a), std::move(b), std::move(c)).detach();
         coke::cancel_sleep_by_id(id);
     }
 }
@@ -276,7 +276,7 @@ coke::Task<> bench_detach_inf_by_id() {
     while (next(i)) {
         id = coke::get_unique_id();
         auto awaiter = coke::sleep(id, coke::InfiniteDuration{});
-        detach(std::move(awaiter)).start();
+        detach(std::move(awaiter)).detach();
         coke::cancel_sleep_by_id(id);
     }
 }
@@ -293,7 +293,7 @@ coke::Task<> bench_detach3_inf_by_id() {
         auto b = coke::sleep(id, coke::InfiniteDuration{});
         auto c = coke::sleep(id, coke::InfiniteDuration{});
 
-        detach3(std::move(a), std::move(b), std::move(c)).start();
+        detach3(std::move(a), std::move(b), std::move(c)).detach();
         coke::cancel_sleep_by_id(id);
     }
 }

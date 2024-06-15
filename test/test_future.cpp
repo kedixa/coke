@@ -109,30 +109,30 @@ coke::Task<> test_async_future() {
 }
 
 template<typename T>
-coke::Task<> do_test(T data, int ms, int state) {
+void do_test(T data, int ms, int state) {
     coke::Promise<T> pro;
     coke::Future<T> fut = pro.get_future();
     int wait_state;
 
-    process<T>(data, std::move(pro)).start();
+    coke::detach(process<T>(data, std::move(pro)));
 
-    wait_state = co_await fut.wait_for(milliseconds(ms));
+    wait_state = coke::sync_wait(fut.wait_for(milliseconds(ms)));
     EXPECT_EQ(wait_state, state);
 
-    co_await fut.wait();
+    coke::sync_wait(fut.wait());
 }
 
-coke::Task<> do_test(int ms, int state) {
+void do_test(int ms, int state) {
     coke::Promise<void> pro;
     coke::Future<void> fut = pro.get_future();
     int wait_state;
 
-    process(std::move(pro)).start();
+    coke::detach(process(std::move(pro)));
 
-    wait_state = co_await fut.wait_for(milliseconds(ms));
+    wait_state = coke::sync_wait(fut.wait_for(milliseconds(ms)));
     EXPECT_EQ(wait_state, state);
 
-    co_await fut.wait();
+    coke::sync_wait(fut.wait());
 }
 
 TEST(FUTURE, string) {

@@ -32,7 +32,7 @@ coke::Task<> simple_latch() {
             x = "hello";
             lt.count_down();
             co_return;
-        }, t, lt).start();
+        }, t, lt).detach();
 
         co_await lt;
         EXPECT_EQ(s, t);
@@ -48,7 +48,7 @@ coke::Task<> simple_latch() {
 
             x = "hello";
             lt.count_down();
-        }, t, lt).start();
+        }, t, lt).detach();
 
         co_await lt;
         EXPECT_EQ(s, t);
