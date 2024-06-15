@@ -21,6 +21,7 @@
 
 #include <coroutine>
 #include <optional>
+#include <utility>
 
 #include "coke/detail/basic_concept.h"
 
@@ -53,17 +54,9 @@ public:
 
     AwaiterBase &operator=(AwaiterBase &&that) {
         if (this != &that) {
-            auto hdl = this->hdl;
-            this->hdl = that.hdl;
-            that.hdl = hdl;
-
-            auto subtask = this->subtask;
-            this->subtask = that.subtask;
-            that.subtask = subtask;
-
-            bool in_series = this->in_series;
-            this->in_series = that.in_series;
-            that.in_series = in_series;
+            std::swap(this->hdl, that.hdl);
+            std::swap(this->subtask, that.subtask);
+            std::swap(this->in_series, that.in_series);
         }
 
         return *this;
@@ -246,11 +239,8 @@ public:
     */
     BasicAwaiter &operator= (BasicAwaiter &&that) {
         if (this != &that) {
-            this->AwaiterBase::operator=(std::move(that));
-
-            auto *info = that.info;
-            that.info = this->info;
-            this->info = info;
+            AwaiterBase::operator=(std::move(that));
+            std::swap(this->info, that.info);
 
             if (this->info)
                 this->info->ptr = this;
