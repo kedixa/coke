@@ -22,7 +22,6 @@
 #include <cstddef>
 #include <type_traits>
 #include <memory>
-#include <latch>
 
 #include "coke/detail/wait_helper.h"
 #include "coke/global.h"
@@ -35,7 +34,7 @@ T sync_wait(Task<T> &&task) {
     T res;
     SyncLatch lt(1);
 
-    detail::sync_wait_helper(std::move(task), res, lt).start();
+    detail::sync_wait_helper(std::move(task), res, lt).detach();
     lt.wait();
     return res;
 }
@@ -43,7 +42,7 @@ T sync_wait(Task<T> &&task) {
 inline void sync_wait(Task<void> &&task) {
     SyncLatch lt(1);
 
-    detail::sync_wait_helper(std::move(task), lt).start();
+    detail::sync_wait_helper(std::move(task), lt).detach();
     lt.wait();
 }
 
@@ -54,7 +53,7 @@ std::vector<T> sync_wait(std::vector<Task<T>> &&tasks) {
     SyncLatch lt(n);
 
     for (std::size_t i = 0; i < n; i++)
-        detail::sync_wait_helper(std::move(tasks[i]), vec[i], lt).start();
+        detail::sync_wait_helper(std::move(tasks[i]), vec[i], lt).detach();
 
     lt.wait();
     return vec;
@@ -72,7 +71,7 @@ std::vector<bool> sync_wait(std::vector<Task<bool>> &&tasks) {
     std::unique_ptr<bool []> vec = std::make_unique<bool []>(n);
 
     for (std::size_t i = 0; i < n; i++)
-        detail::sync_wait_helper(std::move(tasks[i]), vec[i], lt).start();
+        detail::sync_wait_helper(std::move(tasks[i]), vec[i], lt).detach();
 
     lt.wait();
     return std::vector<bool>(vec.get(), vec.get() + n);
@@ -83,7 +82,7 @@ inline void sync_wait(std::vector<Task<void>> &&tasks) {
     SyncLatch lt(n);
 
     for (std::size_t i = 0; i < n; i++)
-        detail::sync_wait_helper(std::move(tasks[i]), lt).start();
+        detail::sync_wait_helper(std::move(tasks[i]), lt).detach();
 
     lt.wait();
 }

@@ -20,7 +20,6 @@
 #define COKE_DETAIL_WAIT_HELPER_H
 
 #include <type_traits>
-#include <latch>
 #include <vector>
 #include <memory>
 
@@ -59,7 +58,7 @@ Task<std::vector<T>> async_wait_helper(std::vector<Task<T>> tasks) {
     Latch lt((long)n);
 
     for (std::size_t i = 0; i < n; i++)
-        async_wait_helper(std::move(tasks[i]), vec[i], lt).start();
+        async_wait_helper(std::move(tasks[i]), vec[i], lt).detach();
 
     co_await lt;
     co_return vec;
@@ -77,7 +76,7 @@ Task<std::vector<bool>> async_wait_helper(std::vector<Task<bool>> tasks) {
     std::unique_ptr<bool []> vec = std::make_unique<bool []>(n);
 
     for (std::size_t i = 0; i < n; i++)
-        async_wait_helper(std::move(tasks[i]), vec[i], lt).start();
+        async_wait_helper(std::move(tasks[i]), vec[i], lt).detach();
 
     co_await lt;
     co_return std::vector<bool>(vec.get(), vec.get() + n);
@@ -88,7 +87,7 @@ inline Task<> async_wait_helper(std::vector<Task<void>> tasks) {
     Latch lt((long)n);
 
     for (std::size_t i = 0; i < n; i++)
-        async_wait_helper(std::move(tasks[i]), lt).start();
+        async_wait_helper(std::move(tasks[i]), lt).detach();
 
     co_await lt;
 }

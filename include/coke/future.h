@@ -435,7 +435,7 @@ Future<T> create_future(Task<T> &&task) {
     Promise<T> promise;
     Future<T> future = promise.get_future();
 
-    detail::detach_task(std::move(promise), std::move(task)).start();
+    detail::detach_task(std::move(promise), std::move(task)).detach();
     return future;
 }
 

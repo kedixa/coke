@@ -130,7 +130,7 @@ public:
 protected:
     virtual void do_proc(TaskType *task) {
         Task<> t = co_proc(ServerContextType(task));
-        t.start_on_series(series_of(task));
+        t.detach_on_series(series_of(task));
     }
 
 private:

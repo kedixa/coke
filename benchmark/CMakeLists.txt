@@ -26,3 +26,7 @@ foreach(exec_name ${ALL_BENCHMARK})
         OpenSSL::SSL OpenSSL::Crypto
     )
 endforeach()
+
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    target_compile_options("bench_graph" PRIVATE "-Wno-unused-comparison")
+endif ()

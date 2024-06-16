@@ -185,7 +185,7 @@ protected:
         for (std::size_t i = 0; i < n; i++)
             ctx[i].init(counters[i], weak_flags[i]);
 
-        invoke(ctx, 0).start();
+        invoke(ctx, 0).detach();
     }
 
     Task<> invoke(detail::DagContext<T> &ctx, dag_index_t id) {
@@ -197,11 +197,11 @@ protected:
 
         for (auto next : outs[id])
             if (ctx[next].count(false))
-                invoke(ctx, next).start();
+                invoke(ctx, next).detach();
 
         for (auto next : weak_outs[id])
             if (ctx[next].count(true))
-                invoke(ctx, next).start();
+                invoke(ctx, next).detach();
 
         ctx.count_down();
     }
