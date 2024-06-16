@@ -147,7 +147,6 @@ public:
      *      exclusive).
      * @return See try_lock_for but ignore coke::TOP_TIMEOUT.
     */
-    [[nodiscard]]
     Task<int> lock() { return lock_impl(detail::TimedWaitHelper{}); }
 
     /**
@@ -164,7 +163,6 @@ public:
      * @retval Negative integer to indicate system error, almost never happens.
      * @see coke/global.h
     */
-    [[nodiscard]]
     Task<int> try_lock_for(const NanoSec &nsec) {
         return lock_impl(detail::TimedWaitHelper(nsec));
     }
@@ -176,7 +174,6 @@ public:
      *      exclusive).
      * @return See try_lock_for but ignore coke::TOP_TIMEOUT.
     */
-    [[nodiscard]]
     Task<int> lock_shared() {
         return lock_shared_impl(detail::TimedWaitHelper{});
     }
@@ -191,7 +188,6 @@ public:
      * @return See try_lock_for.
      *
     */
-    [[nodiscard]]
     Task<int> try_lock_shared_for(const NanoSec &nsec) {
         return lock_shared_impl(detail::TimedWaitHelper(nsec));
     }

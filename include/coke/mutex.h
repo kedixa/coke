@@ -72,7 +72,6 @@ public:
      * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
      *         See try_lock_for but ignore coke::TOP_TIMEOUT.
     */
-    [[nodiscard]]
     Task<int> lock() { return sem.acquire(); }
 
     /**
@@ -87,7 +86,6 @@ public:
      * @retval Negative integer to indicate system error, almost never happens.
      * @see coke/global.h
     */
-    [[nodiscard]]
     Task<int> try_lock_for(const NanoSec &nsec) {
         return sem.try_acquire_for(nsec);
     }

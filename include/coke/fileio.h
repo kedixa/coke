@@ -36,25 +36,19 @@ struct FileResult {
     long nbytes;  // the number of bytes read or written
 };
 
-class FileAwaiter : public BasicAwaiter<FileResult> {
+class [[nodiscard]] FileAwaiter : public BasicAwaiter<FileResult> {
 public:
     template<typename Task>
     explicit FileAwaiter(Task *task);
 };
 
-[[nodiscard]]
 FileAwaiter pread(int fd, void *buf, std::size_t count, off_t offset);
-[[nodiscard]]
 FileAwaiter pwrite(int fd, const void *buf, std::size_t count, off_t offset);
 
-[[nodiscard]]
 FileAwaiter preadv(int fd, const struct iovec *iov, int iovcnt, off_t offset);
-[[nodiscard]]
 FileAwaiter pwritev(int fd, const struct iovec *iov, int iovcnt, off_t offset);
 
-[[nodiscard]]
 FileAwaiter fsync(int fd);
-[[nodiscard]]
 FileAwaiter fdatasync(int fd);
 
 } // namespace coke

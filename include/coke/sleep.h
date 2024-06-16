@@ -44,7 +44,7 @@ static_assert(SLEEP_SUCCESS == TOP_SUCCESS);
 static_assert(SLEEP_ABORTED == TOP_ABORTED);
 
 
-class SleepAwaiter : public detail::SleepBase {
+class [[nodiscard]] SleepAwaiter : public detail::SleepBase {
 public:
     struct ImmediateTag { };
     struct YieldTag { };
@@ -105,7 +105,7 @@ public:
 };
 
 
-class WFSleepAwaiter : public BasicAwaiter<int> {
+class [[nodiscard]] WFSleepAwaiter : public BasicAwaiter<int> {
 public:
     /**
      * @brief WFSleepAwaiter is used to sleep by name, which is implemented in
@@ -115,38 +115,38 @@ public:
 };
 
 
-[[nodiscard]] inline
-SleepAwaiter sleep(const NanoSec &nsec) { return SleepAwaiter(nsec); }
+inline SleepAwaiter sleep(const NanoSec &nsec) {
+    return SleepAwaiter(nsec);
+}
 
-[[nodiscard]] inline
-SleepAwaiter sleep(double sec) { return SleepAwaiter(sec); }
+inline SleepAwaiter sleep(double sec) {
+    return SleepAwaiter(sec);
+}
 
-[[nodiscard]] inline
+inline
 SleepAwaiter sleep(uint64_t id, const NanoSec &nsec, bool insert_head = false) {
     return SleepAwaiter(id, nsec, insert_head);
 }
 
-[[nodiscard]] inline
-SleepAwaiter sleep(uint64_t id, double sec, bool insert_head = false) {
+inline SleepAwaiter sleep(uint64_t id, double sec, bool insert_head = false) {
     return SleepAwaiter(id, sec, insert_head);
 }
 
-[[nodiscard]]
 inline SleepAwaiter sleep(uint64_t id,
                           const InfiniteDuration &inf_duration,
-                          bool insert_head = false)
-{
+                          bool insert_head = false) {
     return SleepAwaiter(id, inf_duration, insert_head);
 }
 
-[[nodiscard, deprecated]] inline
+[[deprecated]] inline
 SleepAwaiter sleep(long sec, long nsec) {
     auto dur = std::chrono::seconds(sec) + std::chrono::nanoseconds(nsec);
     return SleepAwaiter(dur);
 }
 
-[[nodiscard]]
-inline SleepAwaiter yield() { return SleepAwaiter(SleepAwaiter::YieldTag{}); }
+inline SleepAwaiter yield() {
+    return SleepAwaiter(SleepAwaiter::YieldTag{});
+}
 
 std::size_t cancel_sleep_by_id(uint64_t id, std::size_t max);
 
@@ -154,8 +154,7 @@ inline std::size_t cancel_sleep_by_id(uint64_t id) {
     return cancel_sleep_by_id(id, std::size_t(-1));
 }
 
-[[nodiscard]] inline
-WFSleepAwaiter sleep(const std::string &name, const NanoSec &nsec) {
+inline WFSleepAwaiter sleep(const std::string &name, const NanoSec &nsec) {
     return WFSleepAwaiter(name, nsec);
 }
 

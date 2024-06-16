@@ -31,7 +31,7 @@ namespace coke {
 constexpr std::string_view GO_DEFAULT_QUEUE{"coke:go"};
 
 template<typename T>
-class GoAwaiter : public AwaiterBase {
+class [[nodiscard]] GoAwaiter : public AwaiterBase {
 public:
     template<typename FUNC, typename... ARGS>
         requires std::invocable<FUNC, ARGS...>
@@ -72,10 +72,7 @@ public:
     GoAwaiter &operator= (GoAwaiter &&that) {
         if (this != &that) {
             this->AwaiterBase::operator=(std::move(that));
-
-            detail::GoTask<T> *task = this->go_task;
-            this->go_task = that.go_task;
-            that.go_task = task;
+            std::swap(this->go_task, that.go_task);
 
             if (this->go_task)
                 this->go_task->set_awaiter(this);
@@ -99,7 +96,6 @@ private:
 
 template<typename FUNC, typename... ARGS>
     requires std::invocable<FUNC, ARGS...>
-[[nodiscard]]
 auto go(ExecQueue *queue, Executor *executor, FUNC &&func, ARGS&&... args) {
     using result_t = std::remove_cvref_t<std::invoke_result_t<FUNC, ARGS...>>;
 
@@ -110,7 +106,6 @@ auto go(ExecQueue *queue, Executor *executor, FUNC &&func, ARGS&&... args) {
 
 template<typename FUNC, typename... ARGS>
     requires std::invocable<FUNC, ARGS...>
-[[nodiscard]]
 auto go(const std::string &name, FUNC &&func, ARGS&&... args) {
     auto *queue = detail::get_exec_queue(name);
     auto *executor = detail::get_compute_executor();
@@ -122,7 +117,6 @@ auto go(const std::string &name, FUNC &&func, ARGS&&... args) {
 
 template<typename FUNC, typename... ARGS>
     requires std::invocable<FUNC, ARGS...>
-[[nodiscard]]
 auto go(FUNC &&func, ARGS&&... args) {
     return go(std::string(GO_DEFAULT_QUEUE),
               std::forward<FUNC>(func),
@@ -132,7 +126,6 @@ auto go(FUNC &&func, ARGS&&... args) {
 /**
  * @brief Switch to a thread with `queue` and `executor`
 */
-[[nodiscard]]
 inline auto switch_go_thread(ExecQueue *queue, Executor *executor) {
     return GoAwaiter<void>(queue, executor);
 }
@@ -140,7 +133,6 @@ inline auto switch_go_thread(ExecQueue *queue, Executor *executor) {
 /**
  * @brief Switch to a thread in the compute thread pool with `name`
 */
-[[nodiscard]]
 inline auto switch_go_thread(const std::string &name) {
     auto *queue = detail::get_exec_queue(name);
     auto *executor = detail::get_compute_executor();
@@ -150,7 +142,6 @@ inline auto switch_go_thread(const std::string &name) {
 /**
  * @brief Switch to a thread in the compute thread pool with default name
 */
-[[nodiscard]]
 inline auto switch_go_thread() {
     return switch_go_thread(std::string(GO_DEFAULT_QUEUE));
 }

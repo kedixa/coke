@@ -23,6 +23,7 @@
 #include <memory>
 #include <optional>
 #include <exception>
+#include <utility>
 
 #include "coke/detail/basic_concept.h"
 
@@ -87,6 +88,7 @@ struct FinalAwaiter {
     using handle_type = std::coroutine_handle<promise_type>;
 
     FinalAwaiter(bool detached) : detached(detached) { }
+    FinalAwaiter(FinalAwaiter &&) = delete;
 
     bool await_ready() noexcept { return detached; }
     void await_resume() noexcept { }
@@ -105,11 +107,12 @@ private:
 
 
 template<Cokeable T>
-struct TaskAwaiter {
+struct [[nodiscard]] TaskAwaiter {
     using promise_type = CoPromise<T>;
     using handle_type = std::coroutine_handle<promise_type>;
 
     TaskAwaiter(handle_type hdl) : hdl(hdl) { }
+    TaskAwaiter(TaskAwaiter &&) = delete;
 
     bool await_ready() noexcept { return false; }
 
@@ -147,19 +150,16 @@ public:
 
     Task &operator=(Task &&that) noexcept {
         if (this != &that) {
-            auto h = this->hdl;
-            this->hdl = that.hdl;
-            that.hdl = h;
+            std::swap(this->hdl, that.hdl);
         }
 
         return *this;
     }
 
     /**
-     * co_await coke::Task to start and await the result.
+     * @brief co_await coke::Task to start and await the result.
      * If this function is called, the returned TaskAwaiter must be awaited.
     */
-    [[nodiscard]]
     TaskAwaiter<T> operator co_await() noexcept { return TaskAwaiter<T>{hdl}; }
 
     [[deprecated("Use coke::detach() instead")]]

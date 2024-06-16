@@ -96,7 +96,6 @@ public:
      * @pre Current coroutine doesn't owns all the count.
      * @return See try_acquire_for but ignore coke::TOP_TIMEOUT.
     */
-    [[nodiscard]]
     Task<int> acquire() { return acquire_impl(detail::TimedWaitHelper{}); }
 
     /**
@@ -111,7 +110,6 @@ public:
      * @retval Negative integer to indicate system error, almost never happens.
      * @see coke/global.h
     */
-    [[nodiscard]]
     Task<int> try_acquire_for(const NanoSec &nsec) {
         return acquire_impl(detail::TimedWaitHelper(nsec));
     }

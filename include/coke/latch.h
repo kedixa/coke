@@ -27,7 +27,7 @@
 
 namespace coke {
 
-class LatchAwaiter : public BasicAwaiter<void> {
+class [[nodiscard]] LatchAwaiter : public BasicAwaiter<void> {
 private:
     LatchAwaiter() { }
     explicit LatchAwaiter(SubTask *task);
@@ -56,7 +56,7 @@ public:
      * 
      *  co_await l; is same as co_await l.wait();
     */
-    [[nodiscard]] LatchAwaiter operator co_await() {
+    LatchAwaiter operator co_await() {
         return wait();
     }
 
@@ -64,7 +64,7 @@ public:
      * @brief Wait for the Latch to be counted to zero.
      * @return An awaiter needs to be awaited immediately.
      */
-    [[nodiscard]] LatchAwaiter wait() noexcept {
+    LatchAwaiter wait() noexcept {
         return create_awaiter(0);
     }
 
@@ -76,7 +76,7 @@ public:
      * @param n Count the Latch by n. n should >= 1.
      * @return An awaiter needs to be awaited immediately.
      */
-    [[nodiscard]] LatchAwaiter arrive_and_wait(long n = 1) noexcept {
+    LatchAwaiter arrive_and_wait(long n = 1) noexcept {
         return create_awaiter(n);
     }
 

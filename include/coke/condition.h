@@ -44,7 +44,6 @@ public:
      * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
      *         See wait_for but ignore coke::TOP_TIMEOUT.
     */
-    [[nodiscard]]
     Task<int> wait(std::unique_lock<std::mutex> &lock) { 
         return wait_impl(lock, detail::TimedWaitHelper{});
     }
@@ -56,7 +55,6 @@ public:
      * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
      *         See wait_for but ignore coke::TOP_TIMEOUT.
     */
-    [[nodiscard]]
     Task<int> wait(std::unique_lock<std::mutex> &lock,
                    std::function<bool()> pred) {
         return wait_impl(lock, detail::TimedWaitHelper{}, std::move(pred));
@@ -73,7 +71,6 @@ public:
      * @retval Negative integer to indicate system error, almost never happens.
      * @see coke/global.h
     */
-    [[nodiscard]]
     Task<int> wait_for(std::unique_lock<std::mutex> &lock,
                        const NanoSec &nsec) { 
         return wait_impl(lock, detail::TimedWaitHelper{nsec});
@@ -87,7 +84,6 @@ public:
      *         See wait_for(lock, nsec), but coke::TOP_SUCCESS is returned
      *         only if `pred()` returns true.
      */
-    [[nodiscard]]
     Task<int> wait_for(std::unique_lock<std::mutex> &lock, const NanoSec &nsec,
                        std::function<bool()> pred) {
         return wait_impl(lock, detail::TimedWaitHelper{nsec}, std::move(pred));
