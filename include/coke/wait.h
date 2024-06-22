@@ -19,77 +19,52 @@
 #ifndef COKE_WAIT_H
 #define COKE_WAIT_H
 
-#include <cstddef>
-#include <type_traits>
-#include <memory>
-
 #include "coke/detail/wait_helper.h"
 #include "coke/global.h"
 #include "coke/make_task.h"
 
 namespace coke {
 
+/**
+ * @brief Sync wait for single coke::Task<T>.
+ * @return T.
+*/
 template<Cokeable T>
 T sync_wait(Task<T> &&task) {
-    T res;
     SyncLatch lt(1);
+    detail::ValueHelper<T> v;
 
-    detail::sync_wait_helper(std::move(task), res, lt).detach();
+    detail::coke_wait_helper(std::move(task), v, lt).detach();
     lt.wait();
-    return res;
-}
-
-inline void sync_wait(Task<void> &&task) {
-    SyncLatch lt(1);
-
-    detail::sync_wait_helper(std::move(task), lt).detach();
-    lt.wait();
-}
-
-template<Cokeable T>
-std::vector<T> sync_wait(std::vector<Task<T>> &&tasks) {
-    std::size_t n = tasks.size();
-    std::vector<T> vec(n);
-    SyncLatch lt(n);
-
-    for (std::size_t i = 0; i < n; i++)
-        detail::sync_wait_helper(std::move(tasks[i]), vec[i], lt).detach();
-
-    lt.wait();
-    return vec;
+    return v.get_value();
 }
 
 /**
- * Overloading for bool type because std::vector<bool> cannot be accessed by
- * multiple threads.
+ * @brief Sync wait for a vector of coke::Task<T>.
+ * @return std::vector<T> if T is not void, else void.
 */
-inline
-std::vector<bool> sync_wait(std::vector<Task<bool>> &&tasks) {
+template<Cokeable T>
+auto sync_wait(std::vector<Task<T>> &&tasks) {
     std::size_t n = tasks.size();
     SyncLatch lt(n);
-    // `n` == 0 is also valid
-    std::unique_ptr<bool []> vec = std::make_unique<bool []>(n);
+    detail::MValueHelper<T> v(n);
 
     for (std::size_t i = 0; i < n; i++)
-        detail::sync_wait_helper(std::move(tasks[i]), vec[i], lt).detach();
+        detail::coke_wait_helper(std::move(tasks[i]), v, i, lt).detach();
 
     lt.wait();
-    return std::vector<bool>(vec.get(), vec.get() + n);
+    return v.get_value();
 }
 
-inline void sync_wait(std::vector<Task<void>> &&tasks) {
-    std::size_t n = tasks.size();
-    SyncLatch lt(n);
-
-    for (std::size_t i = 0; i < n; i++)
-        detail::sync_wait_helper(std::move(tasks[i]), lt).detach();
-
-    lt.wait();
-}
-
+/**
+ * @brief Sync wait for a constant number of coke::Task<T>.
+ * @return std::vector<T> if T is not void, else void.
+ * @attention It is not recommended to use this function when T is not void
+ *            because the return type is inappropriate.
+*/
 template<Cokeable T, Cokeable... Ts>
-    requires (std::conjunction_v<std::is_same<T, Ts>...> && !std::is_same_v<T, void>)
-std::vector<T> sync_wait(Task<T> &&first, Task<Ts>&&... others) {
+    requires (std::conjunction_v<std::is_same<T, Ts>...>)
+auto sync_wait(Task<T> &&first, Task<Ts>&&... others) {
     std::vector<Task<T>> tasks;
     tasks.reserve(sizeof...(Ts) + 1);
     tasks.emplace_back(std::move(first));
@@ -98,22 +73,17 @@ std::vector<T> sync_wait(Task<T> &&first, Task<Ts>&&... others) {
     return sync_wait(std::move(tasks));
 }
 
-template<Cokeable... Ts>
-    requires std::conjunction_v<std::is_same<void, Ts>...>
-void sync_wait(Task<> &&first, Task<Ts>&&... others) {
-    std::vector<Task<>> tasks;
-    tasks.reserve(sizeof...(Ts) + 1);
-    tasks.emplace_back(std::move(first));
-    (tasks.emplace_back(std::move(others)), ...);
-
-    return sync_wait(std::move(tasks));
-}
-
+/**
+ * @brief Sync wait for a awaitable object derived from coke::AwaiterBase.
+*/
 template<AwaitableType A>
 auto sync_wait(A &&a) -> AwaiterResult<A> {
     return sync_wait(make_task_from_awaitable(std::move(a)));
 }
 
+/**
+ * @brief Sync wait for a constant number of awaitable object.
+*/
 template<AwaitableType A, AwaitableType... As>
     requires std::conjunction_v<std::is_same<AwaiterResult<A>, AwaiterResult<As>>...>
 auto sync_wait(A &&first, As&&... others) {
@@ -127,6 +97,9 @@ auto sync_wait(A &&first, As&&... others) {
     return sync_wait(std::move(tasks));
 }
 
+/**
+ * @brief Sync wait for a vector of awaitable object.
+*/
 template<AwaitableType A>
 auto sync_wait(std::vector<A> &&as) {
     using return_type = AwaiterResult<A>;
@@ -139,10 +112,26 @@ auto sync_wait(std::vector<A> &&as) {
     return sync_wait(std::move(tasks));
 }
 
+/**
+ * @brief Async wait for a vector of coke::Task<T>.
+ * @return std::vector<T> if T is not void, else void.
+*/
+template<Cokeable T>
+auto async_wait(std::vector<Task<T>> &&tasks) {
+    return detail::async_wait_helper(std::move(tasks));
+}
 
+/**
+ * @brief Async wait for a constant number of coke::Task<T>.
+ * @return std::vector<T> if T is not void, else void.
+ * @attention It is not recommended to use this function when T is not void
+ *            because the return type is inappropriate.
+*/
 template<Cokeable T, Cokeable... Ts>
-    requires (std::conjunction_v<std::is_same<T, Ts>...> && !std::is_same_v<T, void>)
-Task<std::vector<T>> async_wait(Task<T> &&first, Task<Ts>&&... others) {
+    requires (std::conjunction_v<std::is_same<T, Ts>...>)
+auto async_wait(Task<T> &&first, Task<Ts>&&... others)
+    -> Task<typename detail::MValueHelper<T>::RetType>
+{
     std::vector<Task<T>> tasks;
     tasks.reserve(sizeof...(Ts) + 1);
     tasks.emplace_back(std::move(first));
@@ -151,26 +140,9 @@ Task<std::vector<T>> async_wait(Task<T> &&first, Task<Ts>&&... others) {
     return detail::async_wait_helper(std::move(tasks));
 }
 
-template<Cokeable... Ts>
-    requires std::conjunction_v<std::is_same<void, Ts>...>
-Task<> async_wait(Task<> &&first, Task<Ts>&&... others) {
-    std::vector<Task<>> tasks;
-    tasks.reserve(sizeof...(Ts) + 1);
-    tasks.emplace_back(std::move(first));
-    (tasks.emplace_back(std::move(others)), ...);
-
-    return detail::async_wait_helper(std::move(tasks));
-}
-
-template<Cokeable T>
-Task<std::vector<T>> async_wait(std::vector<Task<T>> &&tasks) {
-    return detail::async_wait_helper(std::move(tasks));
-}
-
-inline Task<> async_wait(std::vector<Task<void>> &&tasks) {
-    return detail::async_wait_helper(std::move(tasks));
-}
-
+/**
+ * @brief Async wait for a constant number of awaitable object.
+*/
 template<AwaitableType A, AwaitableType... As>
     requires std::conjunction_v<std::is_same<AwaiterResult<A>, AwaiterResult<As>>...>
 auto async_wait(A &&first, As&&... others) {
@@ -184,6 +156,9 @@ auto async_wait(A &&first, As&&... others) {
     return detail::async_wait_helper(std::move(tasks));
 }
 
+/**
+ * @brief Async wait for a vector of awaitable object.
+*/
 template<AwaitableType A>
 auto async_wait(std::vector<A> &&as) {
     using return_type = AwaiterResult<A>;
@@ -196,6 +171,9 @@ auto async_wait(std::vector<A> &&as) {
     return detail::async_wait_helper(std::move(tasks));
 }
 
+/**
+ * @brief Make task func(args...) and sync wait.
+*/
 template<typename FUNC, typename... ARGS>
 auto sync_call(FUNC &&func, ARGS&&... args) {
     return sync_wait(
