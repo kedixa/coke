@@ -56,7 +56,7 @@ void QpsPool::reset_qps(long query, long seconds) noexcept {
 }
 
 QpsPool::AwaiterType
-QpsPool::get_if(unsigned count, const NanoSec &nsec) noexcept {
+QpsPool::get_if(unsigned count, NanoSec nsec) noexcept {
     std::lock_guard<std::mutex> lg(mtx);
     NanoType current, next_nano, next_sub;
 

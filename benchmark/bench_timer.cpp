@@ -221,6 +221,17 @@ coke::Task<> bench_timer_by_id() {
     }
 }
 
+coke::Task<> bench_timer_by_addr() {
+    std::mt19937_64 mt(current_msec());
+    uint64_t id;
+    long long i;
+
+    while (next(i)) {
+        id = coke::get_unique_id() * 8;
+        co_await coke::sleep((void *)(uintptr_t)id, microseconds(dist(mt)));
+    }
+}
+
 coke::Task<> bench_cancel_by_id() {
     std::mt19937_64 mt(current_msec());
     uint64_t id;
@@ -441,6 +452,7 @@ int main(int argc, char *argv[]) {
     delimiter(std::cout, width);
 
     DO_BENCHMARK(timer_by_id);
+    DO_BENCHMARK(timer_by_addr);
     DO_BENCHMARK(cancel_by_id);
     DO_BENCHMARK(detach_by_id);
     DO_BENCHMARK(detach3_by_id);

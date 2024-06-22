@@ -68,7 +68,7 @@ public:
      * The awaiter returns `coke::SLEEP_CANCELED` immediately if the license
      * cannot be acquired in `ns`.
     */
-    AwaiterType get_if(unsigned count, const NanoSec &nsec) noexcept;
+    AwaiterType get_if(unsigned count, NanoSec nsec) noexcept;
 
 private:
     std::mutex mtx;

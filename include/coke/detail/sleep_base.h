@@ -54,7 +54,7 @@ public:
 
     TimedWaitHelper() : abs_time(max()) { }
 
-    TimedWaitHelper(const NanoSec &nano)
+    TimedWaitHelper(NanoSec nano)
         : abs_time(now() + nano)
     { }
 

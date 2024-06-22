@@ -32,7 +32,7 @@ class TimerTask : public SleepRequest {
 public:
     using NanoSec = std::chrono::nanoseconds;
 
-    TimerTask(CommScheduler *scheduler, const NanoSec &nsec)
+    TimerTask(CommScheduler *scheduler, NanoSec nsec)
         : SleepRequest(scheduler), awaiter(nullptr), nsec(nsec)
     { }
 
@@ -127,11 +127,15 @@ private:
     std::atomic<int> ref;
 };
 
-TimerTask *create_timer(const NanoSec &nsec);
+TimerTask *create_timer(NanoSec nsec);
 
-TimerTask *create_timer(uint64_t id, const NanoSec &nsec, bool insert_head);
+TimerTask *create_timer(uint64_t id, NanoSec nsec, bool insert_head);
 
 TimerTask *create_infinite_timer(uint64_t id, bool insert_head);
+
+TimerTask *create_timer(void *addr, NanoSec nsec, bool insert_head);
+
+TimerTask *create_infinite_timer(void *addr, bool insert_head);
 
 TimerTask *create_yield_timer();
 

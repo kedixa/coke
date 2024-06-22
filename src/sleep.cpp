@@ -41,7 +41,7 @@ static NanoSec to_nsec(double sec) {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(dur);
 }
 
-static std::pair<time_t, long> split_nano(const NanoSec &nano) {
+static std::pair<time_t, long> split_nano(NanoSec nano) {
     constexpr uint64_t NANO = 1'000'000'000;
     NanoSec::rep cnt = nano.count();
 
@@ -61,41 +61,29 @@ SleepBase::SleepBase(SleepBase &&that)
     that.timer = nullptr;
     that.result = -1;
 
-    TimerTask *this_timer = (TimerTask *)this->timer;
-    if (this_timer)
-        this_timer->set_awaiter(this);
+    if (this->timer)
+        ((TimerTask *)this->timer)->set_awaiter(this);
 }
 
 SleepBase &SleepBase::operator=(SleepBase &&that) {
     if (this != &that) {
         AwaiterBase::operator=(std::move(that));
+        std::swap(this->result, that.result);
+        std::swap(this->timer, that.timer);
 
-        int r = this->result;
-        this->result = that.result;
-        that.result = r;
+        if (this->timer)
+            ((TimerTask *)this->timer)->set_awaiter(this);
 
-        TimerTask *this_timer = (TimerTask *)that.timer;
-        TimerTask *that_timer = (TimerTask *)this->timer;
-
-        that.timer = that_timer;
-        this->timer = this_timer;
-
-        if (this_timer)
-            this_timer->set_awaiter(this);
-
-        if (that_timer)
-            that_timer->set_awaiter(&that);
+        if (that.timer)
+            ((TimerTask *)that.timer)->set_awaiter(&that);
     }
 
     return *this;
 }
 
 int SleepBase::await_resume() {
-    TimerTask *this_timer = (TimerTask *)this->timer;
-
-    if (this_timer)
-        return this_timer->get_result();
-
+    if (this->timer)
+        return ((TimerTask *)this->timer)->get_result();
     return result;
 }
 
@@ -112,7 +100,7 @@ void YieldTask::handle(int state, int error) {
     return this->TimerTask::handle(state, error);
 }
 
-TimerTask *create_timer(const NanoSec &nsec) {
+TimerTask *create_timer(NanoSec nsec) {
     CommScheduler *s = WFGlobal::get_scheduler();
     return new TimerTask(s, nsec);
 }
@@ -125,7 +113,7 @@ TimerTask *create_yield_timer() {
 } // namespace coke::detail
 
 
-SleepAwaiter::SleepAwaiter(const NanoSec &nsec) {
+SleepAwaiter::SleepAwaiter(NanoSec nsec) {
     auto *time_task = detail::create_timer(nsec);
     time_task->set_awaiter(this);
     this->timer = time_task;
@@ -136,7 +124,7 @@ SleepAwaiter::SleepAwaiter(double sec)
     : SleepAwaiter(to_nsec(sec))
 { }
 
-SleepAwaiter::SleepAwaiter(uint64_t id, const NanoSec &nsec, bool insert_head) {
+SleepAwaiter::SleepAwaiter(uint64_t id, NanoSec nsec, bool insert_head) {
     auto *time_task = detail::create_timer(id, nsec, insert_head);
     time_task->set_awaiter(this);
     this->timer = time_task;
@@ -147,11 +135,26 @@ SleepAwaiter::SleepAwaiter(uint64_t id, double sec, bool insert_head)
     : SleepAwaiter(id, to_nsec(sec), insert_head)
 { }
 
-SleepAwaiter::SleepAwaiter(uint64_t id,
-                           const InfiniteDuration &,
-                           bool insert_head)
-{
+SleepAwaiter::SleepAwaiter(uint64_t id, InfiniteDuration, bool insert_head) {
     auto *time_task = detail::create_infinite_timer(id, insert_head);
+    time_task->set_awaiter(this);
+    this->timer = time_task;
+    this->set_task(time_task);
+}
+
+SleepAwaiter::SleepAwaiter(void *addr, NanoSec nsec, bool insert_head) {
+    auto *time_task = detail::create_timer(addr, nsec, insert_head);
+    time_task->set_awaiter(this);
+    this->timer = time_task;
+    this->set_task(time_task);
+}
+
+SleepAwaiter::SleepAwaiter(void *addr, double sec, bool insert_head)
+    : SleepAwaiter(addr, to_nsec(sec), insert_head)
+{ }
+
+SleepAwaiter::SleepAwaiter(void *addr, InfiniteDuration, bool insert_head) {
+    auto *time_task = detail::create_infinite_timer(addr, insert_head);
     time_task->set_awaiter(this);
     this->timer = time_task;
     this->set_task(time_task);
@@ -169,7 +172,7 @@ SleepAwaiter::SleepAwaiter(YieldTag) {
 }
 
 
-WFSleepAwaiter::WFSleepAwaiter(const std::string &name, const NanoSec &nano) {
+WFSleepAwaiter::WFSleepAwaiter(const std::string &name, NanoSec nano) {
     auto cb = [info = this->get_info()](WFTimerTask *task) {
         auto *awaiter = info->get_awaiter<WFSleepAwaiter>();
         int state = task->get_state();
