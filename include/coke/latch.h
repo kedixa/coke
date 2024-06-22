@@ -19,21 +19,14 @@
 #ifndef COKE_LATCH_H
 #define COKE_LATCH_H
 
-#include <vector>
-#include <mutex>
 #include <latch>
 
-#include "coke/detail/awaiter_base.h"
+#include "coke/detail/mutex_table.h"
+#include "coke/sleep.h"
 
 namespace coke {
 
-class [[nodiscard]] LatchAwaiter : public BasicAwaiter<void> {
-private:
-    LatchAwaiter() { }
-    explicit LatchAwaiter(SubTask *task);
-
-    friend class Latch;
-};
+using LatchAwaiter = SleepAwaiter;
 
 class Latch final {
 public:
@@ -41,13 +34,24 @@ public:
      * @brief Create a latch that can be counted EXACTLY `n` times.
      * @param n Number to be counted and should >= 0.
     */
-    explicit Latch(long n) : expected(n) { }
+    explicit Latch(long n)
+        : mtx(detail::get_mutex(get_addr())), expected(n)
+    { }
+
     ~Latch() { }
 
     /**
-     * @brief coke::Latch is not copyable.
+     * @brief coke::Latch is neither copyable nor moveable.
     */
     Latch(const Latch &) = delete;
+
+    /**
+     * @brief Return whether the internal counter has reached zero.
+    */
+    bool try_wait() const noexcept {
+        std::lock_guard<std::mutex> lg(this->mtx);
+        return this->expected >= 0;
+    }
 
     /**
      * @brief See Latch::wait.
@@ -90,14 +94,15 @@ public:
     void count_down(long n = 1) noexcept;
 
 private:
+    void *get_addr() const noexcept {
+        return (char *)this + 1;
+    }
+
     LatchAwaiter create_awaiter(long n) noexcept;
 
-    static void wake_up(std::vector<SubTask *> tasks) noexcept;
-
 private:
-    std::mutex mtx;
+    std::mutex &mtx;
     long expected;
-    std::vector<SubTask *> tasks;
 };
 
 class SyncLatch final {
