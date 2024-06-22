@@ -58,7 +58,7 @@ coke::Task<> test_async_future() {
 
         do {
             ret = co_await fut.wait_for(milliseconds(100));
-        } while (ret != coke::FUTURE_STATE_READY);
+        } while (ret == coke::FUTURE_STATE_TIMEOUT);
 
         EXPECT_TRUE(fut.valid());
         EXPECT_TRUE(fut.ready());
@@ -74,7 +74,7 @@ coke::Task<> test_async_future() {
         do {
             ret = co_await fut.wait_for(milliseconds(100));
             ++n;
-        } while (ret != coke::FUTURE_STATE_READY);
+        } while (ret == coke::FUTURE_STATE_TIMEOUT);
 
         EXPECT_GE(n, 1);
         EXPECT_LE(n, 5);
@@ -92,7 +92,7 @@ coke::Task<> test_async_future() {
 
         do {
             ret = co_await fut.wait_for(milliseconds(100));
-        } while (ret == coke::FUTURE_STATE_NOTSET);
+        } while (ret == coke::FUTURE_STATE_TIMEOUT);
 
         EXPECT_EQ(ret, coke::FUTURE_STATE_EXCEPTION);
         EXPECT_TRUE(fut.has_exception());
