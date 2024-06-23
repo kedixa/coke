@@ -31,8 +31,11 @@ public:
     /**
      * @brief Create a TimedCondition.
     */
-    TimedCondition() : uid(get_unique_id()) { }
+    TimedCondition() : wait_cnt(0) { }
 
+    /**
+     * @brief TimedCondition is neither copyable nor movable.
+    */
     TimedCondition(const TimedCondition &) = delete;
     TimedCondition &operator=(const TimedCondition &) = delete;
 
@@ -71,8 +74,7 @@ public:
      * @retval Negative integer to indicate system error, almost never happens.
      * @see coke/global.h
     */
-    Task<int> wait_for(std::unique_lock<std::mutex> &lock,
-                       const NanoSec &nsec) { 
+    Task<int> wait_for(std::unique_lock<std::mutex> &lock, NanoSec nsec) {
         return wait_impl(lock, detail::TimedWaitHelper{nsec});
     }
 
@@ -84,7 +86,7 @@ public:
      *         See wait_for(lock, nsec), but coke::TOP_SUCCESS is returned
      *         only if `pred()` returns true.
      */
-    Task<int> wait_for(std::unique_lock<std::mutex> &lock, const NanoSec &nsec,
+    Task<int> wait_for(std::unique_lock<std::mutex> &lock, NanoSec nsec,
                        std::function<bool()> pred) {
         return wait_impl(lock, detail::TimedWaitHelper{nsec}, std::move(pred));
     }
@@ -102,13 +104,13 @@ public:
      * @param n The number of coroutines waiting on *this to wakeup, if less
      *        than n, wakeup all.
     */
-    void notify(std::size_t n) { cancel_sleep_by_id(uid, n); }
+    void notify(std::size_t n) { cancel_sleep_by_addr(get_addr(), n); }
 
     /**
      * @brief If any coroutines are waiting on *this, calling notify_all
      *        unblocks all of them.
     */
-    void notify_all() { cancel_sleep_by_id(uid); }
+    void notify_all() { cancel_sleep_by_addr(get_addr()); }
 
 private:
     Task<int> wait_impl(std::unique_lock<std::mutex> &lock,
@@ -118,8 +120,13 @@ private:
                         detail::TimedWaitHelper helper,
                         std::function<bool()> pred);
 
+    void *get_addr() const noexcept {
+        return (char *)this + 1;
+    }
+
 private:
-    uint64_t uid;
+    // This count is not needed, it is for debugging convenience.
+    int wait_cnt;
 };
 
 } // namespace coke

@@ -41,9 +41,10 @@ public:
     ~Latch() { }
 
     /**
-     * @brief coke::Latch is neither copyable nor moveable.
+     * @brief coke::Latch is neither copyable nor movable.
     */
     Latch(const Latch &) = delete;
+    Latch &operator= (const Latch &) = delete;
 
     /**
      * @brief Return whether the internal counter has reached zero.

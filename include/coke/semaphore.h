@@ -28,39 +28,22 @@ namespace coke {
 
 class TimedSemaphore {
 public:
-    using count_type = uint32_t;
+    using CountType = uint32_t;
 
     /**
-     * @brief Create a TimedSemaphore, with initial count `n`, the uid is
-     *        automatically obtained from `coke::get_unique_id`.
+     * @brief Create a TimedSemaphore, with initial count `n`.
     */
-    explicit TimedSemaphore(count_type n)
-        : TimedSemaphore(n, INVALID_UNIQUE_ID)
+    explicit TimedSemaphore(CountType n)
+        : count(n), waiting(0)
     { }
 
     /**
-     * @brief Create a TimedSemaphore, with initial count `n`, the uid is
-     *        specified by user.
-    */
-    TimedSemaphore(count_type n, uint64_t uid)
-        : count(n), waiting(0), uid(uid)
-    {
-        if (this->uid == INVALID_UNIQUE_ID)
-            this->uid = get_unique_id();
-    }
-
-    /**
-     * @brief TimedSemaphore is not copy or move constructible.
+     * @brief TimedSemaphore is neither copyable nor movable.
     */
     TimedSemaphore(const TimedSemaphore &) = delete;
     TimedSemaphore &operator= (const TimedSemaphore &) = delete;
 
     ~TimedSemaphore() = default;
-
-    /**
-     * @brief Get the unique id.
-    */
-    uint64_t get_uid() const noexcept { return this->uid; }
 
     /**
      * @brief Try to acquire a count.
@@ -82,12 +65,12 @@ public:
     /**
      * @brief Release `cnt` counts, and wake up those who are waiting.
     */
-    void release(count_type cnt = 1) {
+    void release(CountType cnt = 1) {
         std::lock_guard<std::mutex> lg(mtx);
         count += cnt;
 
         if (waiting > 0 && cnt > 0)
-            cancel_sleep_by_id(uid, waiting > cnt ? cnt : waiting);
+            cancel_sleep_by_addr(get_addr(), waiting > cnt ? cnt : waiting);
     }
 
     /**
@@ -96,7 +79,9 @@ public:
      * @pre Current coroutine doesn't owns all the count.
      * @return See try_acquire_for but ignore coke::TOP_TIMEOUT.
     */
-    Task<int> acquire() { return acquire_impl(detail::TimedWaitHelper{}); }
+    Task<int> acquire() {
+        return acquire_impl(detail::TimedWaitHelper{});
+    }
 
     /**
      * @brief Acquire a count, block until success or `nsec` timeout.
@@ -110,7 +95,7 @@ public:
      * @retval Negative integer to indicate system error, almost never happens.
      * @see coke/global.h
     */
-    Task<int> try_acquire_for(const NanoSec &nsec) {
+    Task<int> try_acquire_for(NanoSec nsec) {
         return acquire_impl(detail::TimedWaitHelper(nsec));
     }
 
@@ -121,12 +106,14 @@ protected:
     */
     Task<int> acquire_impl(detail::TimedWaitHelper helper);
 
+    void *get_addr() const noexcept {
+        return (char *)this + 1;
+    }
+
 private:
     std::mutex mtx;
-    count_type count;
-    count_type waiting;
-
-    uint64_t uid;
+    CountType count;
+    CountType waiting;
 };
 
 } // namespace coke

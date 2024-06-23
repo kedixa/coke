@@ -30,12 +30,14 @@ Task<int> TimedCondition::wait_impl(std::unique_lock<std::mutex> &lock,
         co_return TOP_TIMEOUT;
 
     SleepAwaiter s = helper.infinite()
-                     ? sleep(uid, InfiniteDuration{})
-                     : sleep(uid, dur);
+                     ? sleep(get_addr(), coke::inf_dur)
+                     : sleep(get_addr(), dur);
 
+    ++wait_cnt;
     lock.unlock();
     ret = co_await s;
     lock.lock();
+    --wait_cnt;
 
     if (ret == SLEEP_SUCCESS)
         ret = TOP_TIMEOUT;
@@ -59,13 +61,15 @@ Task<int> TimedCondition::wait_impl(std::unique_lock<std::mutex> &lock,
             co_return TOP_TIMEOUT;
 
         SleepAwaiter s = helper.infinite()
-                         ? sleep(uid, InfiniteDuration{}, insert_head)
-                         : sleep(uid, dur, insert_head);
+                         ? sleep(get_addr(), coke::inf_dur, insert_head)
+                         : sleep(get_addr(), dur, insert_head);
 
+        ++wait_cnt;
         lock.unlock();
         insert_head = true;
         ret = co_await s;
         lock.lock();
+        --wait_cnt;
 
         // if there is an error, return it
         if (ret == SLEEP_ABORTED || ret < 0)
