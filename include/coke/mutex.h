@@ -26,28 +26,17 @@ namespace coke {
 class TimedMutex {
 public:
     /**
-     * @brief Create a TimedMutex, the uid is automatically obtained from
-     *        `coke::get_unique_id`.
+     * @brief Create a TimedMutex.
     */
     TimedMutex() : sem(1) { }
 
     /**
-     * @brief Create a TimedMutex with uid specified by user.
-    */
-    explicit TimedMutex(uint64_t uid) : sem(1, uid) { }
-
-    /**
-     * @brief TimedMutex is not copy or move constructible.
+     * @brief TimedMutex is neither copyable nor movable.
     */
     TimedMutex(const TimedMutex &) = delete;
     TimedMutex &operator= (const TimedMutex &) = delete;
 
     ~TimedMutex() = default;
-
-    /**
-     * @brief Get the unique id.
-    */
-    uint64_t get_uid() const { return sem.get_uid(); }
 
     /**
      * @brief Try to lock the mutex for exclusive ownership.
@@ -72,7 +61,6 @@ public:
      * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
      *         See try_lock_for but ignore coke::TOP_TIMEOUT.
     */
-    [[nodiscard]]
     Task<int> lock() { return sem.acquire(); }
 
     /**
@@ -87,8 +75,7 @@ public:
      * @retval Negative integer to indicate system error, almost never happens.
      * @see coke/global.h
     */
-    [[nodiscard]]
-    Task<int> try_lock_for(const NanoSec &nsec) {
+    Task<int> try_lock_for(NanoSec nsec) {
         return sem.try_acquire_for(nsec);
     }
 

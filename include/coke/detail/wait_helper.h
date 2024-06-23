@@ -19,8 +19,8 @@
 #ifndef COKE_DETAIL_WAIT_HELPER_H
 #define COKE_DETAIL_WAIT_HELPER_H
 
+#include <cstddef>
 #include <type_traits>
-#include <latch>
 #include <vector>
 #include <memory>
 
@@ -29,68 +29,113 @@
 
 namespace coke::detail {
 
-template<Cokeable T>
-Task<> sync_wait_helper(Task<T> task, T &res, SyncLatch &lt) {
-    res = co_await task;
-    lt.count_down();
-}
+template<typename T>
+struct ValueHelper {
+    void set_value(T &&t) {
+        value = std::move(t);
+    }
 
-inline Task<> sync_wait_helper(Task<void> task, SyncLatch &lt) {
-    co_await task;
-    lt.count_down();
-}
+    T get_value() {
+        return std::move(value);
+    }
 
+private:
+    T value;
+};
 
-template<Cokeable T>
-Task<> async_wait_helper(Task<T> task, T &res, Latch &lt) {
-    res = co_await task;
-    lt.count_down();
-}
+template<>
+struct ValueHelper<void> {
+    void get_value() { }
+};
 
-inline Task<> async_wait_helper(Task<void> task, Latch &lt) {
-    co_await task;
-    lt.count_down();
-}
+template<typename T>
+struct MValueHelper {
+    using RetType = std::vector<T>;
 
-template<Cokeable T>
-Task<std::vector<T>> async_wait_helper(std::vector<Task<T>> tasks) {
-    std::size_t n = tasks.size();
-    std::vector<T> vec(n);
-    Latch lt((long)n);
+    MValueHelper(std::size_t n) {
+        value.resize(n);
+    }
 
-    for (std::size_t i = 0; i < n; i++)
-        async_wait_helper(std::move(tasks[i]), vec[i], lt).start();
+    void set_value(std::size_t i, T &&t) {
+        value[i] = std::move(t);
+    }
 
-    co_await lt;
-    co_return vec;
-}
+    std::vector<T> get_value() {
+        return std::move(value);
+    }
+
+private:
+    std::vector<T> value;
+};
 
 /**
- * Overloading for bool type because std::vector<bool> cannot be accessed by
- * multiple threads.
+ * @brief Overloading for bool type because std::vector<bool> cannot be
+ *        accessed in multiple threads.
 */
-inline
-Task<std::vector<bool>> async_wait_helper(std::vector<Task<bool>> tasks) {
-    std::size_t n = tasks.size();
-    Latch lt((long)n);
-    // `n` == 0 is also valid
-    std::unique_ptr<bool []> vec = std::make_unique<bool []>(n);
+template<>
+struct MValueHelper<bool> {
+    using RetType = std::vector<bool>;
 
-    for (std::size_t i = 0; i < n; i++)
-        async_wait_helper(std::move(tasks[i]), vec[i], lt).start();
+    MValueHelper(std::size_t n)
+        : value(std::make_unique<bool []>(n)), n(n)
+    { }
 
-    co_await lt;
-    co_return std::vector<bool>(vec.get(), vec.get() + n);
+    void set_value(std::size_t i, bool t) {
+        value[i] = t;
+    }
+
+    std::vector<bool> get_value() {
+        return std::vector<bool>(value.get(), value.get() + n);
+    }
+
+private:
+    std::unique_ptr<bool []> value;
+    std::size_t n;
+};
+
+template<>
+struct MValueHelper<void> {
+    using RetType = void;
+
+    MValueHelper(std::size_t) { }
+
+    void get_value() { }
+};
+
+template<Cokeable T, typename L>
+Task<> coke_wait_helper(Task<T> task, ValueHelper<T> &v, L &lt) {
+    if constexpr (std::is_same_v<T, void>)
+        co_await task;
+    else
+        v.set_value(co_await task);
+
+    lt.count_down();
 }
 
-inline Task<> async_wait_helper(std::vector<Task<void>> tasks) {
+template<Cokeable T, typename L>
+Task<> coke_wait_helper(Task<T> task, MValueHelper<T> &v, std::size_t i, L &lt)
+{
+    if constexpr (std::is_same_v<T, void>)
+        co_await task;
+    else
+        v.set_value(i, co_await task);
+
+    lt.count_down();
+}
+
+template<Cokeable T>
+auto async_wait_helper(std::vector<Task<T>> tasks)
+    -> Task<typename MValueHelper<T>::RetType>
+{
     std::size_t n = tasks.size();
-    Latch lt((long)n);
+    Latch lt(n);
+    MValueHelper<T> v(n);
 
     for (std::size_t i = 0; i < n; i++)
-        async_wait_helper(std::move(tasks[i]), lt).start();
+        coke_wait_helper(std::move(tasks[i]), v, i, lt).detach();
 
     co_await lt;
+    co_return v.get_value();
 }
 
 template<typename T>

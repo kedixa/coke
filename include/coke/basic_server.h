@@ -30,7 +30,8 @@ struct NetworkReplyResult {
     int error;
 };
 
-class NetworkReplyAwaiter : public BasicAwaiter<NetworkReplyResult> {
+class [[nodiscard]] NetworkReplyAwaiter
+    : public BasicAwaiter<NetworkReplyResult> {
 public:
     template<typename REQ, typename RESP>
     explicit NetworkReplyAwaiter(WFNetworkTask<REQ, RESP> *task) {
@@ -60,19 +61,17 @@ public:
         : replied(false), task(task)
     { }
 
-    ServerContext(ServerContext &&c) {
-        replied = c.replied;
-        task = c.task;
-
-        // c cannot be used any more
-        c.replied = true;
-        c.task = nullptr;
+    ServerContext(ServerContext &&that)
+        : replied(that.replied), task(that.task) {
+        // that cannot be used any more
+        that.replied = true;
+        that.task = nullptr;
     }
 
-    ServerContext &operator=(ServerContext &&c) {
-        if (this != &c) {
-            std::swap(task, c.task);
-            std::swap(replied, c.replied);
+    ServerContext &operator=(ServerContext &&that) {
+        if (this != &that) {
+            std::swap(this->task, that.task);
+            std::swap(this->replied, that.replied);
         }
         return *this;
     }
@@ -88,7 +87,6 @@ public:
     */
     TaskType *get_task() { return task; }
 
-    [[nodiscard]]
     AwaiterType reply() {
         // Each ServerContext must reply once
         assert(!replied);
@@ -130,7 +128,7 @@ public:
 protected:
     virtual void do_proc(TaskType *task) {
         Task<> t = co_proc(ServerContextType(task));
-        t.start_on_series(series_of(task));
+        t.detach_on_series(series_of(task));
     }
 
 private:

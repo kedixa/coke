@@ -133,16 +133,6 @@ AwaiterBase::~AwaiterBase() {
     delete subtask;
 }
 
-// series.h impl
-SeriesAwaiter::SeriesAwaiter() {
-    auto cb = [info = this->get_info()](WFCounterTask *task) {
-        auto *awaiter = info->get_awaiter<SeriesAwaiter>();
-        awaiter->emplace_result(series_of(task));
-        awaiter->done();
-    };
-
-    set_task(WFTaskFactory::create_counter_task(0, cb));
-}
 
 // detail/mutex_table.h impl
 

@@ -41,8 +41,8 @@ Task<int> TimedSemaphore::acquire_impl(detail::TimedWaitHelper helper) {
             co_return TOP_TIMEOUT;
 
         SleepAwaiter s = helper.infinite()
-                         ? sleep(uid, InfiniteDuration{}, insert_head)
-                         : sleep(uid, dur, insert_head);
+                         ? sleep(get_addr(), coke::inf_dur, insert_head)
+                         : sleep(get_addr(), dur, insert_head);
         ++waiting;
         insert_head = true;
 
@@ -71,9 +71,9 @@ void SharedTimedMutex::unlock() {
         state = State::Idle;
 
         if (write_waiting)
-            cancel_sleep_by_id(wid, 1);
+            cancel_sleep_by_addr(wlock_addr(), 1);
         else if (read_waiting)
-            cancel_sleep_by_id(rid);
+            cancel_sleep_by_addr(rlock_addr());
     }
     else if (state == State::Reading) {
         read_doing--;
@@ -82,7 +82,7 @@ void SharedTimedMutex::unlock() {
             state = State::Idle;
 
             if (write_waiting)
-                cancel_sleep_by_id(wid, 1);
+                cancel_sleep_by_addr(wlock_addr(), 1);
         }
     }
 }
@@ -103,14 +103,14 @@ Task<int> SharedTimedMutex::lock_impl(detail::TimedWaitHelper helper) {
         auto dur = helper.time_left();
         if (dur <= zero) {
             if (write_waiting == 0 && read_waiting > 0)
-                cancel_sleep_by_id(rid);
+                cancel_sleep_by_addr(rlock_addr());
 
             co_return TOP_TIMEOUT;
         }
 
         SleepAwaiter s = helper.infinite()
-                         ? sleep(wid, InfiniteDuration{}, insert_head)
-                         : sleep(wid, dur, insert_head);
+                         ? sleep(wlock_addr(), coke::inf_dur, insert_head)
+                         : sleep(wlock_addr(), dur, insert_head);
         ++write_waiting;
         insert_head = true;
 
@@ -123,7 +123,7 @@ Task<int> SharedTimedMutex::lock_impl(detail::TimedWaitHelper helper) {
             break;
         else if (ret == SLEEP_ABORTED || ret < 0) {
             if (write_waiting == 0 && read_waiting > 0)
-                cancel_sleep_by_id(rid);
+                cancel_sleep_by_addr(rlock_addr());
 
             co_return ret;
         }
@@ -152,8 +152,8 @@ Task<int> SharedTimedMutex::lock_shared_impl(detail::TimedWaitHelper helper) {
             co_return TOP_TIMEOUT;
 
         SleepAwaiter s = helper.infinite()
-                         ? sleep(rid, InfiniteDuration{}, insert_head)
-                         : sleep(rid, dur, insert_head);
+                         ? sleep(rlock_addr(), coke::inf_dur, insert_head)
+                         : sleep(rlock_addr(), dur, insert_head);
         ++read_waiting;
         insert_head = true;
 

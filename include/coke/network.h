@@ -44,7 +44,8 @@ struct NetworkResult {
 };
 
 template<typename REQ, typename RESP>
-class NetworkAwaiter : public BasicAwaiter<NetworkResult<REQ, RESP>> {
+class [[nodiscard]] NetworkAwaiter
+    : public BasicAwaiter<NetworkResult<REQ, RESP>> {
 public:
     using ReqType = REQ;
     using RespType = RESP;

@@ -20,6 +20,7 @@
 #define COKE_TOOLS_OPTION_PARSER_H
 
 #include <algorithm>
+#include <bit>
 #include <cctype>
 #include <climits>
 #include <cinttypes>
@@ -1438,7 +1439,7 @@ inline bool parse_data_unit(const std::string &str, uintmax_t &val) {
     const char *last = str.c_str() + str.size();
     uintmax_t total = 0, tmp;
     char *end;
-    int sft;
+    int sft, lft;
 
     if (first == last)
         return false;
@@ -1459,10 +1460,12 @@ inline bool parse_data_unit(const std::string &str, uintmax_t &val) {
             ++first;
         }
 
-        if (sft < 0 || ((tmp << sft) >> sft) != tmp)
+        lft = std::countl_zero(tmp);
+        if (sft < 0 || sft > lft)
             return false;
+        else if (tmp > 0)
+            tmp <<= sft;
 
-        tmp <<= sft;
         if (sft > 0 && (*first == 'b' || *first == 'B'))
             ++first;
 
@@ -1485,19 +1488,18 @@ inline std::string data_unit_to_string(uintmax_t val) {
     uintmax_t u, t;
     int sft;
 
-    for (int i = 6; i >= 0; i--) {
+    for (int i = 6; i >= 0 && val > 0; i--) {
         sft = sfts[i];
-        u = 1;
-        u <<= sft;
-
-        if ((u >> sft) != (uintmax_t)1)
+        if (sft >= std::numeric_limits<uintmax_t>::digits)
             continue;
 
-        t = val / u;
-        val %= u;
+        u = (uintmax_t)1 << sft;
+        if (val >= u) {
+            t = val / u;
+            val %= u;
 
-        if (t > 0)
             str.append(std::to_string(t)).push_back(units[i]);
+        }
     }
 
     if (str.empty())

@@ -75,7 +75,6 @@ public:
      * MySQLResult res = co_await cli.request("show tables;");
      * // check res.status and view response
     */
-    [[nodiscard]]
     AwaiterType request(const std::string &query);
 
 protected:
@@ -122,7 +121,6 @@ public:
      *
      * When the object is no longer used, it is best to close the connection.
     */
-    [[nodiscard]]
     AwaiterType disconnect();
 };
 

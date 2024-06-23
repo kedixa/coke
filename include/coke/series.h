@@ -19,20 +19,64 @@
 #ifndef COKE_SERIES_H
 #define COKE_SERIES_H
 
-#include "coke/detail/awaiter_base.h"
-#include "workflow/Workflow.h"
+#include "coke/detail/series_task.h"
 
 namespace coke {
 
-class SeriesAwaiter : public BasicAwaiter<SeriesWork *> {
+/**
+ * @brief SeriesAwaiter is not an awaiter that waits for the SeriesWork to
+ *        finish, but get the current running SeriesWork.
+ *
+ * Do not use SeriesAwaiter directly, but use `coke::current_series` like
+ * `SeriesWork *series = co_await coke::current_series();`.
+*/
+class [[nodiscard]] SeriesAwaiter final : public AwaiterBase {
+public:
+    SeriesAwaiter() : series_task(detail::create_series_task()) {
+        series_task->set_awaiter(this);
+        this->set_task(series_task);
+    }
+
+    SeriesAwaiter(SeriesAwaiter &&that)
+        : AwaiterBase(std::move(that)), series_task(that.series_task)
+    {
+        that.series_task = nullptr;
+
+        if (series_task)
+            series_task->set_awaiter(this);
+    }
+
+    SeriesAwaiter &operator= (SeriesAwaiter &&that) {
+        if (this != &that) {
+            AwaiterBase::operator=(std::move(that));
+            std::swap(this->series_task, that.series_task);
+
+            if (series_task)
+                series_task->set_awaiter(this);
+            if (that.series_task)
+                that.series_task->set_awaiter(&that);
+        }
+
+        return *this;
+    }
+
+    ~SeriesAwaiter() = default;
+
+    SeriesWork *await_resume() { return series_of(series_task); }
+
 private:
-    SeriesAwaiter();
+    detail::SeriesTask *series_task;
 
     friend SeriesAwaiter current_series();
     friend SeriesAwaiter empty();
 };
 
-class ParallelAwaiter : public BasicAwaiter<const ParallelWork *> {
+/**
+ * @brief ParallelAwaiter is an awaiter that waits for the ParallelWork to
+ *        finish. Use `coke::wait_parallel` directly.
+*/
+class [[nodiscard]] ParallelAwaiter : public BasicAwaiter<const ParallelWork *>
+{
 private:
     ParallelAwaiter(ParallelWork *par) {
         auto *info = this->get_info();
@@ -51,18 +95,33 @@ private:
 
 using EmptyAwaiter = SeriesAwaiter;
 
-[[nodiscard]]
+/**
+ * @brief Get the SeriesWork which is running on this coroutine now.
+ *
+ * If not, a new SeriesWork will be created by the series creater registed
+ * by coke::set_series_creater or by the default series creater.
+*/
 inline SeriesAwaiter current_series() { return SeriesAwaiter(); }
 
-[[nodiscard]]
+/**
+ * @brief Same as coke::current_series(), just to have a WFEmptyTask
+ *        corresponding semantics.
+*/
 inline EmptyAwaiter empty() { return EmptyAwaiter(); }
 
-[[nodiscard]]
+/**
+ * @brief Run and wait the parallel work to finish, it's callback is used
+ *        by coke, so you cannot set callback to the parallel work.
+*/
 inline ParallelAwaiter wait_parallel(ParallelWork *parallel) {
     return ParallelAwaiter(parallel);
 }
 
+/**
+ * @brief A function type that can be used to create a new series.
+*/
 using SeriesCreater = SeriesWork * (*)(SubTask *);
+
 /**
  * @brief Set a new series creater and return the old one.
  *
@@ -82,6 +141,33 @@ SeriesCreater set_series_creater(SeriesCreater creater) noexcept;
  *         never called, return default series creater.
 */
 SeriesCreater get_series_creater() noexcept;
+
+/**
+ * @brief Detach the coke::Task on the running series. Each valid coke::Task
+ *        can be co awaited, detached, detached on series, detached on new
+ *        series at most once.
+ * @param task Valid coke::Task object.
+ * @param series A running series.
+*/
+template<Cokeable T>
+void detach_on_series(Task<T> &&task, SeriesWork *series) {
+    task.detach_on_series(series);
+}
+
+/**
+ * @brief Detach the coke::Task on new series.  Each valid coke::Task
+ *        can be co awaited, detached, detached on series, detached on new
+ *        series at most once.
+ * @param task Valid coke::Task object.
+ * @param creater Callable object that accepts a SubTask * parameter and
+ *        returns a newly created SeriesWork.
+*/
+template<Cokeable T, typename SeriesCreaterType>
+void detach_on_new_series(Task<T> &&task, SeriesCreaterType &&creater) {
+    SubTask *detach_task = detail::create_detach_task(std::move(task));
+    SeriesWork *series = creater(detach_task);
+    series->start();
+}
 
 } // namespace coke
 

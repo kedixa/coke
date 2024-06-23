@@ -34,6 +34,8 @@ using NanoSec = detail::NanoSec;
 */
 struct InfiniteDuration { };
 
+constexpr InfiniteDuration inf_dur;
+
 
 // Negative numbers indicate errors
 constexpr int SLEEP_SUCCESS = 0;
@@ -44,7 +46,7 @@ static_assert(SLEEP_SUCCESS == TOP_SUCCESS);
 static_assert(SLEEP_ABORTED == TOP_ABORTED);
 
 
-class SleepAwaiter : public detail::SleepBase {
+class [[nodiscard]] SleepAwaiter : public detail::SleepBase {
 public:
     struct ImmediateTag { };
     struct YieldTag { };
@@ -62,7 +64,7 @@ public:
      *        time to sleep. You can also use larger time units such as
      *        std::chrono::seconds.
     */
-    SleepAwaiter(const NanoSec &nsec);
+    SleepAwaiter(NanoSec nsec);
 
     /**
      * @brief Create a SleepAwaiter that will sleep `sec`.
@@ -86,7 +88,7 @@ public:
      * @param insert_head Whether add the SleepAwaiter to the front of the
      *        queue.
      */
-    SleepAwaiter(uint64_t id, const NanoSec &nsec, bool insert_head);
+    SleepAwaiter(uint64_t id, NanoSec nsec, bool insert_head);
 
     /**
      * @brief Same as sleep `nsec` with id, but use double `sec`.
@@ -97,7 +99,12 @@ public:
      * @brief Same as previous SleepAwaiter, but sleep for infinite duration,
      *        must use cancel to wake it up.
     */
-    SleepAwaiter(uint64_t id, const InfiniteDuration &, bool insert_head);
+    SleepAwaiter(uint64_t id, InfiniteDuration, bool insert_head);
+
+    // Inner use, but user can also use after understanding how to use it
+    SleepAwaiter(void *addr, NanoSec nsec, bool insert_head);
+    SleepAwaiter(void *addr, double sec, bool insert_head);
+    SleepAwaiter(void *addr, InfiniteDuration, bool insert_head);
 
     // Inner use only
     SleepAwaiter(ImmediateTag, int state);
@@ -105,48 +112,60 @@ public:
 };
 
 
-class WFSleepAwaiter : public BasicAwaiter<int> {
+class [[nodiscard]] WFSleepAwaiter : public BasicAwaiter<int> {
 public:
     /**
      * @brief WFSleepAwaiter is used to sleep by name, which is implemented in
      *        Workflow.
     */
-    WFSleepAwaiter(const std::string &name, const NanoSec &nsec);
+    WFSleepAwaiter(const std::string &name, NanoSec nsec);
 };
 
 
-[[nodiscard]] inline
-SleepAwaiter sleep(const NanoSec &nsec) { return SleepAwaiter(nsec); }
+inline SleepAwaiter sleep(NanoSec nsec) {
+    return SleepAwaiter(nsec);
+}
 
-[[nodiscard]] inline
-SleepAwaiter sleep(double sec) { return SleepAwaiter(sec); }
+inline SleepAwaiter sleep(double sec) {
+    return SleepAwaiter(sec);
+}
 
-[[nodiscard]] inline
-SleepAwaiter sleep(uint64_t id, const NanoSec &nsec, bool insert_head = false) {
+inline
+SleepAwaiter sleep(uint64_t id, NanoSec nsec, bool insert_head = false) {
     return SleepAwaiter(id, nsec, insert_head);
 }
 
-[[nodiscard]] inline
-SleepAwaiter sleep(uint64_t id, double sec, bool insert_head = false) {
+inline SleepAwaiter sleep(uint64_t id, double sec, bool insert_head = false) {
     return SleepAwaiter(id, sec, insert_head);
 }
 
-[[nodiscard]]
-inline SleepAwaiter sleep(uint64_t id,
-                          const InfiniteDuration &inf_duration,
-                          bool insert_head = false)
-{
-    return SleepAwaiter(id, inf_duration, insert_head);
+inline
+SleepAwaiter sleep(uint64_t id, InfiniteDuration x, bool insert_head = false) {
+    return SleepAwaiter(id, x, insert_head);
 }
 
-[[nodiscard, deprecated]] inline
+inline SleepAwaiter sleep(void *addr, NanoSec nsec, bool insert_head = false) {
+    return SleepAwaiter(addr, nsec, insert_head);
+}
+
+inline SleepAwaiter sleep(void *addr, double sec, bool insert_head = false) {
+    return SleepAwaiter(addr, sec, insert_head);
+}
+
+inline
+SleepAwaiter sleep(void *addr, InfiniteDuration x, bool insert_head = false) {
+    return SleepAwaiter(addr, x, insert_head);
+}
+
+[[deprecated]] inline
 SleepAwaiter sleep(long sec, long nsec) {
     auto dur = std::chrono::seconds(sec) + std::chrono::nanoseconds(nsec);
     return SleepAwaiter(dur);
 }
 
-[[nodiscard]]
-inline SleepAwaiter yield() { return SleepAwaiter(SleepAwaiter::YieldTag{}); }
+inline SleepAwaiter yield() {
+    return SleepAwaiter(SleepAwaiter::YieldTag{});
+}
 
 std::size_t cancel_sleep_by_id(uint64_t id, std::size_t max);
 
@@ -154,8 +173,13 @@ inline std::size_t cancel_sleep_by_id(uint64_t id) {
     return cancel_sleep_by_id(id, std::size_t(-1));
 }
 
-[[nodiscard]] inline
-WFSleepAwaiter sleep(const std::string &name, const NanoSec &nsec) {
+std::size_t cancel_sleep_by_addr(void *addr, std::size_t max);
+
+inline std::size_t cancel_sleep_by_addr(void *addr) {
+    return cancel_sleep_by_addr(addr, std::size_t(-1));
+}
+
+inline WFSleepAwaiter sleep(const std::string &name, NanoSec nsec) {
     return WFSleepAwaiter(name, nsec);
 }
 

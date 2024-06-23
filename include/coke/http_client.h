@@ -60,17 +60,14 @@ public:
 
     virtual ~HttpClient() = default;
 
-    [[nodiscard]]
     AwaiterType request(const std::string &url) {
         return create_task(url, nullptr);
     }
 
-    [[nodiscard]]
     AwaiterType request(const std::string &url, ReqType &&req) {
         return create_task(url, &req);
     }
 
-    [[nodiscard]]
     AwaiterType request(const std::string &url, const std::string &method,
                         const HttpHeader &headers, std::string body);
 

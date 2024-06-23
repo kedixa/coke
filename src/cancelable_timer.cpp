@@ -18,10 +18,11 @@
 
 #include <atomic>
 #include <cstdint>
+#include <list>
 #include <mutex>
 #include <map>
-#include <list>
 #include <new>
+#include <string_view>
 
 #include "coke/detail/constant.h"
 #include "coke/detail/timer_task.h"
@@ -34,9 +35,14 @@ class CancelInterface;
 
 class alignas(DESTRUCTIVE_ALIGN) CancelableTimerMap {
 public:
-    static CancelableTimerMap *get_instance(uint64_t uid) {
-        static CancelableTimerMap ntm[CANCELABLE_MAP_SIZE];
-        return ntm + uid % CANCELABLE_MAP_SIZE;
+    static CancelableTimerMap *get_uid_instance(uint64_t uid) {
+        static CancelableTimerMap m[CANCELABLE_MAP_SIZE];
+        return m + uid % CANCELABLE_MAP_SIZE;
+    }
+
+    static CancelableTimerMap *get_addr_instance(std::size_t key) {
+        static CancelableTimerMap m[CANCELABLE_MAP_SIZE];
+        return m + key % CANCELABLE_MAP_SIZE;
     }
 
 public:
@@ -78,7 +84,7 @@ public:
     static constexpr auto release = std::memory_order_release;
     static constexpr auto acq_rel = std::memory_order_acq_rel;
 
-    CancelInterface(CommScheduler *scheduler, const NanoSec &nsec)
+    CancelInterface(CommScheduler *scheduler, NanoSec nsec)
         : TimerTask(scheduler, nsec),
           timer_map(nullptr), ref(2), in_map(false), cancel_done(false)
     { }
@@ -139,7 +145,7 @@ protected:
 
 class CancelableTimer final : public CancelInterface {
 public:
-    CancelableTimer(CommScheduler *scheduler, const NanoSec &nsec)
+    CancelableTimer(CommScheduler *scheduler, NanoSec nsec)
         : CancelInterface(scheduler, nsec),
           switched(false), canceled(false)
     { }
@@ -325,18 +331,47 @@ int CancelableTimer::cancel_timer_in_map() {
 }
 
 
-TimerTask *create_timer(uint64_t id, const NanoSec &nsec, bool insert_head)
-{
-    auto *timer_map = CancelableTimerMap::get_instance(id);
+TimerTask *create_timer(uint64_t id, NanoSec nsec, bool insert_head) {
+    auto *timer_map = CancelableTimerMap::get_uid_instance(id);
     auto *task = new CancelableTimer(WFGlobal::get_scheduler(), nsec);
     timer_map->add_task(id, task, insert_head);
     return task;
 }
 
 TimerTask *create_infinite_timer(uint64_t id, bool insert_head) {
-    auto *timer_map = CancelableTimerMap::get_instance(id);
+    auto *timer_map = CancelableTimerMap::get_uid_instance(id);
     auto *task = new InfiniteTimer(WFGlobal::get_scheduler());
     timer_map->add_task(id, task, insert_head);
+    return task;
+}
+
+std::size_t get_hash_from_uaddr(uintptr_t uaddr) {
+    // Maybe we need a more efficient hash
+    auto p = (const unsigned char *)&uaddr;
+    std::string_view sv((const char *)p, sizeof (uaddr));
+    return std::hash<std::string_view>{}(sv);
+}
+
+TimerTask *create_timer(void *addr, NanoSec nsec, bool insert_head) {
+    // Make sure uaddr can be passed to add_task
+    static_assert(sizeof(uint64_t) >= sizeof(uintptr_t));
+
+    uintptr_t uaddr = (uintptr_t)addr;
+    std::size_t hash = get_hash_from_uaddr(uaddr);
+
+    auto *timer_map = CancelableTimerMap::get_addr_instance(hash);
+    auto *task = new CancelableTimer(WFGlobal::get_scheduler(), nsec);
+    timer_map->add_task(uaddr, task, insert_head);
+    return task;
+}
+
+TimerTask *create_infinite_timer(void *addr, bool insert_head) {
+    uintptr_t uaddr = (uintptr_t)addr;
+    std::size_t hash = get_hash_from_uaddr(uaddr);
+
+    auto *timer_map = CancelableTimerMap::get_addr_instance(hash);
+    auto *task = new InfiniteTimer(WFGlobal::get_scheduler());
+    timer_map->add_task(uaddr, task, insert_head);
     return task;
 }
 
@@ -345,8 +380,16 @@ TimerTask *create_infinite_timer(uint64_t id, bool insert_head) {
 namespace coke {
 
 std::size_t cancel_sleep_by_id(uint64_t id, std::size_t max) {
-    auto *timer_map = detail::CancelableTimerMap::get_instance(id);
+    auto *timer_map = detail::CancelableTimerMap::get_uid_instance(id);
     return timer_map->cancel(id, max);
+}
+
+std::size_t cancel_sleep_by_addr(void *addr, std::size_t max) {
+    uintptr_t uaddr = (uintptr_t)addr;
+    std::size_t hash = detail::get_hash_from_uaddr(uaddr);
+
+    auto *timer_map = detail::CancelableTimerMap::get_addr_instance(hash);
+    return timer_map->cancel(uaddr, max);
 }
 
 } // namespace coke

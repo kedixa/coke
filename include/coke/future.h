@@ -247,7 +247,6 @@ public:
      *    It is the better to ensure that all coroutines finish before
      *    the process exits.
     */
-    [[nodiscard]]
     Task<int> wait() { return state->wait(); }
 
     /**
@@ -257,7 +256,6 @@ public:
      *
      * See Future::wait() for more infomation.
      */
-    [[nodiscard]]
     Task<int> wait_for(const NanoSec &nsec) {
         return state->wait_for(nsec);
     }
@@ -435,7 +433,7 @@ Future<T> create_future(Task<T> &&task) {
     Promise<T> promise;
     Future<T> future = promise.get_future();
 
-    detail::detach_task(std::move(promise), std::move(task)).start();
+    detail::detach_task(std::move(promise), std::move(task)).detach();
     return future;
 }
 

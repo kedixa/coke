@@ -60,7 +60,6 @@ public:
     explicit RedisClient(const RedisClientParams &params);
     virtual ~RedisClient() = default;
 
-    [[nodiscard]]
     AwaiterType request(const std::string &command,
                         const std::vector<std::string> &params) noexcept;
 

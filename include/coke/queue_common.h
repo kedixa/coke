@@ -179,7 +179,6 @@ public:
     */
     template<typename... Args>
         requires std::constructible_from<T, Args...>
-    [[nodiscard]]
     Task<int> emplace(Args&&... args) {
         // TODO only when really a sync operation.
         if (coke::prevent_recursive_stack())
@@ -226,7 +225,6 @@ public:
     */
     template<typename... Args>
         requires std::constructible_from<T, Args...>
-    [[nodiscard]]
     Task<int> try_emplace_for(const NanoSec &nsec, Args&&... args) {
         if (coke::prevent_recursive_stack())
             co_await coke::yield();
@@ -290,7 +288,6 @@ public:
     */
     template<typename U>
         requires std::assignable_from<T&, U&&>
-    [[nodiscard]]
     Task<int> push(U &&u) {
         if (coke::prevent_recursive_stack())
             co_await coke::yield();
@@ -331,7 +328,6 @@ public:
     */
     template<typename U>
         requires std::assignable_from<T&, U&&>
-    [[nodiscard]]
     Task<int> try_push_for(const NanoSec &nsec, U &&u) {
         if (coke::prevent_recursive_stack())
             co_await coke::yield();
@@ -395,7 +391,6 @@ public:
     */
     template<typename U>
         requires std::assignable_from<U&, T&&>
-    [[nodiscard]]
     Task<int> pop(U &u) {
         return pop_impl(TimedWaitHelper{}, u);
     }
@@ -416,7 +411,6 @@ public:
     */
     template<typename U>
         requires std::assignable_from<U&, T&&>
-    [[nodiscard]]
     Task<int> try_pop_for(const NanoSec &nsec, U &u) {
         return pop_impl(TimedWaitHelper{nsec}, u);
     }
@@ -435,7 +429,6 @@ public:
     */
     template<std::input_iterator Iter>
         requires std::assignable_from<T&, typename Iter::value_type>
-    [[nodiscard]]
     auto try_push_range(Iter first, Iter last, SizeType size_hint = 0) {
         SizeType cur_qsize = size(), max_qsize = max_size();
 

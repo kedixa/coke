@@ -58,7 +58,7 @@ coke::Task<> test_async_future() {
 
         do {
             ret = co_await fut.wait_for(milliseconds(100));
-        } while (ret != coke::FUTURE_STATE_READY);
+        } while (ret == coke::FUTURE_STATE_TIMEOUT);
 
         EXPECT_TRUE(fut.valid());
         EXPECT_TRUE(fut.ready());
@@ -74,7 +74,7 @@ coke::Task<> test_async_future() {
         do {
             ret = co_await fut.wait_for(milliseconds(100));
             ++n;
-        } while (ret != coke::FUTURE_STATE_READY);
+        } while (ret == coke::FUTURE_STATE_TIMEOUT);
 
         EXPECT_GE(n, 1);
         EXPECT_LE(n, 5);
@@ -92,7 +92,7 @@ coke::Task<> test_async_future() {
 
         do {
             ret = co_await fut.wait_for(milliseconds(100));
-        } while (ret == coke::FUTURE_STATE_NOTSET);
+        } while (ret == coke::FUTURE_STATE_TIMEOUT);
 
         EXPECT_EQ(ret, coke::FUTURE_STATE_EXCEPTION);
         EXPECT_TRUE(fut.has_exception());
@@ -109,30 +109,30 @@ coke::Task<> test_async_future() {
 }
 
 template<typename T>
-coke::Task<> do_test(T data, int ms, int state) {
+void do_test(T data, int ms, int state) {
     coke::Promise<T> pro;
     coke::Future<T> fut = pro.get_future();
     int wait_state;
 
-    process<T>(data, std::move(pro)).start();
+    coke::detach(process<T>(data, std::move(pro)));
 
-    wait_state = co_await fut.wait_for(milliseconds(ms));
+    wait_state = coke::sync_wait(fut.wait_for(milliseconds(ms)));
     EXPECT_EQ(wait_state, state);
 
-    co_await fut.wait();
+    coke::sync_wait(fut.wait());
 }
 
-coke::Task<> do_test(int ms, int state) {
+void do_test(int ms, int state) {
     coke::Promise<void> pro;
     coke::Future<void> fut = pro.get_future();
     int wait_state;
 
-    process(std::move(pro)).start();
+    coke::detach(process(std::move(pro)));
 
-    wait_state = co_await fut.wait_for(milliseconds(ms));
+    wait_state = coke::sync_wait(fut.wait_for(milliseconds(ms)));
     EXPECT_EQ(wait_state, state);
 
-    co_await fut.wait();
+    coke::sync_wait(fut.wait());
 }
 
 TEST(FUTURE, string) {
