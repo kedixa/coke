@@ -106,8 +106,8 @@ protected:
     */
     Task<int> acquire_impl(detail::TimedWaitHelper helper);
 
-    void *get_addr() const noexcept {
-        return (char *)this + 1;
+    const void *get_addr() const noexcept {
+        return (const char *)this + 1;
     }
 
 private:

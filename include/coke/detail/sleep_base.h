@@ -62,6 +62,8 @@ public:
 
     NanoSec time_left() const { return abs_time - now(); }
 
+    bool timeout() const { return abs_time <= now(); }
+
 private:
     TimePoint abs_time;
 };
