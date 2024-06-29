@@ -142,10 +142,10 @@ struct alignas(DESTRUCTIVE_ALIGN) AlignedMutex {
     std::mutex mtx;
 };
 
-std::mutex &get_mutex(void *ptr) {
+std::mutex &get_mutex(const void *ptr) {
     static AlignedMutex m[MUTEX_TABLE_SIZE];
 
-    uintptr_t h = reinterpret_cast<uintptr_t>(ptr);
+    uintptr_t h = (uintptr_t)(void *)ptr;
     return m[h%MUTEX_TABLE_SIZE].mtx;
 }
 

@@ -102,9 +102,9 @@ public:
     SleepAwaiter(uint64_t id, InfiniteDuration, bool insert_head);
 
     // Inner use, but user can also use after understanding how to use it
-    SleepAwaiter(void *addr, NanoSec nsec, bool insert_head);
-    SleepAwaiter(void *addr, double sec, bool insert_head);
-    SleepAwaiter(void *addr, InfiniteDuration, bool insert_head);
+    SleepAwaiter(const void *addr, NanoSec nsec, bool insert_head);
+    SleepAwaiter(const void *addr, double sec, bool insert_head);
+    SleepAwaiter(const void *addr, InfiniteDuration, bool insert_head);
 
     // Inner use only
     SleepAwaiter(ImmediateTag, int state);
@@ -130,32 +130,55 @@ inline SleepAwaiter sleep(double sec) {
     return SleepAwaiter(sec);
 }
 
-inline
-SleepAwaiter sleep(uint64_t id, NanoSec nsec, bool insert_head = false) {
+
+inline SleepAwaiter
+sleep(uint64_t id, NanoSec nsec, bool insert_head = false) {
     return SleepAwaiter(id, nsec, insert_head);
 }
 
-inline SleepAwaiter sleep(uint64_t id, double sec, bool insert_head = false) {
+inline SleepAwaiter
+sleep(uint64_t id, double sec, bool insert_head = false) {
     return SleepAwaiter(id, sec, insert_head);
 }
 
-inline
-SleepAwaiter sleep(uint64_t id, InfiniteDuration x, bool insert_head = false) {
+inline SleepAwaiter
+sleep(uint64_t id, InfiniteDuration x, bool insert_head = false) {
     return SleepAwaiter(id, x, insert_head);
 }
 
-inline SleepAwaiter sleep(void *addr, NanoSec nsec, bool insert_head = false) {
+inline SleepAwaiter
+sleep(uint64_t id, detail::TimedWaitHelper helper, bool insert_head = false) {
+    if (helper.infinite())
+        return SleepAwaiter(id, inf_dur, insert_head);
+    else
+        return SleepAwaiter(id, helper.time_left(), insert_head);
+}
+
+
+inline SleepAwaiter
+sleep(const void *addr, NanoSec nsec, bool insert_head = false) {
     return SleepAwaiter(addr, nsec, insert_head);
 }
 
-inline SleepAwaiter sleep(void *addr, double sec, bool insert_head = false) {
+inline SleepAwaiter
+sleep(const void *addr, double sec, bool insert_head = false) {
     return SleepAwaiter(addr, sec, insert_head);
 }
 
-inline
-SleepAwaiter sleep(void *addr, InfiniteDuration x, bool insert_head = false) {
+inline SleepAwaiter
+sleep(const void *addr, InfiniteDuration x, bool insert_head = false) {
     return SleepAwaiter(addr, x, insert_head);
 }
+
+inline SleepAwaiter
+sleep(const void *addr, detail::TimedWaitHelper helper,
+      bool insert_head = false) {
+    if (helper.infinite())
+        return SleepAwaiter(addr, inf_dur, insert_head);
+    else
+        return SleepAwaiter(addr, helper.time_left(), insert_head);
+}
+
 
 [[deprecated]] inline
 SleepAwaiter sleep(long sec, long nsec) {
@@ -173,9 +196,9 @@ inline std::size_t cancel_sleep_by_id(uint64_t id) {
     return cancel_sleep_by_id(id, std::size_t(-1));
 }
 
-std::size_t cancel_sleep_by_addr(void *addr, std::size_t max);
+std::size_t cancel_sleep_by_addr(const void *addr, std::size_t max);
 
-inline std::size_t cancel_sleep_by_addr(void *addr) {
+inline std::size_t cancel_sleep_by_addr(const void *addr) {
     return cancel_sleep_by_addr(addr, std::size_t(-1));
 }
 

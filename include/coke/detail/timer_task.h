@@ -133,9 +133,9 @@ TimerTask *create_timer(uint64_t id, NanoSec nsec, bool insert_head);
 
 TimerTask *create_infinite_timer(uint64_t id, bool insert_head);
 
-TimerTask *create_timer(void *addr, NanoSec nsec, bool insert_head);
+TimerTask *create_timer(const void *addr, NanoSec nsec, bool insert_head);
 
-TimerTask *create_infinite_timer(void *addr, bool insert_head);
+TimerTask *create_infinite_timer(const void *addr, bool insert_head);
 
 TimerTask *create_yield_timer();
 

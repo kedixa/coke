@@ -142,18 +142,19 @@ SleepAwaiter::SleepAwaiter(uint64_t id, InfiniteDuration, bool insert_head) {
     this->set_task(time_task);
 }
 
-SleepAwaiter::SleepAwaiter(void *addr, NanoSec nsec, bool insert_head) {
+SleepAwaiter::SleepAwaiter(const void *addr, NanoSec nsec, bool insert_head) {
     auto *time_task = detail::create_timer(addr, nsec, insert_head);
     time_task->set_awaiter(this);
     this->timer = time_task;
     this->set_task(time_task);
 }
 
-SleepAwaiter::SleepAwaiter(void *addr, double sec, bool insert_head)
+SleepAwaiter::SleepAwaiter(const void *addr, double sec, bool insert_head)
     : SleepAwaiter(addr, to_nsec(sec), insert_head)
 { }
 
-SleepAwaiter::SleepAwaiter(void *addr, InfiniteDuration, bool insert_head) {
+SleepAwaiter::SleepAwaiter(const void *addr, InfiniteDuration,
+                           bool insert_head) {
     auto *time_task = detail::create_infinite_timer(addr, insert_head);
     time_task->set_awaiter(this);
     this->timer = time_task;

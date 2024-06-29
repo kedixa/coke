@@ -352,11 +352,11 @@ std::size_t get_hash_from_uaddr(uintptr_t uaddr) {
     return std::hash<std::string_view>{}(sv);
 }
 
-TimerTask *create_timer(void *addr, NanoSec nsec, bool insert_head) {
+TimerTask *create_timer(const void *addr, NanoSec nsec, bool insert_head) {
     // Make sure uaddr can be passed to add_task
     static_assert(sizeof(uint64_t) >= sizeof(uintptr_t));
 
-    uintptr_t uaddr = (uintptr_t)addr;
+    uintptr_t uaddr = (uintptr_t)(void *)addr;
     std::size_t hash = get_hash_from_uaddr(uaddr);
 
     auto *timer_map = CancelableTimerMap::get_addr_instance(hash);
@@ -365,8 +365,8 @@ TimerTask *create_timer(void *addr, NanoSec nsec, bool insert_head) {
     return task;
 }
 
-TimerTask *create_infinite_timer(void *addr, bool insert_head) {
-    uintptr_t uaddr = (uintptr_t)addr;
+TimerTask *create_infinite_timer(const void *addr, bool insert_head) {
+    uintptr_t uaddr = (uintptr_t)(void *)addr;
     std::size_t hash = get_hash_from_uaddr(uaddr);
 
     auto *timer_map = CancelableTimerMap::get_addr_instance(hash);
@@ -384,8 +384,8 @@ std::size_t cancel_sleep_by_id(uint64_t id, std::size_t max) {
     return timer_map->cancel(id, max);
 }
 
-std::size_t cancel_sleep_by_addr(void *addr, std::size_t max) {
-    uintptr_t uaddr = (uintptr_t)addr;
+std::size_t cancel_sleep_by_addr(const void *addr, std::size_t max) {
+    uintptr_t uaddr = (uintptr_t)(void *)addr;
     std::size_t hash = detail::get_hash_from_uaddr(uaddr);
 
     auto *timer_map = detail::CancelableTimerMap::get_addr_instance(hash);
