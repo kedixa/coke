@@ -24,7 +24,7 @@
 namespace coke {
 
 void Latch::count_down(long n) noexcept {
-    void *addr = nullptr;
+    const void *addr = nullptr;
 
     {
         std::lock_guard<std::mutex> lg(this->mtx);
@@ -45,7 +45,7 @@ void Latch::count_down(long n) noexcept {
 
 LatchAwaiter Latch::create_awaiter(long n) noexcept {
     LatchAwaiter a;
-    void *addr = nullptr;
+    const void *addr = nullptr;
 
     {
         std::lock_guard<std::mutex> lg(this->mtx);
@@ -67,6 +67,14 @@ LatchAwaiter Latch::create_awaiter(long n) noexcept {
 
     // ATTENTION: *this maybe destroyed
     return a;
+}
+
+LatchAwaiter Latch::wait_impl(detail::TimedWaitHelper helper) noexcept {
+    std::lock_guard<std::mutex> lg(mtx);
+    if (this->expected > 0)
+        return sleep(get_addr(), helper);
+    else
+        return SleepAwaiter();
 }
 
 void SyncLatch::wait() const noexcept {

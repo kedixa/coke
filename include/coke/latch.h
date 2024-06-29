@@ -28,6 +28,13 @@ namespace coke {
 
 using LatchAwaiter = SleepAwaiter;
 
+/**
+ * @brief The return value of LatchAwaiter does not conform to normal semantics,
+ *        define constant for it to distinguish from SleepAwaiter.
+*/
+constexpr int LATCH_SUCCESS = SLEEP_CANCELED;
+constexpr int LATCH_TIMEOUT = SLEEP_SUCCESS;
+
 class Latch final {
 public:
     /**
@@ -55,11 +62,7 @@ public:
     }
 
     /**
-     * @brief See Latch::wait.
-     * 
-     *  Latch l(...);
-     * 
-     *  co_await l; is same as co_await l.wait();
+     * @brief Same as Latch::wait.
     */
     LatchAwaiter operator co_await() {
         return wait();
@@ -67,10 +70,21 @@ public:
 
     /**
      * @brief Wait for the Latch to be counted to zero.
-     * @return An awaiter needs to be awaited immediately.
+     * @return An awaiter that should be awaited immediately.
+     * @retval coke::LATCH_SUCCESS.
      */
     LatchAwaiter wait() noexcept {
-        return create_awaiter(0);
+        return wait_impl(detail::TimedWaitHelper{});
+    }
+
+    /**
+     * @brief Wait for the Latch to be counted to zero, or timeout.
+     * @return An awaiter that should be awaited immediately.
+     * @retval coke::LATCH_SUCCESS if Latch is counted to zero.
+     * @retval coke::LATCH_TIMEOUT if `nsec` timeout.
+     */
+    LatchAwaiter wait_for(NanoSec nsec) noexcept {
+        return wait_impl(detail::TimedWaitHelper{nsec});
     }
 
     /**
@@ -95,9 +109,11 @@ public:
     void count_down(long n = 1) noexcept;
 
 private:
-    void *get_addr() const noexcept {
-        return (char *)this + 1;
+    const void *get_addr() const noexcept {
+        return (const char *)this + 1;
     }
+
+    LatchAwaiter wait_impl(detail::TimedWaitHelper helper) noexcept;
 
     LatchAwaiter create_awaiter(long n) noexcept;
 
