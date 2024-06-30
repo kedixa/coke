@@ -50,6 +50,10 @@ coke::Task<> create_exception_task() {
     throw std::runtime_error("this is an exception");
 }
 
+coke::Task<> sleep(std::chrono::nanoseconds ns) {
+    co_await coke::sleep(ns);
+}
+
 coke::Task<> test_async_future() {
     {
         std::string str(100, 'a'), result;
@@ -135,6 +139,73 @@ void do_test(int ms, int state) {
     coke::sync_wait(fut.wait());
 }
 
+coke::Task<> wait_future() {
+    auto create = []() {
+        std::vector<coke::Future<void>> futs;
+        futs.reserve(4);
+
+        for (int i = 0; i < 4; i++) {
+            futs.emplace_back(
+                coke::create_future(sleep(milliseconds(50 * i)))
+            );
+        }
+
+        return futs;
+    };
+
+    {
+        auto futs = create();
+        std::size_t n = 2;
+        std::size_t done = 0;
+
+        co_await coke::wait_futures(futs, n);
+
+        for (auto &fut : futs) {
+            if (fut.ready())
+                done++;
+        }
+        EXPECT_GE(done, n);
+
+        co_await coke::wait_futures(futs, futs.size());
+
+        done = 0;
+        for (auto &fut : futs) {
+            if (fut.ready())
+                done++;
+        }
+        EXPECT_EQ(done, futs.size());
+    }
+
+    {
+        auto futs = create();
+        std::size_t n = 2;
+        std::size_t done = 0;
+        int ret;
+
+        ret = co_await coke::wait_futures_for(futs, n, milliseconds(60));
+
+        for (auto &fut : futs) {
+            if (fut.ready())
+                done++;
+        }
+
+        EXPECT_GE(done, 1);
+
+        if (ret == coke::TOP_SUCCESS) {
+            EXPECT_GE(done, n);
+        }
+
+        co_await coke::wait_futures(futs, futs.size());
+
+        done = 0;
+        for (auto &fut : futs) {
+            if (fut.ready())
+                done++;
+        }
+        EXPECT_EQ(done, futs.size());
+    }
+}
+
 TEST(FUTURE, string) {
     do_test(std::string(120, 'a'), 200, coke::FUTURE_STATE_TIMEOUT);
     do_test(std::string(120, 'a'), 400, coke::FUTURE_STATE_READY);
@@ -168,6 +239,10 @@ TEST(FUTURE, broken) {
 
 TEST(FUTURE, from_task) {
     coke::sync_wait(test_async_future());
+}
+
+TEST(FUTURE, wait_future) {
+    coke::sync_wait(wait_future());
 }
 
 int main(int argc, char *argv[]) {

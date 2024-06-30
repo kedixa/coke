@@ -19,172 +19,9 @@
 #ifndef COKE_FUTURE_H
 #define COKE_FUTURE_H
 
-#include <atomic>
-#include <optional>
-#include <memory>
-#include <mutex>
-
-#include "coke/detail/task.h"
-#include "coke/detail/mutex_table.h"
-#include "coke/sleep.h"
+#include "coke/detail/future_base.h"
 
 namespace coke {
-
-constexpr int FUTURE_STATE_READY        = 0;
-constexpr int FUTURE_STATE_TIMEOUT      = 1;
-constexpr int FUTURE_STATE_ABORTED      = 2;
-constexpr int FUTURE_STATE_BROKEN       = 3;
-constexpr int FUTURE_STATE_EXCEPTION    = 4;
-constexpr int FUTURE_STATE_NOTSET       = 5;
-
-template<Cokeable Res>
-class Future;
-
-template<Cokeable Res>
-class Promise;
-
-namespace detail {
-
-struct FutureStateBase {
-    constexpr static auto acquire = std::memory_order_acquire;
-    constexpr static auto release = std::memory_order_release;
-
-public:
-    FutureStateBase()
-        : state(FUTURE_STATE_NOTSET), mtx(get_mutex(this)),
-          uid(INVALID_UNIQUE_ID)
-    { }
-
-    int get_state() const { return state.load(acquire); }
-
-    bool set_broken() {
-        return set_once([](bool *flag) { *flag = true; },
-                        FUTURE_STATE_BROKEN);
-    }
-
-    bool set_exception(const std::exception_ptr &eptr) {
-        return set_once([&, this](bool *flag) {
-            this->eptr = eptr;
-            *flag = true;
-        }, FUTURE_STATE_EXCEPTION);
-    }
-
-    std::exception_ptr get_exception() { return eptr; }
-
-    void raise_exception() {
-        if (eptr)
-            std::rethrow_exception(eptr);
-    }
-
-    Task<int> wait() { return wait_impl(TimedWaitHelper{}); }
-
-    Task<int> wait_for(const NanoSec &nsec) {
-        return wait_impl(TimedWaitHelper{nsec});
-    }
-
-protected:
-    template<typename Callable>
-    bool set_once(Callable &&func, int new_state) {
-        bool set_succ = false;
-        std::call_once(once_flag, std::forward<Callable>(func), &set_succ);
-
-        if (set_succ) {
-            state.store(new_state, release);
-            this->wakeup();
-        }
-
-        return set_succ;
-    }
-
-    void wakeup() {
-        std::lock_guard<std::mutex> lg(mtx);
-        if (uid != INVALID_UNIQUE_ID)
-            cancel_sleep_by_id(uid);
-    }
-
-    Task<int> wait_impl(TimedWaitHelper helper) {
-        constexpr NanoSec zero(0);
-
-        int st = get_state();
-        if (st != FUTURE_STATE_NOTSET)
-            co_return st;
-
-        std::unique_lock<std::mutex> lk(mtx);
-
-        if (uid == INVALID_UNIQUE_ID)
-            uid = get_unique_id();
-
-        auto dur = helper.time_left();
-        if (dur <= zero)
-            co_return FUTURE_STATE_TIMEOUT;
-
-        SleepAwaiter s = helper.infinite()
-                         ? sleep(uid, InfiniteDuration{})
-                         : sleep(uid, dur);
-
-        st = get_state();
-        if (st != FUTURE_STATE_NOTSET)
-            co_return st;
-
-        lk.unlock();
-        int ret = co_await s;
-        lk.lock();
-
-        st = get_state();
-        if (st == FUTURE_STATE_NOTSET)
-            co_return ((ret == 0) ? FUTURE_STATE_TIMEOUT : ret);
-        co_return st;
-    }
-
-protected:
-    std::once_flag once_flag;
-    std::atomic<int> state;
-
-    std::mutex &mtx;
-    uint64_t uid;
-    std::exception_ptr eptr;
-};
-
-template<typename T>
-class FutureState : public FutureStateBase {
-public:
-    bool set_value(const T &value) {
-        return set_once([&, this](bool *flag) {
-            this->opt.emplace(value);
-            *flag = true;
-        }, FUTURE_STATE_READY);
-    }
-
-    bool set_value(T &&value) {
-        return set_once([&, this](bool *flag) {
-            this->opt.emplace(std::move(value));
-            *flag = true;
-        }, FUTURE_STATE_READY);
-    }
-
-    T &get() {
-        raise_exception();
-        return opt.value();
-    }
-
-private:
-    std::optional<T> opt;
-};
-
-template<>
-class FutureState<void> : public FutureStateBase {
-public:
-    bool set_value() {
-        return set_once([](bool *flag) {
-            *flag = true;
-        }, FUTURE_STATE_READY);
-    }
-
-    void get() { raise_exception(); }
-};
-
-} // namespace detail
-
 
 template<Cokeable Res>
 class Future {
@@ -206,6 +43,12 @@ public:
      * is valid.
     */
     bool valid() const { return (bool)state; }
+
+    /**
+     * @brief Get the internal state of this future. See the global constants
+     *        named coke::FUTURE_STATE_XXX.
+    */
+    int get_state() const { return state->get_state(); }
 
     /**
      * @pre valid() returns true.
@@ -282,6 +125,26 @@ public:
      * @brief Get the exception  associated with the Future.
     */
     std::exception_ptr get_exception() { return state->get_exception(); }
+
+    /**
+     * @brief Sets a callback that will be called once when the future is
+     *        completed, or immediately if it is already completed.
+     *
+     * The int param of the callback is the value of this->get_state().
+     *
+     * @attention This is mainly for internal use, and you can also use it if
+     *            understand how to use. See coke::wait_futures.
+    */
+    void set_callback(std::function<void(int)> callback) {
+        state->set_callback(std::move(callback));
+    }
+
+    /**
+     * @brief Remove the callback.
+    */
+    void remove_callback() {
+        state->remove_callback();
+    }
 
 private:
     /**
@@ -401,31 +264,9 @@ private:
     std::shared_ptr<State> state;
 };
 
-namespace detail {
-
-template<Cokeable T>
-Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
-    try {
-        if constexpr (std::is_void_v<T>) {
-            co_await task;
-            promise.set_value();
-        }
-        else {
-            promise.set_value(co_await task);
-        }
-    }
-    catch (...) {
-        promise.set_exception(std::current_exception());
-    }
-
-    co_return;
-}
-
-} // namespace  detail
-
 
 /**
- * @brief Create coke::Future from coke::Task, the task will be started
+ * @brief Create coke::Future from coke::Task<T>, the task will be started
  *        immediately.
 */
 template<Cokeable T>
@@ -435,6 +276,70 @@ Future<T> create_future(Task<T> &&task) {
 
     detail::detach_task(std::move(promise), std::move(task)).detach();
     return future;
+}
+
+
+/**
+ * @brief Wait until at least `n` futures is completed.
+ * @pre No callback has been set for any future.
+ * @return coke::Task<void> that should be co_await immediately.
+*/
+template<Cokeable T>
+Task<void> wait_futures(std::vector<Future<T>> &futs, std::size_t n) {
+    if (n == 0)
+        co_return;
+    else if (n > futs.size())
+        n = futs.size();
+
+    detail::FutureWaitHelper helper(n);
+
+    for (Future<T> &fut : futs) {
+        fut.set_callback([&helper](int) {
+            helper.count_down();
+        });
+    }
+
+    co_await helper.wait();
+
+    for (Future<T> &fut : futs) {
+        fut.remove_callback();
+    }
+}
+
+/**
+ * @brief Wait until at least `n` futures is completed, or `nsec` timeout.
+ * @pre No callback has been set for any future.
+ * @return coke::Task<int> that should be co_await immediately.
+ * @retval coke::TOP_SUCCESS if at least `n` futures is completed.
+ * @retval coke::TOP_TIMEOUT if `nsec` timeout.
+*/
+template<Cokeable T>
+Task<int> wait_futures_for(std::vector<Future<T>> &futs,
+                           std::size_t n, NanoSec nsec) {
+    if (n == 0)
+        co_return TOP_SUCCESS;
+    else if (n > futs.size())
+        n = futs.size();
+
+    detail::FutureWaitHelper helper(n);
+    int ret;
+
+    for (Future<T> &fut : futs) {
+        fut.set_callback([&helper](int) {
+            helper.count_down();
+        });
+    }
+
+    ret = co_await helper.wait_for(nsec);
+
+    for (Future<T> &fut : futs) {
+        fut.remove_callback();
+    }
+
+    if (ret == LATCH_SUCCESS)
+        co_return TOP_SUCCESS;
+    else
+        co_return TOP_TIMEOUT;
 }
 
 } // namespace coke
