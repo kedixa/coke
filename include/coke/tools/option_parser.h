@@ -415,6 +415,38 @@ struct CountableOptionTrait {
 };
 
 /**
+ * @brief Option trait for bool, unlike FlagOption, BoolOption should use
+ *        "true", "yes", "y" or "false", "no", "n" to specify the value.
+*/
+struct BoolOptionTrait {
+    using ValueType = bool;
+
+    static std::string get_type_str() { return "bool"; }
+
+    static std::string to_string(const bool &val) {
+        return val ? "true" : "false";
+    }
+
+    static bool from_string(const std::string &str, bool &val, bool) {
+        std::string tmp = str;
+
+        for (char &c : tmp)
+            c = std::tolower(c);
+
+        if (tmp == "true" || tmp == "yes" || tmp == "y") {
+            val = true;
+            return true;
+        }
+        else if (tmp == "false" || tmp == "no" || tmp == "n") {
+            val = false;
+            return true;
+        }
+
+        return false;
+    }
+};
+
+/**
  * @brief Option trait for std::string.
 */
 struct StringOptionTrait {
@@ -718,6 +750,8 @@ using FlagOption = BasicOption<bool, FlagOptionTrait>;
 
 using CountableOption = BasicOption<int, CountableOptionTrait>;
 
+using BoolOption = BasicOption<bool, BoolOptionTrait>;
+
 using StringOption = BasicOption<std::string, StringOptionTrait>;
 
 using MStringOption = BasicOption<std::vector<std::string>,
@@ -856,6 +890,15 @@ public:
         opt.set_has_value(false);
         val = 0;
         return opt;
+    }
+
+    /**
+     * @brief Add bool option. See add_integer.
+    */
+    BoolOption &
+    add_bool(bool &val, char short_name, const std::string &long_name,
+             bool required = false, const std::string &desc = "") {
+        return add<BoolOption>(&val, short_name, long_name, required, desc);
     }
 
     /**
