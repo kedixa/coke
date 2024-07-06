@@ -22,6 +22,9 @@ set(ALL_TESTS
     test_parallel
     test_exception
     test_condition
+    test_queue
+    test_series
+    test_option_parser
 )
 
 include (../cmake/find-workflow.cmake)
