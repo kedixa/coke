@@ -29,6 +29,7 @@ cc_library(
         "src/mutex.cpp",
         "src/dag.cpp",
         "src/condition.cpp",
+        "src/stop_token.cpp",
     ],
     hdrs = [
         "include/coke/basic_server.h",
@@ -52,6 +53,7 @@ cc_library(
         "include/coke/condition.h",
         "include/coke/queue_common.h",
         "include/coke/queue.h",
+        "include/coke/stop_token.h",
     ],
     includes = ["include"],
     deps = [
