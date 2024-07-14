@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
 
+set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "cmake build type")
+
 project(
     coke
     VERSION 0.2.0
@@ -11,7 +13,6 @@ set(COKE_ENABLE_BENCHMARK FALSE CACHE BOOL "Whether to build benchmarks, default
 set(COKE_ENABLE_EXAMPLE FALSE CACHE BOOL "Whether to build examples, default FALSE")
 set(COKE_BUILD_STATIC TRUE CACHE BOOL "Whether to build coke static library, default TRUE")
 set(COKE_BUILD_SHARED FALSE CACHE BOOL "Whether to build coke shared library, default FALSE")
-set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "cmake build type")
 
 set(COKE_LIBRARY ${PROJECT_NAME})
 set(COKE_LIBRARY_DIR ${PROJECT_BINARY_DIR}/lib)

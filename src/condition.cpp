@@ -22,18 +22,13 @@ namespace coke {
 
 Task<int> TimedCondition::wait_impl(std::unique_lock<std::mutex> &lock,
                                     detail::TimedWaitHelper helper) {
-    constexpr NanoSec zero(0);
-
     int ret;
-    auto dur = helper.time_left();
-    if (dur <= zero)
+    if (helper.timeout())
         co_return TOP_TIMEOUT;
 
-    SleepAwaiter s = helper.infinite()
-                     ? sleep(get_addr(), coke::inf_dur)
-                     : sleep(get_addr(), dur);
-
+    auto s = sleep(get_addr(), helper);
     ++wait_cnt;
+
     lock.unlock();
     ret = co_await s;
     lock.lock();
@@ -50,23 +45,18 @@ Task<int> TimedCondition::wait_impl(std::unique_lock<std::mutex> &lock,
 Task<int> TimedCondition::wait_impl(std::unique_lock<std::mutex> &lock,
                                     detail::TimedWaitHelper helper,
                                     std::function<bool()> pred) {
-    constexpr NanoSec zero(0);
-
     bool insert_head = false;
     int ret;
 
     while (!pred()) {
-        auto dur = helper.time_left();
-        if (dur <= zero)
+        if (helper.timeout())
             co_return TOP_TIMEOUT;
 
-        SleepAwaiter s = helper.infinite()
-                         ? sleep(get_addr(), coke::inf_dur, insert_head)
-                         : sleep(get_addr(), dur, insert_head);
-
+        auto s = sleep(get_addr(), helper, insert_head);
         ++wait_cnt;
-        lock.unlock();
         insert_head = true;
+
+        lock.unlock();
         ret = co_await s;
         lock.lock();
         --wait_cnt;

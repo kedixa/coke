@@ -177,12 +177,12 @@ protected:
                && write_waiting == 0;
     }
 
-    void *rlock_addr() const noexcept {
-        return (char *)this + 1;
+    const void *rlock_addr() const noexcept {
+        return (const char *)this + 1;
     }
 
-    void *wlock_addr() const noexcept {
-        return (char *)this + 2;
+    const void *wlock_addr() const noexcept {
+        return (const char *)this + 2;
     }
 
 private:

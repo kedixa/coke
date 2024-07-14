@@ -55,8 +55,30 @@ coke::Task<> simple_latch() {
     }
 }
 
+coke::Task<> ret_value() {
+    coke::Latch lt(1);
+    int ret;
+
+    auto func = [&]() -> coke::Task<> {
+        co_await coke::sleep(0.2);
+        lt.count_down();
+    };
+
+    func().detach();
+
+    ret = co_await lt.wait_for(std::chrono::milliseconds(10));
+    EXPECT_EQ(ret, coke::LATCH_TIMEOUT);
+
+    ret = co_await lt;
+    EXPECT_EQ(ret, coke::LATCH_SUCCESS);
+}
+
 TEST(LATCH, simple) {
     coke::sync_wait(simple_latch());
+}
+
+TEST(LATCH, ret_value) {
+    coke::sync_wait(ret_value());
 }
 
 int main(int argc, char *argv[]) {

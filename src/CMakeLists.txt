@@ -14,6 +14,7 @@ set(SRCS
     mutex.cpp
     dag.cpp
     condition.cpp
+    stop_token.cpp
 )
 
 if (COKE_BUILD_STATIC)

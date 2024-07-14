@@ -112,7 +112,7 @@ public:
     */
     void notify_all() { cancel_sleep_by_addr(get_addr()); }
 
-private:
+protected:
     Task<int> wait_impl(std::unique_lock<std::mutex> &lock,
                         detail::TimedWaitHelper helper);
 
@@ -120,12 +120,13 @@ private:
                         detail::TimedWaitHelper helper,
                         std::function<bool()> pred);
 
-    void *get_addr() const noexcept {
-        return (char *)this + 1;
+    const void *get_addr() const noexcept {
+        return (const char *)this + 1;
     }
 
 private:
-    // This count is not needed, it is for debugging convenience.
+    // This count is not needed, it is for debugging convenience, and make
+    // *this has unique address.
     int wait_cnt;
 };
 

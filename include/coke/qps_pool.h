@@ -35,38 +35,30 @@ public:
 
 public:
     /**
-     * Create QpsPool with query/seconds limit, `query` == 0 means no limit.
-     * requires `query` >= 0 and seconds >= 1
-     *  Example:
-     *  coke::QpsPool pool(10);
-     *
-     *  // in coroutine, the following loop will take about 10 seconds
-     *  for (std::size_t i = 0; i < 101; i++) {
-     *      co_await pool.get();
-     *      // do something under qps limit
-     *  }
+     * @brief Create QpsPool with `query` query in `seconds` seconds.
+     *        Requires `query` >= 0 and seconds >= 1.
     */
     QpsPool(long query, long seconds = 1);
 
     /**
-     * Reset another `qps` limit, even if pool is already in use.
-     * The new limit will take effect the next time `get` is called.
+     * @brief Reset another `qps` limit, even if pool is already in use.
+     *        The new limit will take effect the next time `get` is called.
     */
     void reset_qps(long query, long seconds = 1) noexcept;
 
     /**
-     * Acquire `count` license from QpsPool, the returned awaitable
-     * object should be co awaited immediately.
+     * @brief Acquire `count` license from QpsPool.
+     * @return An awaitable object that should be co awaited immediately.
     */
     AwaiterType get(unsigned count = 1) noexcept {
         return get_if(count, NanoSec::max());
     }
 
     /**
-     * Acquire `count` license from QpsPool when the wait period less or equal
-     * to `ns`, the returned awaitable object should be co awaited immediately.
-     * The awaiter returns `coke::SLEEP_CANCELED` immediately if the license
-     * cannot be acquired in `ns`.
+     * @brief Acquire `count` license from QpsPool if wait period <= `nsec`.
+     * @return An awaitable object that should be co awaited immediately.
+     * @retval coke::SLEEP_SUCCESS if the license if acquired.
+     * @retval coke::SLEEP_CANCELED if cannot be acquired in nsec.
     */
     AwaiterType get_if(unsigned count, NanoSec nsec) noexcept;
 
