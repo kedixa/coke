@@ -13,6 +13,8 @@ set(ALL_EXAMPLES
     ex010-timed_wait
     ex011-redis_server
     ex012-faster_merge_sort
+    ex013-background_clock
+    ex014-option_parser
 )
 
 include (../cmake/find-workflow.cmake)
