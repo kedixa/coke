@@ -351,6 +351,37 @@ TEST(QUEUE, priority_queue_order) {
                                          {8, 7, 5, 4, 2, 1});
 }
 
+TEST(QUEUE, queue_force) {
+    coke::Queue<std::string> que(1);
+    bool b;
+
+    b = que.try_emplace(50, 'a');
+    EXPECT_TRUE(b);
+
+    b = que.try_emplace(60, 'b');
+    EXPECT_FALSE(b);
+
+    b = que.force_emplace(70, 'c');
+    EXPECT_TRUE(b);
+
+    b = que.force_push(std::string(80, 'd'));
+    EXPECT_TRUE(b);
+
+    EXPECT_EQ(que.size(), 3);
+
+    que.close();
+    EXPECT_TRUE(que.closed());
+
+    b = que.force_emplace(90, 'e');
+    EXPECT_FALSE(b);
+
+    b = que.force_push(std::string(100, 'f'));
+    EXPECT_FALSE(b);
+
+    b = que.try_push(std::string(110, 'g'));
+    EXPECT_FALSE(b);
+}
+
 int main(int argc, char *argv[]) {
     coke::GlobalSettings s;
     s.poller_threads = 4;

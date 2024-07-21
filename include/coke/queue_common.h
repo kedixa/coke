@@ -49,7 +49,6 @@ public:
 
 protected:
     using UniqueLock = std::unique_lock<std::mutex>;
-    using TimedWaitHelper = detail::TimedWaitHelper;
 
     static constexpr auto acquire = std::memory_order_acquire;
     static constexpr auto release = std::memory_order_release;
@@ -156,13 +155,33 @@ public:
      * @retval false If full or closed, the args... will not be moved or copied.
     */
     template<typename... Args>
-        requires std::constructible_from<T, Args...>
+        requires std::constructible_from<T, Args&&...>
     bool try_emplace(Args&&... args) {
-        if (!push_pred())
+        if (cannot_push())
             return false;
 
         UniqueLock lk(que_mtx);
-        if (!push_pred())
+        if (cannot_push())
+            return false;
+
+        get().do_emplace(std::forward<Args>(args)...);
+        after_push(lk, 1);
+        return true;
+    }
+
+    /**
+     * @brief Force emplace new elements into container even if full.
+     *
+     * @param args... Arguments to construct T.
+     * @returns Whether new element is pushed.
+     * @retval true If new element is pushed into container.
+     * @retval false If closed, the args... will not be moved or copied.
+    */
+    template<typename... Args>
+        requires std::constructible_from<T, Args&&...>
+    bool force_emplace(Args&&... args) {
+        UniqueLock lk(que_mtx);
+        if (closed())
             return false;
 
         get().do_emplace(std::forward<Args>(args)...);
@@ -178,35 +197,9 @@ public:
      * @retval See emplace_for.
     */
     template<typename... Args>
-        requires std::constructible_from<T, Args...>
+        requires std::constructible_from<T, Args&&...>
     Task<int> emplace(Args&&... args) {
-        // TODO only when really a sync operation.
-        if (coke::prevent_recursive_stack())
-            co_await coke::yield();
-
-        int ret = TOP_SUCCESS;
-
-        UniqueLock lk(que_mtx);
-        if (closed())
-            ret = TOP_CLOSED;
-        else if (full()) {
-            CountGuard cg(push_wait_cnt);
-            ret = co_await push_cv.wait(lk, [this]() {
-                return push_pred();
-            });
-        }
-
-        if (ret == TOP_SUCCESS) {
-            if (closed())
-                ret = TOP_CLOSED;
-            else
-                get().do_emplace(std::forward<Args>(args)...);
-        }
-
-        if (ret == TOP_SUCCESS)
-            after_push(lk, 1);
-
-        co_return ret;
+        return emplace_impl(true, NanoSec(0), std::forward<Args>(args)...);
     }
 
     /**
@@ -224,34 +217,9 @@ public:
      * @see coke/global.h
     */
     template<typename... Args>
-        requires std::constructible_from<T, Args...>
-    Task<int> try_emplace_for(const NanoSec &nsec, Args&&... args) {
-        if (coke::prevent_recursive_stack())
-            co_await coke::yield();
-
-        int ret = TOP_SUCCESS;
-
-        UniqueLock lk(que_mtx);
-        if (closed())
-            ret = TOP_CLOSED;
-        else if (full()) {
-            CountGuard cg(push_wait_cnt);
-            ret = co_await push_cv.wait_for(lk, nsec, [this]() {
-                return push_pred();
-            });
-        }
-
-        if (ret == TOP_SUCCESS) {
-            if (closed())
-                ret = TOP_CLOSED;
-            else
-                get().do_emplace(std::forward<Args>(args)...);
-        }
-
-        if (ret == TOP_SUCCESS)
-            after_push(lk, 1);
-
-        co_return ret;
+        requires std::constructible_from<T, Args&&...>
+    Task<int> try_emplace_for(NanoSec nsec, Args&&... args) {
+        return emplace_impl(false, nsec, std::forward<Args>(args)...);
     }
 
     /**
@@ -266,11 +234,32 @@ public:
     template<typename U>
         requires std::assignable_from<T&, U&&>
     bool try_push(U &&u) {
-        if (!push_pred())
+        if (cannot_push())
             return false;
 
         UniqueLock lk(que_mtx);
-        if (!push_pred())
+        if (cannot_push())
+            return false;
+
+        get().do_push(std::forward<U>(u));
+        after_push(lk, 1);
+        return true;
+    }
+
+    /**
+     * @brief Force push new elements into container even if full.
+     *
+     * @param u Value that will push into container.
+     *
+     * @returns Whether new element is pushed.
+     * @retval true If new element is pushed into container.
+     * @retval false If closed, the u will not be moved or copied.
+    */
+    template<typename U>
+        requires std::assignable_from<T&, U&&>
+    bool force_push(U &&u) {
+        UniqueLock lk(que_mtx);
+        if (closed())
             return false;
 
         get().do_push(std::forward<U>(u));
@@ -289,32 +278,7 @@ public:
     template<typename U>
         requires std::assignable_from<T&, U&&>
     Task<int> push(U &&u) {
-        if (coke::prevent_recursive_stack())
-            co_await coke::yield();
-
-        int ret = TOP_SUCCESS;
-
-        UniqueLock lk(que_mtx);
-        if (closed())
-            ret = TOP_CLOSED;
-        else if (full()) {
-            CountGuard cg(push_wait_cnt);
-            ret = co_await push_cv.wait(lk, [this]() {
-                return push_pred();
-            });
-        }
-
-        if (ret == TOP_SUCCESS) {
-            if (closed())
-                ret = TOP_CLOSED;
-            else
-                get().do_push(std::forward<U>(u));
-        }
-
-        if (ret == TOP_SUCCESS)
-            after_push(lk, 1);
-
-        co_return ret;
+        return push_impl(true, NanoSec(0), std::forward<U>(u));
     }
 
     /**
@@ -328,33 +292,8 @@ public:
     */
     template<typename U>
         requires std::assignable_from<T&, U&&>
-    Task<int> try_push_for(const NanoSec &nsec, U &&u) {
-        if (coke::prevent_recursive_stack())
-            co_await coke::yield();
-
-        int ret = TOP_SUCCESS;
-
-        UniqueLock lk(que_mtx);
-        if (closed())
-            ret = TOP_CLOSED;
-        else if (full()) {
-            CountGuard cg(push_wait_cnt);
-            ret = co_await push_cv.wait_for(lk, nsec, [this]() {
-                return push_pred();
-            });
-        }
-
-        if (ret == TOP_SUCCESS) {
-            if (closed())
-                ret = TOP_CLOSED;
-            else
-                get().do_push(std::forward<U>(u));
-        }
-
-        if (ret == TOP_SUCCESS)
-            after_push(lk, 1);
-
-        co_return ret;
+    Task<int> try_push_for(NanoSec nsec, U &&u) {
+        return push_impl(false, nsec, std::forward<U>(u));
     }
 
     /**
@@ -392,7 +331,7 @@ public:
     template<typename U>
         requires std::assignable_from<U&, T&&>
     Task<int> pop(U &u) {
-        return pop_impl(TimedWaitHelper{}, u);
+        return pop_impl(true, NanoSec(0), u);
     }
 
     /**
@@ -411,8 +350,8 @@ public:
     */
     template<typename U>
         requires std::assignable_from<U&, T&&>
-    Task<int> try_pop_for(const NanoSec &nsec, U &u) {
-        return pop_impl(TimedWaitHelper{nsec}, u);
+    Task<int> try_pop_for(NanoSec nsec, U &u) {
+        return pop_impl(false, nsec, u);
     }
 
     /**
@@ -555,9 +494,11 @@ public:
     }
 
 protected:
-    bool pop_pred() const { return closed() || !empty(); }
+    bool cannot_push() const { return full() || closed(); }
 
-    bool push_pred() const { return closed() || !full(); }
+    bool pop_pred() const { return !empty() || closed(); }
+
+    bool push_pred() const { return !full() || closed(); }
 
     void after_push(UniqueLock &lk, SizeType push_cnt) {
         SizeType wake_cnt = min(push_cnt, pop_wait_cnt);
@@ -579,8 +520,84 @@ protected:
             push_cv.notify(wake_cnt);
     }
 
+    template<typename... Args>
+    Task<int> emplace_impl(bool inf, NanoSec nsec, Args&&... args) {
+        if (coke::prevent_recursive_stack())
+            co_await coke::yield();
+
+        int ret = TOP_SUCCESS;
+
+        UniqueLock lk(que_mtx);
+        if (closed())
+            ret = TOP_CLOSED;
+        else if (full()) {
+            CountGuard cg(push_wait_cnt);
+
+            if (inf) {
+                ret = co_await push_cv.wait(lk, [this]() {
+                    return push_pred();
+                });
+            }
+            else {
+                ret = co_await push_cv.wait_for(lk, nsec, [this]() {
+                    return push_pred();
+                });
+            }
+        }
+
+        if (ret == TOP_SUCCESS) {
+            if (closed())
+                ret = TOP_CLOSED;
+            else
+                get().do_emplace(std::forward<Args>(args)...);
+        }
+
+        if (ret == TOP_SUCCESS)
+            after_push(lk, 1);
+
+        co_return ret;
+    }
+
     template<typename U>
-    Task<int> pop_impl(TimedWaitHelper h, U &u) {
+    Task<int> push_impl(bool inf, NanoSec nsec, U &&u) {
+        if (coke::prevent_recursive_stack())
+            co_await coke::yield();
+
+        int ret = TOP_SUCCESS;
+
+        UniqueLock lk(que_mtx);
+        if (closed())
+            ret = TOP_CLOSED;
+        else if (full()) {
+            CountGuard cg(push_wait_cnt);
+
+            if (inf) {
+                ret = co_await push_cv.wait(lk, [this]() {
+                    return push_pred();
+                });
+            }
+            else {
+                ret = co_await push_cv.wait_for(lk, nsec, [this]() {
+                    return push_pred();
+                });
+            }
+        }
+
+        if (ret == TOP_SUCCESS) {
+            if (closed())
+                ret = TOP_CLOSED;
+            else
+                get().do_push(std::forward<U>(u));
+        }
+
+        if (ret == TOP_SUCCESS)
+            after_push(lk, 1);
+
+        co_return ret;
+    }
+
+    template<typename U>
+    Task<int> pop_impl(bool inf, NanoSec nsec, U &u) {
         if (coke::prevent_recursive_stack())
             co_await coke::yield();
 
@@ -594,13 +611,13 @@ protected:
         else {
             CountGuard cg(pop_wait_cnt);
 
-            if (h.infinite()) {
+            if (inf) {
                 ret = co_await pop_cv.wait(lk, [this]() {
                     return pop_pred();
                 });
             }
             else {
-                ret = co_await pop_cv.wait_for(lk, h.time_left(), [this]() {
+                ret = co_await pop_cv.wait_for(lk, nsec, [this]() {
                     return pop_pred();
                 });
             }

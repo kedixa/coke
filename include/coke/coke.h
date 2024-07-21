@@ -42,7 +42,6 @@
 #include "coke/future.h"
 #include "coke/make_task.h"
 #include "coke/condition.h"
-#include "coke/queue.h"
 #include "coke/stop_token.h"
 
 #endif // COKE_COKE_H
