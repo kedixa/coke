@@ -20,6 +20,7 @@
 #define COKE_SERIES_H
 
 #include "coke/detail/series_task.h"
+#include "coke/basic_awaiter.h"
 
 namespace coke {
 

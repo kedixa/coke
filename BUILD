@@ -32,6 +32,7 @@ cc_library(
         "src/stop_token.cpp",
     ],
     hdrs = [
+        "include/coke/basic_awaiter.h",
         "include/coke/basic_server.h",
         "include/coke/coke.h",
         "include/coke/dag.h",
