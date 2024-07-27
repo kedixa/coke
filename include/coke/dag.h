@@ -30,6 +30,7 @@
 
 #include "coke/global.h"
 #include "coke/latch.h"
+#include "coke/task.h"
 #include "coke/sleep.h"
 
 namespace coke {

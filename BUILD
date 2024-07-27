@@ -49,6 +49,7 @@ cc_library(
         "include/coke/series.h",
         "include/coke/shared_mutex.h",
         "include/coke/sleep.h",
+        "include/coke/task.h",
         "include/coke/wait.h",
         "include/coke/make_task.h",
         "include/coke/condition.h",

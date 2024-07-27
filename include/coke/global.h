@@ -22,9 +22,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "coke/detail/task.h"
-#include "coke/detail/awaiter_base.h"
-
 namespace coke {
 
 // version

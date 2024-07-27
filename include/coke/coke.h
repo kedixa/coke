@@ -28,6 +28,7 @@
 */
 
 #include "coke/global.h"
+#include "coke/basic_awaiter.h"
 #include "coke/fileio.h"
 #include "coke/go.h"
 #include "coke/latch.h"
@@ -37,6 +38,7 @@
 #include "coke/generic_awaiter.h"
 #include "coke/series.h"
 #include "coke/semaphore.h"
+#include "coke/task.h"
 #include "coke/mutex.h"
 #include "coke/shared_mutex.h"
 #include "coke/future.h"

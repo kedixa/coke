@@ -25,7 +25,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "coke/detail/task.h"
 #include "coke/condition.h"
 
 namespace coke {
