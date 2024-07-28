@@ -146,7 +146,7 @@ public:
 public:
 
     /**
-     * @brief Try to emplace new elements into container.
+     * @brief Try to emplace new element into container.
      *
      * @param args... Arguments to construct T.
      * @returns Whether new element is pushed.
@@ -169,7 +169,7 @@ public:
     }
 
     /**
-     * @brief Force emplace new elements into container even if full.
+     * @brief Force emplace new element into container even if full.
      *
      * @param args... Arguments to construct T.
      * @returns Whether new element is pushed.
@@ -189,11 +189,11 @@ public:
     }
 
     /**
-     * @brief Emplace new elements into container.
+     * @brief Emplace new element into container.
      *
      * @param args... Arguments to construct T.
      * @returns Coroutine coke::Task that should co_await immediately.
-     * @retval See emplace_for.
+     * @retval See try_emplace_for.
     */
     template<typename... Args>
         requires std::constructible_from<T, Args&&...>
@@ -202,7 +202,7 @@ public:
     }
 
     /**
-     * @brief Emplace new elements into container before nsec timeout.
+     * @brief Emplace new element into container before nsec timeout.
      *
      * @param nsec If container is full, wait at most nsec time.
      * @param args... Arguments to construct T.
@@ -222,7 +222,7 @@ public:
     }
 
     /**
-     * @brief Try to push new elements into container.
+     * @brief Try to push new element into container.
      *
      * @param u Value that will push into container.
      *
@@ -246,7 +246,7 @@ public:
     }
 
     /**
-     * @brief Force push new elements into container even if full.
+     * @brief Force push new element into container even if full.
      *
      * @param u Value that will push into container.
      *
@@ -267,12 +267,12 @@ public:
     }
 
     /**
-     * @brief Push new elements into container.
+     * @brief Push new element into container.
      *
      * @param u Value that will push into container.
      *
      * @returns Coroutine coke::Task that should co_await immediately.
-     * @retval See emplace_for.
+     * @retval See try_emplace_for.
     */
     template<typename U>
         requires std::assignable_from<T&, U&&>
@@ -281,13 +281,13 @@ public:
     }
 
     /**
-     * @brief Push new elements into container before nsec timeout.
+     * @brief Push new element into container before nsec timeout.
      *
      * @param nsec If container is full, wait at most nsec time.
      * @param u Value that will push into container.
      *
      * @returns Coroutine coke::Task that should co_await immediately.
-     * @retval See emplace_for.
+     * @retval See try_emplace_for.
     */
     template<typename U>
         requires std::assignable_from<T&, U&&>
@@ -325,7 +325,7 @@ public:
      * @param u Reference that receive popped element.
      *
      * @returns Coroutine that should co_await immediately.
-     * @retval See pop_for.
+     * @retval See try_pop_for.
     */
     template<typename U>
         requires std::assignable_from<U&, T&&>
