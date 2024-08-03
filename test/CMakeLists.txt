@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.16)
 
 find_package(GTest REQUIRED)
 find_program(MEMCHECK_PROG valgrind)
