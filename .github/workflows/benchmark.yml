@@ -13,7 +13,7 @@ permissions:
 jobs:
   bench-coke:
     name: Coke Benchmark
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: (contains('["issues", "pull_request"]', github.event_name) && github.event.label.name == 'do-benchmark' && github.actor == 'kedixa')
     steps:
     - name: Checkout
