@@ -16,35 +16,28 @@
  * Authors: kedixa (https://github.com/kedixa)
 */
 
-#ifndef COKE_QUEUE_COMMON_H
-#define COKE_QUEUE_COMMON_H
+#ifndef COKE_DEQUE_H
+#define COKE_DEQUE_H
 
 #include <atomic>
 #include <cstdint>
 #include <mutex>
 #include <type_traits>
 #include <utility>
+#include <deque>
 
+#include "coke/detail/basic_concept.h"
 #include "coke/condition.h"
 
 namespace coke {
 
-/**
- * @class coke::QueueCommon
- * @brief Common CRTP base of coke::Queue, coke::PriorityQueue and coke::Stack.
- *
- * Class QueueCommon requires its subclasses to implement three template
- * functions: `void do_emplace(Args&&...)`, `void do_push(U &&)`, and
- * `void do_pop(U &)` to use the interface provided by this class.
- *
- * @tparam Q Type of subclass.
- * @tparam T Type of container's value.
-*/
-template<typename Q, typename T>
-class QueueCommon {
+template<Queueable T, typename Alloc=std::allocator<T>>
+class Deque {
 public:
-    // Type used to represent container's size, usually an alias for std::size_t
     using SizeType = std::size_t;
+    using ContainerType = std::deque<T, Alloc>;
+    using ValueType = T;
+    using QueueType = ContainerType;
 
 protected:
     using UniqueLock = std::unique_lock<std::mutex>;
@@ -52,6 +45,8 @@ protected:
     static constexpr auto acquire = std::memory_order_acquire;
     static constexpr auto release = std::memory_order_release;
     static constexpr auto acq_rel = std::memory_order_acq_rel;
+    static constexpr auto pos_front = true;
+    static constexpr auto pos_back = false;
 
     static SizeType min(SizeType a, SizeType b) { return (b < a) ? b : a; }
 
@@ -62,12 +57,12 @@ protected:
         SizeType &n;
     };
 
+public:
     /**
-     * @brief Class Queue cannot be used directly, inherit it and implement its
-     *        requirements, see coke::Queue etc.
+     * @brief Create coke::Deque with max_size.
      * @param max_size Max size of the container.
     */
-    QueueCommon(SizeType max_size)
+    explicit Deque(SizeType max_size)
         : que_max_size(max_size), que_cur_size(0), que_closed(false),
           push_wait_cnt(0), pop_wait_cnt(0)
     {
@@ -76,12 +71,11 @@ protected:
             que_max_size = 1;
     }
 
-    ~QueueCommon() = default;
+    // Deque is neither copyable nor moveable
+    Deque(const Deque &) = delete;
+    Deque &operator= (const Deque &) = delete;
 
-public:
-    // Queue is neither copyable nor moveable
-    QueueCommon(const QueueCommon &) = delete;
-    QueueCommon &operator=(const QueueCommon &) = delete;
+    ~Deque() = default;
 
     /**
      * @brief Check whether the container is empty.
@@ -118,11 +112,11 @@ public:
 
     /**
      * @brief Close the container.
-     * 
+     *
      * When the container is closed, all coroutines waiting for push will wake
      * up and fail in the coke::TOP_CLOSED state, subsequent push operations
      * will directly fail in this state. The coroutine that wants to pop will
-     * succeed until the queue is empty and then it will fail with
+     * succeed until the deque is empty and then it will fail with
      * coke::TOP_CLOSED status.
      *
      * @pre The container is not closed().
@@ -142,11 +136,10 @@ public:
     */
     void reopen() noexcept { que_closed.store(false, release); }
 
-// public template member functions
-public:
+    // emplace
 
     /**
-     * @brief Try to emplace new element into container.
+     * @brief Try to emplace new element in the front.
      *
      * @param args... Arguments to construct T.
      * @returns Whether new element is pushed.
@@ -155,21 +148,22 @@ public:
     */
     template<typename... Args>
         requires std::constructible_from<T, Args&&...>
-    bool try_emplace(Args&&... args) {
-        if (cannot_push())
-            return false;
-
-        UniqueLock lk(que_mtx);
-        if (cannot_push())
-            return false;
-
-        get().do_emplace(std::forward<Args>(args)...);
-        after_push(lk, 1);
-        return true;
+    bool try_emplace_front(Args&&... args) {
+        return try_emplace_impl(pos_front, std::forward<Args>(args)...);
     }
 
     /**
-     * @brief Force emplace new element into container even if full.
+     * @brief Try to emplace new element in the back.
+     * @see try_emplace_front.
+     */
+    template<typename... Args>
+        requires std::constructible_from<T, Args&&...>
+    bool try_emplace_back(Args&&... args) {
+        return try_emplace_impl(pos_back, std::forward<Args>(args)...);
+    }
+
+    /**
+     * @brief Force emplace new element in the front even if full.
      *
      * @param args... Arguments to construct T.
      * @returns Whether new element is pushed.
@@ -178,31 +172,45 @@ public:
     */
     template<typename... Args>
         requires std::constructible_from<T, Args&&...>
-    bool force_emplace(Args&&... args) {
-        UniqueLock lk(que_mtx);
-        if (closed())
-            return false;
-
-        get().do_emplace(std::forward<Args>(args)...);
-        after_push(lk, 1);
-        return true;
+    bool force_emplace_front(Args&&... args) {
+        return force_emplace_impl(pos_front, std::forward<Args>(args)...);
     }
 
     /**
-     * @brief Emplace new element into container.
+     * @brief Force emplace new element in the back even if full.
+     * @see force_emplace_front.
+     */
+    template<typename... Args>
+        requires std::constructible_from<T, Args&&...>
+    bool force_emplace_back(Args&&... args) {
+        return force_emplace_impl(pos_back, std::forward<Args>(args)...);
+    }
+
+    /**
+     * @brief Emplace new element in the front.
      *
      * @param args... Arguments to construct T.
      * @returns Coroutine coke::Task that should co_await immediately.
-     * @retval See try_emplace_for.
+     * @retval See try_emplace_front_for.
     */
     template<typename... Args>
         requires std::constructible_from<T, Args&&...>
-    Task<int> emplace(Args&&... args) {
-        return emplace_impl(true, NanoSec(0), std::forward<Args>(args)...);
+    Task<int> emplace_front(Args&&... args) {
+        return emplace_impl(pos_front, true, NanoSec(0), std::forward<Args>(args)...);
     }
 
     /**
-     * @brief Emplace new element into container before nsec timeout.
+     * @brief Emplace new element in the back.
+     * @see try_emplace_front_for.
+    */
+    template<typename... Args>
+        requires std::constructible_from<T, Args&&...>
+    Task<int> emplace_back(Args&&... args) {
+        return emplace_impl(pos_back, true, NanoSec(0), std::forward<Args>(args)...);
+    }
+
+    /**
+     * @brief Emplace new element in the front before nsec timeout.
      *
      * @param nsec If container is full, wait at most nsec time.
      * @param args... Arguments to construct T.
@@ -217,86 +225,122 @@ public:
     */
     template<typename... Args>
         requires std::constructible_from<T, Args&&...>
-    Task<int> try_emplace_for(NanoSec nsec, Args&&... args) {
-        return emplace_impl(false, nsec, std::forward<Args>(args)...);
+    Task<int> try_emplace_front_for(NanoSec nsec, Args&&... args) {
+        return emplace_impl(pos_front, false, nsec, std::forward<Args>(args)...);
     }
 
     /**
-     * @brief Try to push new element into container.
+     * @brief Emplace new element in the back before nsec timeout.
+     * @see try_emplace_front_for.
+    */
+    template<typename... Args>
+        requires std::constructible_from<T, Args&&...>
+    Task<int> try_emplace_back_for(NanoSec nsec, Args&&... args) {
+        return emplace_impl(pos_back, false, nsec, std::forward<Args>(args)...);
+    }
+
+    // push
+
+    /**
+     * @brief Try to push new element to the front.
      *
-     * @param u Value that will push into container.
-     *
+     * @param u Value that will be pushed.
      * @returns Whether new element is pushed.
      * @retval true If new element is pushed into container.
      * @retval false If full or closed, the u will not be moved or copied.
     */
     template<typename U>
         requires std::assignable_from<T&, U&&>
-    bool try_push(U &&u) {
-        if (cannot_push())
-            return false;
-
-        UniqueLock lk(que_mtx);
-        if (cannot_push())
-            return false;
-
-        get().do_push(std::forward<U>(u));
-        after_push(lk, 1);
-        return true;
+    bool try_push_front(U &&u) {
+        return try_push_impl(pos_front, std::forward<U>(u));
     }
 
     /**
-     * @brief Force push new element into container even if full.
+     * @brief Try to push new element to the back.
+     * @see try_push_front.
+    */
+    template<typename U>
+        requires std::assignable_from<T&, U&&>
+    bool try_push_back(U &&u) {
+        return try_push_impl(pos_back, std::forward<U>(u));
+    }
+
+    /**
+     * @brief Force push new element to the front even if full.
      *
-     * @param u Value that will push into container.
-     *
+     * @param u Value that will be pushed.
      * @returns Whether new element is pushed.
      * @retval true If new element is pushed into container.
      * @retval false If closed, the u will not be moved or copied.
     */
     template<typename U>
         requires std::assignable_from<T&, U&&>
-    bool force_push(U &&u) {
-        UniqueLock lk(que_mtx);
-        if (closed())
-            return false;
-
-        get().do_push(std::forward<U>(u));
-        after_push(lk, 1);
-        return true;
+    bool force_push_front(U &&u) {
+        return force_push_impl(pos_front, std::forward<U>(u));
     }
 
     /**
-     * @brief Push new element into container.
-     *
-     * @param u Value that will push into container.
-     *
-     * @returns Coroutine coke::Task that should co_await immediately.
-     * @retval See try_emplace_for.
+     * @brief Force push new element to the front even if full.
+     * @see force_push_front.
     */
     template<typename U>
         requires std::assignable_from<T&, U&&>
-    Task<int> push(U &&u) {
-        return push_impl(true, NanoSec(0), std::forward<U>(u));
+    bool force_push_back(U &&u) {
+        return force_push_impl(pos_back, std::forward<U>(u));
     }
 
     /**
-     * @brief Push new element into container before nsec timeout.
+     * @brief Push new element to the front.
      *
-     * @param nsec If container is full, wait at most nsec time.
      * @param u Value that will push into container.
-     *
-     * @returns Coroutine coke::Task that should co_await immediately.
-     * @retval See try_emplace_for.
+     * @retval See try_emplace_front_for.
     */
     template<typename U>
         requires std::assignable_from<T&, U&&>
-    Task<int> try_push_for(NanoSec nsec, U &&u) {
-        return push_impl(false, nsec, std::forward<U>(u));
+    Task<int> push_front(U &&u) {
+        return push_impl(pos_front, true, NanoSec(0), std::forward<U>(u));
     }
 
     /**
-     * @brief Try to pop element from container.
+     * @brief Push new element to the back.
+     *
+     * @param u Value that will push into container.
+     * @retval See try_emplace_front_for.
+    */
+    template<typename U>
+        requires std::assignable_from<T&, U&&>
+    Task<int> push_back(U &&u) {
+        return push_impl(pos_back, true, NanoSec(0), std::forward<U>(u));
+    }
+
+    /**
+     * @brief Try to push new element to the front before nsec timeout.
+     *
+     * @param u Value that will push into container.
+     * @retval See try_emplace_front_for.
+    */
+    template<typename U>
+        requires std::assignable_from<T&, U&&>
+    Task<int> try_push_front_for(NanoSec nsec, U &&u) {
+        return push_impl(pos_front, false, nsec, std::forward<U>(u));
+    }
+
+    /**
+     * @brief Try to push new element to the back before nsec timeout.
+     *
+     * @param u Value that will push into container.
+     * @retval See try_emplace_front_for.
+    */
+    template<typename U>
+        requires std::assignable_from<T&, U&&>
+    Task<int> try_push_back_for(NanoSec nsec, U &&u) {
+        return push_impl(pos_back, false, nsec, std::forward<U>(u));
+    }
+
+    // pop
+
+    /**
+     * @brief Try to pop element from front.
      *
      * @param u Reference that receive popped element.
      *
@@ -306,40 +350,47 @@ public:
     */
     template<typename U>
         requires std::assignable_from<U&, T&&>
-    bool try_pop(U &u) {
-        if (empty())
-            return false;
-
-        UniqueLock lk(que_mtx);
-        if (empty())
-            return false;
-
-        get().do_pop(u);
-        after_pop(lk, 1);
-        return true;
+    bool try_pop_front(U &u) {
+        return try_pop_impl(pos_front, u);
     }
 
     /**
-     * @brief Pop element from container.
-     *
-     * @param u Reference that receive popped element.
-     *
-     * @returns Coroutine that should co_await immediately.
-     * @retval See try_pop_for.
+     * @brief Try to pop element from back.
+     * @see try_pop_front.
+     */
+    template<typename U>
+        requires std::assignable_from<U&, T&&>
+    bool try_pop_back(U &u) {
+        return try_pop_impl(pos_back, u);
+    }
+
+    /**
+     * @brief Pop element from front.
+     * @retval See try_pop_front_for.
     */
     template<typename U>
         requires std::assignable_from<U&, T&&>
-    Task<int> pop(U &u) {
-        return pop_impl(true, NanoSec(0), u);
+    Task<int> pop_front(U &u) {
+        return pop_impl(pos_front, true, NanoSec(0), u);
     }
 
     /**
-     * @brief Pop element from container.
+     * @brief Pop element from back.
+     * @retval See try_pop_front_for.
+    */
+    template<typename U>
+        requires std::assignable_from<U&, T&&>
+    Task<int> pop_back(U &u) {
+        return pop_impl(pos_back, true, NanoSec(0), u);
+    }
+
+    /**
+     * @brief Try to pop element from front before nsec timeout.
      *
      * @param nsec If container is empty, wait at most nsec time.
      * @param u Reference that receive popped element.
      *
-     * @returns Coroutine that should co_await immediately.
+     * @returns coke::Task<int> that should co_await immediately.
      * @retval coke::TOP_SUCCESS If pop successful.
      * @retval coke::TOP_TIMEOUT If timeout before container is able to pop.
      * @retval coke::TOP_ABORTED If process exit.
@@ -349,12 +400,24 @@ public:
     */
     template<typename U>
         requires std::assignable_from<U&, T&&>
-    Task<int> try_pop_for(NanoSec nsec, U &u) {
-        return pop_impl(false, nsec, u);
+    Task<int> try_pop_front_for(NanoSec nsec, U &u) {
+        return pop_impl(pos_front, false, nsec, u);
     }
 
     /**
-     * @brief Try to push a range of elements into container.
+     * @brief Try to pop element from back before nsec timeout.
+     * @see try_pop_front_for.
+     */
+    template<typename U>
+        requires std::assignable_from<U&, T&&>
+    Task<int> try_pop_back_for(NanoSec nsec, U &u) {
+        return pop_impl(pos_back, false, nsec, u);
+    }
+
+    // range
+
+    /**
+     * @brief Try to push a range of elements in the back.
      *
      * @param first,last Element range [first,last)
      * @param size_hint Only try to push element when the remaining space of the
@@ -367,7 +430,7 @@ public:
     */
     template<std::input_iterator Iter>
         requires std::assignable_from<T&, typename Iter::value_type>
-    auto try_push_range(Iter first, Iter last, SizeType size_hint = 0) {
+    auto try_push_back_range(Iter first, Iter last, SizeType size_hint = 0) {
         SizeType cur_qsize = size(), max_qsize = max_size();
 
         if (cur_qsize >= max_qsize || max_qsize - cur_qsize < size_hint)
@@ -383,7 +446,7 @@ public:
         SizeType n = 0, m = max_qsize - cur_qsize;
         try {
             while (first != last && n < m) {
-                get().do_push(*first);
+                que.push_back(*first);
                 ++n;
                 ++first;
             }
@@ -401,7 +464,7 @@ public:
     }
 
     /**
-     * @brief Try to pop elements into range.
+     * @brief Try to pop elements into range fron front.
      *
      * The iter in [first, ret_iter) are dereferenced exactly once, the iter in
      * [ret_iter, last) will not be dereferenced. [first, last) are traversed
@@ -417,7 +480,7 @@ public:
     template<typename Iter>
         requires std::is_assignable_v<decltype(*std::declval<Iter>()), T&&>
                  && std::output_iterator<Iter, T>
-    auto try_pop_range(Iter first, Iter last, SizeType size_hint = 0) {
+    auto try_pop_front_range(Iter first, Iter last, SizeType size_hint = 0) {
         SizeType cur_size = size();
 
         if (cur_size == 0 || cur_size < size_hint)
@@ -432,7 +495,9 @@ public:
         SizeType n = 0;
         try {
             while (first != last && n < cur_size) {
-                get().do_pop(*first);
+                *first = std::move(que.front());
+                que.pop_front();
+
                 ++n;
                 ++first;
             }
@@ -450,7 +515,7 @@ public:
     }
 
     /**
-     * @brief Try to pop at most max_pop elements from container.
+     * @brief Try to pop at most max_pop elements from front.
      *
      * @param iter Iterator to recieve element. E.g. std::back_insert_iterator.
      * @param max_pop Max elements to pop.
@@ -460,7 +525,7 @@ public:
     template<typename Iter>
         requires std::is_assignable_v<decltype(*std::declval<Iter>()), T&&>
                  && std::output_iterator<Iter, T>
-    SizeType try_pop_n(Iter iter, SizeType max_pop) {
+    SizeType try_pop_front_n(Iter iter, SizeType max_pop) {
         SizeType cur_size = size();
 
         if (cur_size == 0 || max_pop == 0)
@@ -475,7 +540,9 @@ public:
         SizeType n = 0, m = min(cur_size, max_pop);
         try {
             while (n < m) {
-                get().do_pop(*iter);
+                *iter = std::move(que.front());
+                que.pop_front();
+
                 ++n;
                 ++iter;
             }
@@ -492,12 +559,12 @@ public:
         return n;
     }
 
-protected:
-    bool cannot_push() const { return full() || closed(); }
+private:
+    bool cannot_push() const noexcept { return full() || closed(); }
 
-    bool pop_pred() const { return !empty() || closed(); }
+    bool pop_pred() const noexcept { return !empty() || closed(); }
 
-    bool push_pred() const { return !full() || closed(); }
+    bool push_pred() const noexcept { return !full() || closed(); }
 
     void after_push(UniqueLock &lk, SizeType push_cnt) {
         SizeType wake_cnt = min(push_cnt, pop_wait_cnt);
@@ -520,7 +587,40 @@ protected:
     }
 
     template<typename... Args>
-    Task<int> emplace_impl(bool inf, NanoSec nsec, Args&&... args) {
+    bool try_emplace_impl(bool pos, Args&&... args) {
+        if (cannot_push())
+            return false;
+
+        UniqueLock lk(que_mtx);
+        if (cannot_push())
+            return false;
+
+        if (pos == pos_front)
+            que.emplace_front(std::forward<Args>(args)...);
+        else
+            que.emplace_back(std::forward<Args>(args)...);
+
+        after_push(lk, 1);
+        return true;
+    }
+
+    template<typename... Args>
+    bool force_emplace_impl(bool pos, Args&&... args) {
+        UniqueLock lk(que_mtx);
+        if (closed())
+            return false;
+
+        if (pos == pos_front)
+            que.emplace_front(std::forward<Args>(args)...);
+        else
+            que.emplace_back(std::forward<Args>(args)...);
+
+        after_push(lk, 1);
+        return true;
+    }
+
+    template<typename... Args>
+    Task<int> emplace_impl(bool pos, bool inf, NanoSec nsec, Args&&... args) {
         if (coke::prevent_recursive_stack())
             co_await coke::yield();
 
@@ -547,8 +647,10 @@ protected:
         if (ret == TOP_SUCCESS) {
             if (closed())
                 ret = TOP_CLOSED;
+            else if (pos == pos_front)
+                que.emplace_front(std::forward<Args>(args)...);
             else
-                get().do_emplace(std::forward<Args>(args)...);
+                que.emplace_back(std::forward<Args>(args)...);
         }
 
         if (ret == TOP_SUCCESS)
@@ -558,7 +660,40 @@ protected:
     }
 
     template<typename U>
-    Task<int> push_impl(bool inf, NanoSec nsec, U &&u) {
+    bool try_push_impl(bool pos, U &&u) {
+        if (cannot_push())
+            return false;
+
+        UniqueLock lk(que_mtx);
+        if (cannot_push())
+            return false;
+
+        if (pos == pos_front)
+            que.push_front(std::forward<U>(u));
+        else
+            que.push_back(std::forward<U>(u));
+
+        after_push(lk, 1);
+        return true;
+    }
+
+    template<typename U>
+    bool force_push_impl(bool pos, U &&u) {
+        UniqueLock lk(que_mtx);
+        if (closed())
+            return false;
+
+        if (pos == pos_front)
+            que.push_front(std::forward<U>(u));
+        else
+            que.push_back(std::forward<U>(u));
+
+        after_push(lk, 1);
+        return true;
+    }
+
+    template<typename U>
+    Task<int> push_impl(bool pos, bool inf, NanoSec nsec, U &&u) {
         if (coke::prevent_recursive_stack())
             co_await coke::yield();
 
@@ -585,8 +720,10 @@ protected:
         if (ret == TOP_SUCCESS) {
             if (closed())
                 ret = TOP_CLOSED;
+            else if (pos == pos_front)
+                que.push_front(std::forward<U>(u));
             else
-                get().do_push(std::forward<U>(u));
+                que.push_back(std::forward<U>(u));
         }
 
         if (ret == TOP_SUCCESS)
@@ -596,7 +733,29 @@ protected:
     }
 
     template<typename U>
-    Task<int> pop_impl(bool inf, NanoSec nsec, U &u) {
+    bool try_pop_impl(bool pos, U &u) {
+        if (empty())
+            return false;
+
+        UniqueLock lk(que_mtx);
+        if (empty())
+            return false;
+
+        if (pos == pos_front) {
+            u = std::move(que.front());
+            que.pop_front();
+        }
+        else {
+            u = std::move(que.back());
+            que.pop_back();
+        }
+
+        after_pop(lk, 1);
+        return true;
+    }
+
+    template<typename U>
+    Task<int> pop_impl(bool pos, bool inf, NanoSec nsec, U &u) {
         if (coke::prevent_recursive_stack())
             co_await coke::yield();
 
@@ -623,10 +782,16 @@ protected:
         }
 
         if (ret == TOP_SUCCESS) {
-            if (!empty())
-                get().do_pop(u);
-            else
+            if (empty())
                 ret = TOP_CLOSED;
+            else if (pos == pos_front) {
+                u = std::move(que.front());
+                que.pop_front();
+            }
+            else {
+                u = std::move(que.back());
+                que.pop_back();
+            }
         }
 
         if (ret == TOP_SUCCESS)
@@ -635,7 +800,7 @@ protected:
         co_return ret;
     }
 
-protected:
+private:
     SizeType que_max_size;
     std::atomic<SizeType> que_cur_size;
     std::atomic<bool> que_closed;
@@ -646,14 +811,9 @@ protected:
 
     SizeType push_wait_cnt;
     SizeType pop_wait_cnt;
-
-private:
-    Q &get() noexcept { return static_cast<Q &>(*this); }
-
-    const Q &get() const noexcept { return static_cast<const Q &>(*this); }
+    QueueType que;
 };
-
 
 } // namespace coke
 
-#endif // COKE_QUEUE_COMMON_H
+#endif // COKE_DEQUE_H

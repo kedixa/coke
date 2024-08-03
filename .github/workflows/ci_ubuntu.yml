@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  wf_tag: v0.11.3
+  wf_tag: v0.11.5
 
 jobs:
   build-ubuntu-2404:
@@ -81,7 +81,7 @@ jobs:
 
   build-ubuntu-2004:
     name: ubuntu-20.04
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container:
       image: ubuntu:20.04
     steps:

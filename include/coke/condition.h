@@ -22,6 +22,7 @@
 #include <functional>
 #include <mutex>
 
+#include "coke/task.h"
 #include "coke/sleep.h"
 
 namespace coke {

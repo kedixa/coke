@@ -22,6 +22,7 @@
 #include <string>
 
 #include "coke/detail/sleep_base.h"
+#include "coke/basic_awaiter.h"
 #include "coke/global.h"
 
 namespace coke {

@@ -22,6 +22,7 @@
 #include <atomic>
 
 #include "coke/detail/mutex_table.h"
+#include "coke/task.h"
 #include "coke/sleep.h"
 
 namespace coke {

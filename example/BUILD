@@ -36,3 +36,5 @@ create_example_target("ex009-mysql_cli", ["//:mysql", "//:tools", "//example:rea
 create_example_target("ex010-timed_wait")
 create_example_target("ex011-redis_server", ["//:redis"])
 create_example_target("ex012-faster_merge_sort", ["//:tools"])
+create_example_target("ex013-background_clock")
+create_example_target("ex014-option_parser", ["//:tools"])

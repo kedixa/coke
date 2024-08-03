@@ -1,30 +1,29 @@
-name: CI on CentOS Stream 8
+name: CI on CentOS Stream 9
 
 on:
   workflow_dispatch:
 
 env:
-  wf_tag: v0.11.3
+  wf_tag: v0.11.5
 
 jobs:
-  build-centos-stream8:
-    name: centos-stream8
-    runs-on: ubuntu-22.04
+  build-centos-stream9:
+    name: centos-stream9
+    runs-on: ubuntu-24.04
     container:
-      image: quay.io/centos/centos:stream8
+      image: quay.io/centos/centos:stream9
     strategy:
       matrix:
         compiler_prepare: [
-          "source scl_source enable gcc-toolset-12",
+          "export CC=gcc CXX=g++",
           "export CC=clang CXX=clang++"
         ]
     steps:
     - name: Prepare
       run: |
-        dnf install -y gcc-toolset-12-gcc gcc-toolset-12-gcc-c++ \
-          openssl openssl-devel \
-          clang git cmake valgrind
-        dnf --enablerepo=powertools install -y gtest-devel
+        dnf install -y epel-release
+        dnf install -y gcc gcc-c++ openssl openssl-devel \
+          clang git cmake valgrind gtest-devel
     - uses: actions/checkout@v4
     - uses: actions/checkout@v4
       with:

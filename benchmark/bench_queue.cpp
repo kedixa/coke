@@ -4,6 +4,7 @@
 
 #include "bench_common.h"
 #include "coke/coke.h"
+#include "coke/queue.h"
 
 std::vector<int> width{16, 8, 6, 8, 6, 10};
 

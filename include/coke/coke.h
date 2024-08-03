@@ -28,6 +28,7 @@
 */
 
 #include "coke/global.h"
+#include "coke/basic_awaiter.h"
 #include "coke/fileio.h"
 #include "coke/go.h"
 #include "coke/latch.h"
@@ -37,11 +38,12 @@
 #include "coke/generic_awaiter.h"
 #include "coke/series.h"
 #include "coke/semaphore.h"
+#include "coke/task.h"
 #include "coke/mutex.h"
 #include "coke/shared_mutex.h"
 #include "coke/future.h"
 #include "coke/make_task.h"
 #include "coke/condition.h"
-#include "coke/queue.h"
+#include "coke/stop_token.h"
 
 #endif // COKE_COKE_H

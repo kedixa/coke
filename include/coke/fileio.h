@@ -21,7 +21,7 @@
 
 #include <sys/uio.h>  // struct iovec
 
-#include "coke/detail/awaiter_base.h"
+#include "coke/basic_awaiter.h"
 
 namespace coke {
 

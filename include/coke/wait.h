@@ -20,7 +20,6 @@
 #define COKE_WAIT_H
 
 #include "coke/detail/wait_helper.h"
-#include "coke/global.h"
 #include "coke/make_task.h"
 
 namespace coke {

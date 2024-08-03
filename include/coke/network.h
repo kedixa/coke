@@ -23,7 +23,7 @@
 #include <utility>
 #include <cassert>
 
-#include "coke/detail/awaiter_base.h"
+#include "coke/basic_awaiter.h"
 #include "workflow/WFTask.h"
 
 namespace coke {

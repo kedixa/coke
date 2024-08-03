@@ -24,7 +24,7 @@
 #include <vector>
 #include <memory>
 
-#include "coke/detail/task.h"
+#include "coke/task.h"
 #include "coke/latch.h"
 
 namespace coke::detail {

@@ -25,7 +25,7 @@
 #include <mutex>
 #include <functional>
 
-#include "coke/detail/task.h"
+#include "coke/task.h"
 #include "coke/sleep.h"
 #include "coke/latch.h"
 

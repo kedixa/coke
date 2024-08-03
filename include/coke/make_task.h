@@ -22,7 +22,7 @@
 #include <functional>
 #include <memory>
 
-#include "coke/detail/task.h"
+#include "coke/task.h"
 
 namespace coke {
 

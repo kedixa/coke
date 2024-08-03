@@ -19,7 +19,7 @@
 #ifndef COKE_BASIC_SERVER_H
 #define COKE_BASIC_SERVER_H
 
-#include "coke/detail/task.h"
+#include "coke/task.h"
 #include "coke/network.h"
 #include "workflow/WFServer.h"
 

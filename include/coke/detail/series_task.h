@@ -20,7 +20,7 @@
 #define COKE_DETAIL_SERIES_TASK_H
 
 #include "coke/detail/awaiter_base.h"
-#include "coke/detail/task.h"
+#include "coke/task.h"
 #include "workflow/Workflow.h"
 
 namespace coke::detail {
