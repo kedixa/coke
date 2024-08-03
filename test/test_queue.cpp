@@ -25,6 +25,7 @@
 
 #include "coke/global.h"
 #include "coke/wait.h"
+#include "coke/deque.h"
 #include "coke/queue.h"
 #include "coke/future.h"
 
@@ -306,6 +307,43 @@ void test_order(std::vector<int> in, std::vector<int> out) {
     }
 }
 
+coke::Task<> test_deque_order() {
+    std::chrono::seconds sec(1);
+    std::vector<int> out;
+    std::vector<int> expected_out;
+
+    for (int i = 3; i < 19; i++)
+        expected_out.push_back(i);
+
+    coke::Deque<int> que(100);
+
+    que.try_emplace_front(10);
+    que.try_push_front(9);
+    que.force_emplace_front(8);
+    que.force_push_front(7);
+    co_await que.emplace_front(6);
+    co_await que.try_emplace_front_for(sec, 5);
+    co_await que.push_front(4);
+    co_await que.try_push_front_for(sec, 3);
+
+    que.try_emplace_back(11);
+    que.try_push_back(12);
+    que.force_emplace_back(13);
+    que.force_push_back(14);
+    co_await que.emplace_back(15);
+    co_await que.try_emplace_back_for(sec, 16);
+    co_await que.push_back(17);
+    co_await que.try_push_back_for(sec, 18);
+
+    while (!que.empty()) {
+        int tmp = -1;
+        que.try_pop_front(tmp);
+        out.push_back(tmp);
+    }
+
+    EXPECT_EQ(out, expected_out);
+}
+
 /// Tests.
 
 TEST(QUEUE, queue_single) {
@@ -379,6 +417,41 @@ TEST(QUEUE, queue_force) {
     EXPECT_FALSE(b);
 
     b = que.try_push(std::string(110, 'g'));
+    EXPECT_FALSE(b);
+}
+
+TEST(QUEUE, deque_order) {
+    coke::sync_wait(test_deque_order());
+}
+
+TEST(QUEUE, deque_force) {
+    coke::Deque<std::string> que(1);
+    bool b;
+
+    b = que.try_emplace_front(50, 'a');
+    EXPECT_TRUE(b);
+
+    b = que.try_emplace_front(60, 'b');
+    EXPECT_FALSE(b);
+
+    b = que.force_emplace_front(70, 'c');
+    EXPECT_TRUE(b);
+
+    b = que.force_push_front(std::string(80, 'd'));
+    EXPECT_TRUE(b);
+
+    EXPECT_EQ(que.size(), 3);
+
+    que.close();
+    EXPECT_TRUE(que.closed());
+
+    b = que.force_emplace_front(90, 'e');
+    EXPECT_FALSE(b);
+
+    b = que.force_push_front(std::string(100, 'f'));
+    EXPECT_FALSE(b);
+
+    b = que.try_push_front(std::string(110, 'g'));
     EXPECT_FALSE(b);
 }
 
