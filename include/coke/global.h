@@ -26,10 +26,10 @@ namespace coke {
 
 // version
 constexpr int COKE_MAJOR_VERSION = 0;
-constexpr int COKE_MINOR_VERSION = 2;
+constexpr int COKE_MINOR_VERSION = 3;
 constexpr int COKE_PATCH_VERSION = 0;
 
-constexpr const char COKE_VERSION_STR[] = "0.2.0";
+constexpr const char COKE_VERSION_STR[] = "0.3.0";
 
 // state constant from workflow, see WFTask.h
 constexpr int STATE_UNDEFINED = -1;
