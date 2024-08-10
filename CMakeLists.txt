@@ -4,7 +4,7 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "cmake build type")
 
 project(
     coke
-    VERSION 0.2.0
+    VERSION 0.3.0
     LANGUAGES CXX
 )
 

@@ -15,6 +15,7 @@ set(ALL_EXAMPLES
     ex012-faster_merge_sort
     ex013-background_clock
     ex014-option_parser
+    ex015-async_queue
 )
 
 include (../cmake/find-workflow.cmake)
