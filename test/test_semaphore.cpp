@@ -35,7 +35,7 @@ enum {
 };
 
 struct ParamPack {
-    coke::TimedSemaphore sem;
+    coke::Semaphore sem;
     std::atomic<int> count;
     std::atomic<int> total;
     int sem_max;
@@ -44,7 +44,7 @@ struct ParamPack {
 };
 
 coke::Task<> do_test_semaphore(ParamPack *p) {
-    coke::TimedSemaphore &sem = p->sem;
+    coke::Semaphore &sem = p->sem;
     int ret;
 
     for (int i = 0; i < p->loop_max; i++) {
@@ -82,7 +82,7 @@ coke::Task<> do_test_semaphore(ParamPack *p) {
 
 void test_semaphore(int sem_max, int test_method) {
     ParamPack p {
-        .sem = coke::TimedSemaphore(sem_max),
+        .sem = coke::Semaphore(sem_max),
         .count = 0,
         .total = 0,
         .sem_max = sem_max,

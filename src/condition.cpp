@@ -20,8 +20,8 @@
 
 namespace coke {
 
-Task<int> TimedCondition::wait_impl(std::unique_lock<std::mutex> &lock,
-                                    detail::TimedWaitHelper helper) {
+Task<int> Condition::wait_impl(std::unique_lock<std::mutex> &lock,
+                               detail::TimedWaitHelper helper) {
     int ret;
     if (helper.timeout())
         co_return TOP_TIMEOUT;
@@ -42,9 +42,9 @@ Task<int> TimedCondition::wait_impl(std::unique_lock<std::mutex> &lock,
     co_return ret;
 }
 
-Task<int> TimedCondition::wait_impl(std::unique_lock<std::mutex> &lock,
-                                    detail::TimedWaitHelper helper,
-                                    std::function<bool()> pred) {
+Task<int> Condition::wait_impl(std::unique_lock<std::mutex> &lock,
+                               detail::TimedWaitHelper helper,
+                               std::function<bool()> pred) {
     bool insert_head = false;
     int ret;
 

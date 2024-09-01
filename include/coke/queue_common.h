@@ -641,8 +641,8 @@ protected:
     std::atomic<bool> que_closed;
 
     mutable std::mutex que_mtx;
-    TimedCondition push_cv;
-    TimedCondition pop_cv;
+    Condition push_cv;
+    Condition pop_cv;
 
     SizeType push_wait_cnt;
     SizeType pop_wait_cnt;

@@ -27,7 +27,7 @@
 
 namespace coke {
 
-class SharedTimedMutex {
+class SharedMutex {
     enum class State : uint8_t {
         Idle        = 0,
         Reading     = 1,
@@ -38,19 +38,19 @@ public:
     using CountType = uint32_t;
 
     /**
-     * @brief Create a SharedTimedMutex.
+     * @brief Create a SharedMutex.
     */
-    SharedTimedMutex()
+    SharedMutex()
         : read_doing(0), read_waiting(0), write_waiting(0), state(State::Idle)
     { }
 
     /**
-     * @brief SharedTimedMutex is neither copyable nor movable.
+     * @brief SharedMutex is neither copyable nor movable.
     */
-    SharedTimedMutex(const SharedTimedMutex &) = delete;
-    SharedTimedMutex &operator= (const SharedTimedMutex &) = delete;
+    SharedMutex(const SharedMutex &) = delete;
+    SharedMutex &operator= (const SharedMutex &) = delete;
 
-    ~SharedTimedMutex() = default;
+    ~SharedMutex() = default;
 
     /**
      * @brief Try to lock the mutex for exclusive ownership.
