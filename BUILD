@@ -28,6 +28,7 @@ cc_library(
         "src/latch.cpp",
         "src/mutex.cpp",
         "src/qps_pool.cpp",
+        "src/random.cpp",
         "src/sleep.cpp",
         "src/stop_token.cpp",
     ],

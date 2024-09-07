@@ -1,19 +1,20 @@
 cmake_minimum_required(VERSION 3.16)
 
 set(SRCS
+    cancelable_timer.cpp
     coke_impl.cpp
+    condition.cpp
+    dag.cpp
     fileio.cpp
     go.cpp
     http_impl.cpp
     latch.cpp
+    mutex.cpp
+    mysql_impl.cpp
     qps_pool.cpp
+    random.cpp
     redis_impl.cpp
     sleep.cpp
-    mysql_impl.cpp
-    cancelable_timer.cpp
-    mutex.cpp
-    dag.cpp
-    condition.cpp
     stop_token.cpp
 )
 
