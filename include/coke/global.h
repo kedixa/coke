@@ -22,6 +22,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#define COKE_VERSION_NUMBER 0x000300L
+
 namespace coke {
 
 // version
