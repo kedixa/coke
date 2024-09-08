@@ -57,6 +57,7 @@ cc_library(
         "include/coke/sleep.h",
         "include/coke/stop_token.h",
         "include/coke/task.h",
+        "include/coke/wait_group.h",
         "include/coke/wait.h",
     ],
     includes = ["include"],

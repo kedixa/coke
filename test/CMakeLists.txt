@@ -24,6 +24,7 @@ set(ALL_TESTS
     test_series
     test_shared_mutex
     test_sleep
+    test_wait_group
     test_wait
 )
 

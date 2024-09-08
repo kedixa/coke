@@ -16,6 +16,7 @@ set(ALL_EXAMPLES
     ex013-background_clock
     ex014-option_parser
     ex015-async_queue
+    ex016-wait_group
 )
 
 include (../cmake/find-workflow.cmake)
