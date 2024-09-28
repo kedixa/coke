@@ -16,6 +16,8 @@ set(ALL_EXAMPLES
     ex013-background_clock
     ex014-option_parser
     ex015-async_queue
+    ex016-wait_group
+    ex017-backup_request
 )
 
 include (../cmake/find-workflow.cmake)
@@ -32,7 +34,7 @@ foreach(example ${ALL_EXAMPLES})
     )
 
     target_link_libraries(${exec_name}
-        ${COKE_LIBRARY}
+        coke::coke
         ${COKE_TRY_STATIC_WORKFLOW}
         Threads::Threads
         OpenSSL::SSL OpenSSL::Crypto

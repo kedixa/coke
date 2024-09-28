@@ -45,5 +45,6 @@
 #include "coke/make_task.h"
 #include "coke/condition.h"
 #include "coke/stop_token.h"
+#include "coke/wait_group.h"
 
 #endif // COKE_COKE_H

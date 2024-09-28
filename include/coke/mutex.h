@@ -23,20 +23,20 @@
 
 namespace coke {
 
-class TimedMutex {
+class Mutex {
 public:
     /**
-     * @brief Create a TimedMutex.
+     * @brief Create a Mutex.
     */
-    TimedMutex() : sem(1) { }
+    Mutex() : sem(1) { }
 
     /**
-     * @brief TimedMutex is neither copyable nor movable.
+     * @brief Mutex is neither copyable nor movable.
     */
-    TimedMutex(const TimedMutex &) = delete;
-    TimedMutex &operator= (const TimedMutex &) = delete;
+    Mutex(const Mutex &) = delete;
+    Mutex &operator= (const Mutex &) = delete;
 
-    ~TimedMutex() = default;
+    ~Mutex() = default;
 
     /**
      * @brief Try to lock the mutex for exclusive ownership.
@@ -80,7 +80,7 @@ public:
     }
 
 private:
-    TimedSemaphore sem;
+    Semaphore sem;
 };
 
 } // namespace coke

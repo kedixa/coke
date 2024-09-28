@@ -22,6 +22,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#define COKE_VERSION_NUMBER 0x000300L
+
 namespace coke {
 
 // version
@@ -49,13 +51,13 @@ constexpr int CTOR_WAIT_TIMEOUT = 1;
 constexpr int CTOR_CONNECT_TIMEOUT = 2;
 constexpr int CTOR_TRANSMIT_TIMEOUT = 3;
 
-// return value of coroutine operation such as TimedMutex.lock
+// return value of coroutine operation such as Mutex::lock
 // Negative numbers indicate system errors
 
 // The operation success
 constexpr int TOP_SUCCESS = 0;
 // The operation timeout before success, used by most time-related operations
-// such as TimedSemaphore::acquire_for etc.
+// such as Mutex::try_lock_for etc.
 constexpr int TOP_TIMEOUT = 1;
 // TOP_ABORTED only appears when the process is about to exit but there are
 // still coroutines performing time-related operations, but Coke recommends

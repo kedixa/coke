@@ -27,20 +27,20 @@
 
 namespace coke {
 
-class TimedCondition {
+class Condition {
 public:
     /**
-     * @brief Create a TimedCondition.
+     * @brief Create a Condition.
     */
-    TimedCondition() : wait_cnt(0) { }
+    Condition() : wait_cnt(0) { }
 
     /**
-     * @brief TimedCondition is neither copyable nor movable.
+     * @brief Condition is neither copyable nor movable.
     */
-    TimedCondition(const TimedCondition &) = delete;
-    TimedCondition &operator=(const TimedCondition &) = delete;
+    Condition(const Condition &) = delete;
+    Condition &operator=(const Condition &) = delete;
 
-    ~TimedCondition() = default;
+    ~Condition() = default;
 
     /**
      * @brief Blocks the current coroutine until the condition is awakened.

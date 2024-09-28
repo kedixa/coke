@@ -24,7 +24,7 @@
 using Milli = std::chrono::milliseconds;
 
 std::mutex mtx;
-coke::TimedCondition cv;
+coke::Condition cv;
 int x, y;
 
 coke::Task<int> cv_wait() {

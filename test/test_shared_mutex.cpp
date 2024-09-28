@@ -39,7 +39,7 @@ enum {
 };
 
 struct ParamPack {
-    coke::SharedTimedMutex mtx;
+    coke::SharedMutex mtx;
     std::atomic<int> count;
     std::atomic<int> total;
     int test_method;
@@ -47,7 +47,7 @@ struct ParamPack {
 };
 
 coke::Task<> do_test_mutex(ParamPack *p) {
-    coke::SharedTimedMutex &mtx = p->mtx;
+    coke::SharedMutex &mtx = p->mtx;
     bool shared = (p->test_method >= TEST_TRY_LOCK_SHARED);
     int ret;
 
@@ -153,7 +153,7 @@ TEST(SHARED_MUTEX, shared_and_unique) {
     int loop_max = 128;
     std::atomic<bool> finish{false};
     std::atomic<int> shared_count{0};
-    coke::SharedTimedMutex mtx;
+    coke::SharedMutex mtx;
 
     auto lock_shared = [&]() -> coke::Task<> {
         while (!finish.load()) {

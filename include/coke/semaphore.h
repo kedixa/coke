@@ -27,24 +27,24 @@
 
 namespace coke {
 
-class TimedSemaphore {
+class Semaphore {
 public:
     using CountType = uint32_t;
 
     /**
-     * @brief Create a TimedSemaphore, with initial count `n`.
+     * @brief Create a Semaphore, with initial count `n`.
     */
-    explicit TimedSemaphore(CountType n)
+    explicit Semaphore(CountType n)
         : count(n), waiting(0)
     { }
 
     /**
-     * @brief TimedSemaphore is neither copyable nor movable.
+     * @brief Semaphore is neither copyable nor movable.
     */
-    TimedSemaphore(const TimedSemaphore &) = delete;
-    TimedSemaphore &operator= (const TimedSemaphore &) = delete;
+    Semaphore(const Semaphore &) = delete;
+    Semaphore &operator= (const Semaphore &) = delete;
 
-    ~TimedSemaphore() = default;
+    ~Semaphore() = default;
 
     /**
      * @brief Try to acquire a count.

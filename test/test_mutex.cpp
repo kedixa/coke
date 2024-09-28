@@ -35,7 +35,7 @@ enum {
 };
 
 struct ParamPack {
-    coke::TimedMutex mtx;
+    coke::Mutex mtx;
     std::atomic<int> count;
     std::atomic<int> total;
     int test_method;
@@ -43,7 +43,7 @@ struct ParamPack {
 };
 
 coke::Task<> do_test_mutex(ParamPack *p) {
-    coke::TimedMutex &mtx = p->mtx;
+    coke::Mutex &mtx = p->mtx;
     int ret;
 
     for (int i = 0; i < p->loop_max; i++) {
