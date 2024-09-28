@@ -7,6 +7,10 @@
 #include "coke/wait_group.h"
 #include "coke/wait.h"
 
+/**
+ * This example shows the basic usage of coke::WaitGroup.
+ */
+
 std::string current();
 
 coke::Task<> subworker(coke::WaitGroup &wg, int i) {
