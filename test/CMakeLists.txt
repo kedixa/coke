@@ -46,7 +46,7 @@ foreach(exec_name ${ALL_TESTS})
     )
 
     target_link_libraries(${exec_name}
-        ${COKE_LIBRARY}
+        coke::coke
         ${COKE_TRY_STATIC_WORKFLOW}
         Threads::Threads
         OpenSSL::SSL OpenSSL::Crypto
