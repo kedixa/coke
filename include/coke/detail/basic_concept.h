@@ -22,8 +22,6 @@
 #include <concepts>
 #include <type_traits>
 
-#include "workflow/SubTask.h"
-
 namespace coke {
 
 /**
@@ -39,19 +37,6 @@ concept Cokeable = (
     !std::is_array_v<T>
 ) || std::is_void_v<T>;
 
-/**
- * @brief This concept is used to provide constraints on the parameters of
- *        AwaiterBase::await_suspend.
- * @details
- * The current implementation of coke::detail::CoPromise is strongly coupled
- * with series and cannot accept other type of std::coroutine_handle yet.
- * Future versions may change CoPromise's implementation.
-*/
-template<typename T>
-concept PromiseType = requires(T t) {
-    { t.get_series() } -> std::same_as<void *>;
-    { t.set_series((void *)nullptr) } -> std::same_as<void>;
-};
 
 /**
  * @brief This concept is used to constrain the types of elements for coke

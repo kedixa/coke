@@ -19,12 +19,7 @@
 #ifndef COKE_DETAIL_AWAITER_BASE_H
 #define COKE_DETAIL_AWAITER_BASE_H
 
-#include <coroutine>
-#include <optional>
-#include <utility>
-
-#include "coke/detail/basic_concept.h"
-
+#include "coke/detail/task_impl.h"
 #include "workflow/SubTask.h"
 
 namespace coke {
@@ -79,20 +74,29 @@ public:
 
     /**
      * @brief Suspend current coroutine h and start the task(maintained by this
-     *        awaiter) on the same series in h.
-     * @tparam T PromiseType concept is used to constrain that this awaitable
-     *         can only be co_await under coke framework.
+     *        awaiter). If PromiseType is CoPromise, task will run on the same
+     *        series in h, otherwise on a new series.
+     * @tparam PromiseType Type of promise.
     */
-    template<PromiseType T>
-    void await_suspend(std::coroutine_handle<T> h) {
+    template<typename PromiseType>
+    void await_suspend(std::coroutine_handle<PromiseType> h) {
         this->hdl = h;
 
-        void *series = h.promise().get_series();
-        if (series)
-            suspend(series);
+        if constexpr (IsCoPromise<PromiseType>) {
+            // The Awaiter is awaited in CoPromise
+            void *series = h.promise().get_series();
+
+            if (series)
+                suspend(series);
+            else {
+                series = create_series(subtask);
+                h.promise().set_series(series);
+                suspend(series, true);
+            }
+        }
         else {
-            series = create_series(subtask);
-            h.promise().set_series(series);
+            // The Awaiter is awaited in third party coroutine framework
+            void *series = create_series(subtask);
             suspend(series, true);
         }
 
@@ -101,7 +105,7 @@ public:
 
     /**
      * @brief This function is only for developers, we make it public just
-     *        for convenience, and users should not called it directly.
+     *        for convenience, and users should not call it directly.
      *        When this->subtask finishes, call this->done() to wake up the
      *        coroutine.
      *

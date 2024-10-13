@@ -16,8 +16,8 @@
  * Authors: kedixa (https://github.com/kedixa)
 */
 
-#ifndef COKE_DETAIL_TASK_H
-#define COKE_DETAIL_TASK_H
+#ifndef COKE_DETAIL_TASK_IMPL_H
+#define COKE_DETAIL_TASK_IMPL_H
 
 #include <coroutine>
 #include <memory>
@@ -65,12 +65,8 @@ public:
     void unhandled_exception() { eptr = std::current_exception(); }
 
     void raise_exception() {
-        if (eptr) {
-            std::exception_ptr tmp(std::move(eptr));
-            eptr = nullptr;
-
-            std::rethrow_exception(tmp);
-        }
+        if (eptr)
+            std::rethrow_exception(std::move(eptr));
     }
 
 protected:
@@ -82,6 +78,9 @@ private:
     void *series{nullptr};
     bool detached{false};
 };
+
+template<typename T>
+concept IsCoPromise = std::derived_from<T, PromiseBase>;
 
 template<Cokeable T>
 class CoPromise;
@@ -129,11 +128,15 @@ struct [[nodiscard]] TaskAwaiter {
             return std::move(hdl.promise().value());
     }
 
-    template<typename U>
-    auto await_suspend(std::coroutine_handle<CoPromise<U>> h) {
+    template<typename PromiseType>
+    auto await_suspend(std::coroutine_handle<PromiseType> h) {
         CoPromise<T> &p = hdl.promise();
         p.set_previous_handle(h);
-        p.set_series(h.promise().get_series());
+
+        // If this is awaited in coke::Task, share the same series
+        if constexpr (IsCoPromise<PromiseType>)
+            p.set_series(h.promise().get_series());
+
         return hdl;
     }
 
@@ -288,4 +291,8 @@ struct TaskHelper<Task<T>> {
 
 } // namespace coke::detail
 
-#endif //COKE_DETAIL_TASK_H
+namespace coke {
+    using detail::IsCoPromise;
+}
+
+#endif // COKE_DETAIL_TASK_IMPL_H
