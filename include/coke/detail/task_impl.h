@@ -41,8 +41,14 @@ public:
     PromiseBase(PromiseBase &&) = delete;
     virtual ~PromiseBase() {
         // Do not allow unhandled exceptions to escape.
-        if (eptr)
-            std::terminate();
+        if (eptr) {
+            try {
+                std::rethrow_exception(eptr);
+            }
+            catch (...) {
+                std::terminate();
+            }
+        }
     }
 
     void set_context(std::shared_ptr<void> ctx) noexcept { context = ctx; }
