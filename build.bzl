@@ -9,6 +9,7 @@ def create_test_target(name, extra_deps = None):
         srcs = [name + ".cpp"],
         deps = ["//:common"] + extra_deps,
         linkopts = ["-lgtest"],
+        linkstatic = True,
     )
 
 def create_example_target(example_name, extra_deps = None):
