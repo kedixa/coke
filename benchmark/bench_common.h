@@ -26,6 +26,20 @@
 #include <vector>
 
 #include "coke/tools/option_parser.h"
+#include "coke/basic_awaiter.h"
+#include "workflow/WFTaskFactory.h"
+
+class RepeaterAwaiter : public coke::BasicAwaiter<void> {
+public:
+    RepeaterAwaiter(WFRepeaterTask *task) {
+        task->set_callback([info = this->get_info()](void *) {
+            auto *awaiter = info->get_awaiter<RepeaterAwaiter>();
+            awaiter->done();
+        });
+
+        this->set_task(task);
+    }
+};
 
 inline long long current_msec() {
     auto dur = std::chrono::steady_clock::now().time_since_epoch();

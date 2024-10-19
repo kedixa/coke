@@ -5,7 +5,7 @@ cc_library(
     hdrs = [
         "bench_common.h",
     ],
-    deps = ["//:tools"],
+    deps = ["//:tools", "//:common"],
 )
 
 create_benchmark_target("bench_exception")

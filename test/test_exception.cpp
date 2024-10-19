@@ -32,12 +32,12 @@ coke::Task<T> func(bool e, T x) {
 }
 
 template<typename T>
-coke::Task<> task_exception(bool e, coke::Task<T> &&task, const T &x) {
+coke::Task<> task_exception(bool e, coke::Task<T> task, const T &x) {
     bool has_exception = false;
     T y;
 
     try {
-        y = co_await task;
+        y = co_await std::move(task);
     }
     catch (const T &exc) {
         y = exc;

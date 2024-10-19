@@ -58,6 +58,12 @@ concept Queueable = (
 template<typename T>
 concept IsCokePromise = T::__is_coke_promise_type;
 
+template<typename T>
+constexpr bool is_coke_awaitable_v = false;
+
+template<typename T>
+concept IsCokeAwaitable = T::__is_coke_awaitable_type || is_coke_awaitable_v<T>;
+
 } // namespace coke
 
 #endif // COKE_DETAIL_CONCEPT_H

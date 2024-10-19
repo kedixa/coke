@@ -34,7 +34,7 @@ coke::Task<> simple_latch() {
             co_return;
         }, t, lt).detach();
 
-        co_await lt;
+        co_await lt.wait();
         EXPECT_EQ(s, t);
     }
 
@@ -50,7 +50,7 @@ coke::Task<> simple_latch() {
             lt.count_down();
         }, t, lt).detach();
 
-        co_await lt;
+        co_await lt.wait();
         EXPECT_EQ(s, t);
     }
 }
@@ -69,7 +69,7 @@ coke::Task<> ret_value() {
     ret = co_await lt.wait_for(std::chrono::milliseconds(10));
     EXPECT_EQ(ret, coke::LATCH_TIMEOUT);
 
-    ret = co_await lt;
+    ret = co_await lt.wait();
     EXPECT_EQ(ret, coke::LATCH_SUCCESS);
 }
 

@@ -30,7 +30,7 @@ Task<int> Condition::wait_impl(std::unique_lock<std::mutex> &lock,
     ++wait_cnt;
 
     lock.unlock();
-    ret = co_await s;
+    ret = co_await std::move(s);
     lock.lock();
     --wait_cnt;
 
@@ -57,7 +57,7 @@ Task<int> Condition::wait_impl(std::unique_lock<std::mutex> &lock,
         insert_head = true;
 
         lock.unlock();
-        ret = co_await s;
+        ret = co_await std::move(s);
         lock.lock();
         --wait_cnt;
 

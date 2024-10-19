@@ -105,9 +105,9 @@ struct MValueHelper<void> {
 template<Cokeable T, typename L>
 Task<> coke_wait_helper(Task<T> task, ValueHelper<T> &v, L &lt) {
     if constexpr (std::is_same_v<T, void>)
-        co_await task;
+        co_await std::move(task);
     else
-        v.set_value(co_await task);
+        v.set_value(co_await std::move(task));
 
     lt.count_down();
 }
@@ -116,9 +116,9 @@ template<Cokeable T, typename L>
 Task<> coke_wait_helper(Task<T> task, MValueHelper<T> &v, std::size_t i, L &lt)
 {
     if constexpr (std::is_same_v<T, void>)
-        co_await task;
+        co_await std::move(task);
     else
-        v.set_value(i, co_await task);
+        v.set_value(i, co_await std::move(task));
 
     lt.count_down();
 }
@@ -134,7 +134,7 @@ auto async_wait_helper(std::vector<Task<T>> tasks)
     for (std::size_t i = 0; i < n; i++)
         coke_wait_helper(std::move(tasks[i]), v, i, lt).detach();
 
-    co_await lt;
+    co_await lt.wait();
     co_return v.get_value();
 }
 
@@ -151,7 +151,7 @@ using AwaiterResult = std::remove_cvref_t<
 
 template<AwaitableType A>
 auto make_task_from_awaitable_helper(A a) -> Task<AwaiterResult<A>> {
-    co_return co_await a;
+    co_return co_await std::move(a);
 }
 
 } // namespace coke::detail

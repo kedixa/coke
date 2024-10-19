@@ -41,7 +41,6 @@ cc_library(
         "include/coke/deque.h",
         "include/coke/fileio.h",
         "include/coke/future.h",
-        "include/coke/generic_awaiter.h",
         "include/coke/global.h",
         "include/coke/go.h",
         "include/coke/latch.h",

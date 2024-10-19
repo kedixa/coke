@@ -26,7 +26,7 @@ Task<bool> StopToken::wait_finish_impl(detail::TimedWaitHelper helper) {
         SleepAwaiter s = sleep(get_finish_addr(), helper);
 
         lk.unlock();
-        int ret = co_await s;
+        int ret = co_await std::move(s);
         lk.lock();
 
         if (ret < 0 || ret == SLEEP_ABORTED)
@@ -42,7 +42,7 @@ Task<bool> StopToken::wait_stop_impl(detail::TimedWaitHelper helper) {
         SleepAwaiter s = sleep(get_stop_addr(), helper);
 
         lk.unlock();
-        int ret = co_await s;
+        int ret = co_await std::move(s);
         lk.lock();
 
         if (ret < 0 || ret == SLEEP_ABORTED)

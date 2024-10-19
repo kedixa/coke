@@ -37,6 +37,8 @@ class AwaiterBase {
     static void *create_series(SubTask *first);
 
 public:
+    constexpr static bool __is_coke_awaitable_type = true;
+
     AwaiterBase() = default;
 
     /**

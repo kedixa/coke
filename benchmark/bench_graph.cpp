@@ -236,12 +236,8 @@ coke::Task<> do_bench_wf(Creater &&creater) {
         return nullptr;
     };
 
-    coke::GenericAwaiter<void> g;
-    auto callback = [&g] (WFRepeaterTask *) { g.done(); };
-    auto *rep = WFTaskFactory::create_repeater_task(create, callback);
-    g.take_over(rep);
-
-    co_await g;
+    auto *rep = WFTaskFactory::create_repeater_task(create, nullptr);
+    co_await RepeaterAwaiter(rep);
 }
 
 // benchmarks

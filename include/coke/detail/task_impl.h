@@ -71,6 +71,19 @@ public:
             std::rethrow_exception(std::move(eptr));
     }
 
+    template<typename T>
+        requires IsCokeAwaitable<std::decay_t<T>>
+    auto await_transform(T &&t) const {
+        static_assert(std::is_rvalue_reference_v<T&&>, "Awaitable must be rvalue reference");
+        return std::forward<T>(t);
+    }
+
+    template<typename T>
+        requires (!IsCokeAwaitable<std::decay_t<T>>)
+    auto await_transform(T &&) const {
+        static_assert(!std::is_same_v<T, T>, "This type cannot be co awaited in coke::Task");
+    }
+
 protected:
     std::exception_ptr eptr{nullptr};
 
@@ -151,6 +164,7 @@ class [[nodiscard]] Task {
 public:
     using promise_type = CoPromise<T>;
     using handle_type = std::coroutine_handle<promise_type>;
+    constexpr static bool __is_coke_awaitable_type = true;
 
     Task() { }
     Task(Task &&that) : hdl(that.hdl) { that.hdl = nullptr; }
