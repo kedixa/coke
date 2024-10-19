@@ -19,6 +19,8 @@
 #ifndef COKE_BASIC_AWAITER_H
 #define COKE_BASIC_AWAITER_H
 
+#include <optional>
+
 #include "coke/detail/awaiter_base.h"
 
 namespace coke {

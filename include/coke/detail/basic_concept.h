@@ -51,6 +51,13 @@ concept Queueable = (
     !std::is_array_v<T>
 );
 
+/**
+ * @brief This concept is used to check whether T is coke::CoPromise<U>, used
+ *        in AwaiterBase::await_suspend.
+ */
+template<typename T>
+concept IsCokePromise = T::__is_coke_promise_type;
+
 } // namespace coke
 
 #endif // COKE_DETAIL_CONCEPT_H

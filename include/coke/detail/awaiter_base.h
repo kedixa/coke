@@ -19,7 +19,10 @@
 #ifndef COKE_DETAIL_AWAITER_BASE_H
 #define COKE_DETAIL_AWAITER_BASE_H
 
-#include "coke/detail/task_impl.h"
+#include <coroutine>
+#include <utility>
+
+#include "coke/detail/basic_concept.h"
 #include "workflow/SubTask.h"
 
 namespace coke {
@@ -82,7 +85,7 @@ public:
     void await_suspend(std::coroutine_handle<PromiseType> h) {
         this->hdl = h;
 
-        if constexpr (IsCoPromise<PromiseType>) {
+        if constexpr (IsCokePromise<PromiseType>) {
             // The Awaiter is awaited in CoPromise
             void *series = h.promise().get_series();
 

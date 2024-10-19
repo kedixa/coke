@@ -36,6 +36,8 @@ class PromiseBase {
     using void_handle = std::coroutine_handle<>;
 
 public:
+    constexpr static bool __is_coke_promise_type = true;
+
     PromiseBase() = default;
     PromiseBase(const PromiseBase &) = delete;
     PromiseBase(PromiseBase &&) = delete;
@@ -78,9 +80,6 @@ private:
     void *series{nullptr};
     bool detached{false};
 };
-
-template<typename T>
-concept IsCoPromise = std::derived_from<T, PromiseBase>;
 
 template<Cokeable T>
 class CoPromise;
@@ -134,7 +133,7 @@ struct [[nodiscard]] TaskAwaiter {
         p.set_previous_handle(h);
 
         // If this is awaited in coke::Task, share the same series
-        if constexpr (IsCoPromise<PromiseType>)
+        if constexpr (IsCokePromise<PromiseType>)
             p.set_series(h.promise().get_series());
 
         return hdl;
@@ -290,9 +289,5 @@ struct TaskHelper<Task<T>> {
 };
 
 } // namespace coke::detail
-
-namespace coke {
-    using detail::IsCoPromise;
-}
 
 #endif // COKE_DETAIL_TASK_IMPL_H
