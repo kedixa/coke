@@ -42,7 +42,7 @@ jobs:
         BAZEL_OPTS: ${{ matrix.compiler.opts }}
       run: |
         echo ${CC} ${CXX}
-        bazel build //example/... //benchmark/... ${BAZEL_OPTS}
+        bazel build //example:all_examples //benchmark:all_benchmarks ${BAZEL_OPTS}
         bazel test //test/... ${BAZEL_OPTS}
         bazel test //test/... ${BAZEL_OPTS} --config=memcheck
 
@@ -75,9 +75,9 @@ jobs:
         BAZEL_OPTS: ${{ matrix.compiler.opts }}
       run: |
         echo ${CC} ${CXX}
-        bazel build ... ${BAZEL_OPTS}
-        bazel test ... ${BAZEL_OPTS}
-        bazel test ... ${BAZEL_OPTS} --config=memcheck
+        bazel build //example:all_examples //benchmark:all_benchmarks ${BAZEL_OPTS}
+        bazel test //test/... ${BAZEL_OPTS}
+        bazel test //test/... ${BAZEL_OPTS} --config=memcheck
 
   build-ubuntu-2004:
     name: ubuntu-20.04
