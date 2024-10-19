@@ -17,6 +17,8 @@
 */
 
 #include <atomic>
+#include <mutex>
+#include <queue>
 
 #include "coke/mysql_client.h"
 #include "coke/mysql_utils.h"
@@ -89,9 +91,48 @@ MySQLClient::AwaiterType MySQLClient::request(const std::string &query) {
     return AwaiterType(task);
 }
 
-std::size_t MySQLConnection::get_unique_id() {
-    static std::atomic<std::size_t> uid{0};
-    return uid.fetch_add(1, std::memory_order_relaxed);
+
+struct __MySQLConnId {
+    static __MySQLConnId *get_instance() {
+        static __MySQLConnId instance;
+        return &instance;
+    }
+
+    std::size_t acquire() {
+        std::lock_guard<std::mutex> lg(mtx);
+
+        if (que.empty())
+            return uid++;
+
+        std::size_t conn_id = que.top();
+        que.pop();
+        return conn_id;
+    }
+
+    void release(std::size_t cid) {
+        std::lock_guard<std::mutex> lg(mtx);
+
+        if (cid + 1 == uid)
+            --uid;
+        else
+            que.push(cid);
+    }
+
+private:
+    std::mutex mtx;
+    std::size_t uid{0};
+    std::priority_queue<std::size_t> que;
+};
+
+
+std::size_t MySQLConnection::acquire_conn_id() {
+    __MySQLConnId *p = __MySQLConnId::get_instance();
+    return p->acquire();
+}
+
+void MySQLConnection::release_conn_id(std::size_t conn_id) {
+    __MySQLConnId *p = __MySQLConnId::get_instance();
+    p->release(conn_id);
 }
 
 MySQLConnection::AwaiterType MySQLConnection::disconnect() {

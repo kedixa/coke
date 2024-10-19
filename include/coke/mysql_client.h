@@ -93,7 +93,7 @@ protected:
 /**
  * MySQLConnection is a kind of MySQLClient, but all requests need to be sent
  * serially from the same connection, the uniqueness of the connection
- * will be determined by the **globally unique transaction_id**.
+ * will be determined by the **globally unique connection id**.
  *
  * This feature can be used to implement database transactions. When a request
  * fails, the current connection will be closed, and the connection will be
@@ -101,25 +101,22 @@ protected:
  *
 */
 class MySQLConnection : public MySQLClient {
-public:
-    /**
-     * Each call to this function will return an auto-incremented id,
-     * which can be used to create a MySQLConnection.
-    */
-    static std::size_t get_unique_id();
+    static std::size_t acquire_conn_id();
+    static void release_conn_id(std::size_t conn_id);
 
 public:
-    explicit MySQLConnection(const MySQLClientParams &params,
-                             std::size_t conn_id)
-        : MySQLClient(params, true, conn_id)
+    explicit MySQLConnection(const MySQLClientParams &params)
+        : MySQLClient(params, true, acquire_conn_id())
     { }
 
-    std::size_t get_conn_id() const { return conn_id; }
+    virtual ~MySQLConnection() {
+        release_conn_id(conn_id);
+    }
 
     /**
-     * Disconnect this Connection.
+     * @brief Disconnect this Connection.
      *
-     * When the object is no longer used, it is best to close the connection.
+     * When the object is no longer used, the connection MUST be disconnected.
     */
     AwaiterType disconnect();
 };
