@@ -20,8 +20,8 @@
 #include <gtest/gtest.h>
 
 #include "coke/coke.h"
-#include "coke/http_client.h"
-#include "coke/http_server.h"
+#include "coke/http/http_client.h"
+#include "coke/http/http_server.h"
 
 #include "workflow/WFTaskFactory.h"
 

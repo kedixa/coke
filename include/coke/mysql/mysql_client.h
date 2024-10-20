@@ -21,7 +21,7 @@
 
 #include <string>
 
-#include "coke/network.h"
+#include "coke/net/network.h"
 
 #include "workflow/MySQLMessage.h"
 #include "workflow/URIParser.h"

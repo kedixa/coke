@@ -2,8 +2,8 @@
 #include <string>
 #include <cerrno>
 
-#include "coke/coke.h"
-#include "coke/http_server.h"
+#include "coke/task.h"
+#include "coke/http/http_server.h"
 
 /**
  * This example start an http server on port 8888, the server replies a simple

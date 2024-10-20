@@ -19,7 +19,7 @@
 #ifndef COKE_HTTP_SERVER_H
 #define COKE_HTTP_SERVER_H
 
-#include "coke/basic_server.h"
+#include "coke/net/basic_server.h"
 
 #include "workflow/WFHttpServer.h"
 #include "workflow/HttpMessage.h"

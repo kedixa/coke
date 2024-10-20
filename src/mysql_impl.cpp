@@ -20,8 +20,8 @@
 #include <mutex>
 #include <queue>
 
-#include "coke/mysql_client.h"
-#include "coke/mysql_utils.h"
+#include "coke/mysql/mysql_client.h"
+#include "coke/mysql/mysql_utils.h"
 
 #include "workflow/StringUtil.h"
 #include "workflow/WFTaskFactory.h"

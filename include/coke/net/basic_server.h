@@ -20,7 +20,7 @@
 #define COKE_BASIC_SERVER_H
 
 #include "coke/task.h"
-#include "coke/network.h"
+#include "coke/net/network.h"
 #include "workflow/WFServer.h"
 
 namespace coke {
