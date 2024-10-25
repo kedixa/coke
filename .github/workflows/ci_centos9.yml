@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  wf_tag: v0.11.5
+  wf_tag: v0.11.6
 
 jobs:
   build-centos-stream9:

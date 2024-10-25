@@ -207,9 +207,9 @@ inline WFSleepAwaiter sleep(const std::string &name, NanoSec nsec) {
     return WFSleepAwaiter(name, nsec);
 }
 
-void cancel_sleep_by_name(const std::string &name, std::size_t max);
+int cancel_sleep_by_name(const std::string &name, std::size_t max);
 
-inline void cancel_sleep_by_name(const std::string &name) {
+inline int cancel_sleep_by_name(const std::string &name) {
     return cancel_sleep_by_name(name, std::size_t(-1));
 }
 

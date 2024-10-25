@@ -186,7 +186,7 @@ WFSleepAwaiter::WFSleepAwaiter(const std::string &name, NanoSec nano) {
     set_task(WFTaskFactory::create_timer_task(name, sec, nsec, cb));
 }
 
-void cancel_sleep_by_name(const std::string &name, std::size_t max) {
+int cancel_sleep_by_name(const std::string &name, std::size_t max) {
     return WFTaskFactory::cancel_by_name(name, max);
 }
 
