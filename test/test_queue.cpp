@@ -21,6 +21,7 @@
 #include <random>
 #include <optional>
 #include <iterator>
+#include <memory>
 #include <gtest/gtest.h>
 
 #include "coke/global.h"
@@ -453,6 +454,20 @@ TEST(QUEUE, deque_force) {
 
     b = que.try_push_front(std::string(110, 'g'));
     EXPECT_FALSE(b);
+}
+
+TEST(QUEUE, priority_queue_move_only) {
+    coke::PriorityQueue<std::unique_ptr<int>> que(1);
+    std::unique_ptr<int> ptr = std::make_unique<int>(1234);
+    bool b1, b2;
+
+    b1 = que.try_push(std::move(ptr));
+    b2 = que.try_pop(ptr);
+
+    EXPECT_TRUE(b1);
+    EXPECT_TRUE(b2);
+    EXPECT_EQ(*ptr, 1234);
+    EXPECT_FALSE(que.try_pop(ptr));
 }
 
 int main(int argc, char *argv[]) {
