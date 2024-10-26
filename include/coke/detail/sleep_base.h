@@ -29,8 +29,8 @@ using NanoSec = std::chrono::nanoseconds;
 
 class SleepBase : public AwaiterBase {
 public:
-    SleepBase(SleepBase &&that);
-    SleepBase &operator= (SleepBase &&that);
+    SleepBase(SleepBase &&that) noexcept;
+    SleepBase &operator= (SleepBase &&that) noexcept;
     ~SleepBase() = default;
 
     int await_resume();

@@ -59,17 +59,15 @@ public:
         this->set_task(go_task);
     }
 
-    GoAwaiter(GoAwaiter &&that)
+    GoAwaiter(GoAwaiter &&that) noexcept
         : AwaiterBase(std::move(that)),
-          go_task(that.go_task)
+          go_task(std::exchange(that.go_task, nullptr))
     {
-        that.go_task = nullptr;
-
         if (this->go_task)
             this->go_task->set_awaiter(this);
     }
 
-    GoAwaiter &operator= (GoAwaiter &&that) {
+    GoAwaiter &operator= (GoAwaiter &&that) noexcept {
         if (this != &that) {
             this->AwaiterBase::operator=(std::move(that));
             std::swap(this->go_task, that.go_task);

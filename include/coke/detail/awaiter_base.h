@@ -41,6 +41,12 @@ public:
 
     AwaiterBase() = default;
 
+    AwaiterBase(AwaiterBase &&that) noexcept
+        : hdl(std::exchange(that.hdl, nullptr)),
+          subtask(std::exchange(that.subtask, nullptr)),
+          in_series(std::exchange(that.in_series, false))
+    { }
+
     /**
      * @brief If the task associated with the current awaiter has not been
      *        started, the default action of the destructor is to delete task.
@@ -52,7 +58,7 @@ public:
     */
     AwaiterBase &operator= (const AwaiterBase &) = delete;
 
-    AwaiterBase &operator=(AwaiterBase &&that) {
+    AwaiterBase &operator=(AwaiterBase &&that) noexcept {
         if (this != &that) {
             std::swap(this->hdl, that.hdl);
             std::swap(this->subtask, that.subtask);
@@ -60,14 +66,6 @@ public:
         }
 
         return *this;
-    }
-
-    AwaiterBase(AwaiterBase &&that)
-        : hdl(that.hdl), subtask(that.subtask), in_series(that.in_series)
-    {
-        that.hdl = nullptr;
-        that.subtask = nullptr;
-        that.in_series = false;
     }
 
     /**

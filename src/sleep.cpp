@@ -54,18 +54,16 @@ static std::pair<time_t, long> split_nano(NanoSec nano) {
 
 namespace detail {
 
-SleepBase::SleepBase(SleepBase &&that)
+SleepBase::SleepBase(SleepBase &&that) noexcept
     : AwaiterBase(std::move(that)),
-      timer(that.timer), result(that.result)
+      timer(std::exchange(that.timer, nullptr)),
+      result(std::exchange(that.result, -1))
 {
-    that.timer = nullptr;
-    that.result = -1;
-
     if (this->timer)
         ((TimerTask *)this->timer)->set_awaiter(this);
 }
 
-SleepBase &SleepBase::operator=(SleepBase &&that) {
+SleepBase &SleepBase::operator=(SleepBase &&that) noexcept {
     if (this != &that) {
         AwaiterBase::operator=(std::move(that));
         std::swap(this->result, that.result);
