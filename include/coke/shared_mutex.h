@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <mutex>
+#include <system_error>
 
 #include "coke/task.h"
 #include "coke/sleep.h"
@@ -118,6 +119,13 @@ public:
     void unlock();
 
     /**
+     * @brief Unlock the mutex from shared ownership.
+     *
+     * @pre Current coroutine must owns the mutex in shared ownership.
+     */
+    void unlock_shared() { unlock(); }
+
+    /**
      * @brief Lock the mutex for exclusive ownership, block until success.
      *
      * @pre Current coroutine doesn't owns the mutex in any mode(shared or
@@ -192,6 +200,134 @@ private:
     CountType read_waiting;
     CountType write_waiting;
     State state;
+};
+
+template<typename M>
+class SharedLock {
+public:
+    using MutexType = M;
+
+    SharedLock() : co_mtx(nullptr), owns(false) { }
+
+    /**
+     * @brief Create SharedLock with mutex m.
+     *
+     * @param m The shared mutex to wrap.
+     * @param is_locked Whether m is already locked.
+     */
+    explicit SharedLock(MutexType &m, bool is_locked = false)
+        : co_mtx(std::addressof(m)), owns(is_locked)
+    { }
+
+    /**
+     * @brief Move construct from other.
+     */
+    SharedLock(SharedLock &&other) noexcept
+        : co_mtx(std::exchange(other.co_mtx, nullptr)),
+          owns(std::exchange(other.owns, false))
+    { }
+
+    /**
+     * @brief Unlock *this and move assign from other.
+     */
+    SharedLock &operator= (SharedLock &&other) {
+        if (owns)
+            co_mtx->unlock();
+
+        co_mtx = std::exchange(other.co_mtx, nullptr);
+        owns = std::exchange(other.owns, false);
+    }
+
+    /**
+     * @brief Unlock the mutex if owns the lock.
+     */
+    ~SharedLock() {
+        if (owns)
+            co_mtx->unlock_shared();
+    }
+
+    /**
+     * @brief Test whether the lock owns its associated mutex.
+     */
+    bool owns_lock() const {
+        return owns;
+    }
+
+    void swap(SharedLock &other) {
+        if (this != &other) {
+            std::swap(this->co_mtx, other.co_mtx);
+            std::swap(this->owns, other.owns);
+        }
+    }
+
+    /**
+     * @brief Disassociates the associated mutex without unlocking it.
+     */
+    MutexType *release() {
+        M *m = co_mtx;
+        co_mtx = nullptr;
+        owns = false;
+        return m;
+    }
+
+    /**
+     * @brief Try to lock the mutex without blocking.
+     * @throw std::system_error if already locked.
+     */
+    bool try_lock() {
+        if (owns)
+            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+
+        owns = co_mtx->try_lock_shared();
+        return owns;
+    }
+
+    /**
+     * @brief Lock the mutex, see SharedMutex::lock.
+     * @throw std::system_error if already locked.
+     */
+    Task<int> lock() {
+        if (owns)
+            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+
+        int ret = co_await co_mtx->lock_shared();
+        if (ret == coke::TOP_SUCCESS)
+            owns = true;
+
+        co_return ret;
+    }
+
+    /**
+     * @brief Try to lock the mutex, wait at most nsec, see
+     *        SharedMutex::try_lock_for.
+     * @throw std::system_error if already locked.
+     */
+    Task<int> try_lock_for(NanoSec nsec) {
+        if (owns)
+            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+
+        int ret = co_await co_mtx->try_lock_shared_for(nsec);
+        if (ret == coke::TOP_SUCCESS)
+            owns = true;
+
+        co_return ret;
+    }
+
+    /**
+     * @brief Unlock the associated mutex.
+     * @throw std::system_error if not owns lock.
+     */
+    void unlock() {
+        if (!owns)
+            throw std::system_error(std::make_error_code(std::errc::operation_not_permitted));
+
+        co_mtx->unlock_shared();
+        owns = false;
+    }
+
+private:
+    MutexType *co_mtx;
+    bool owns;
 };
 
 } // namespace coke
