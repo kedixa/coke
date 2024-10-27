@@ -42,7 +42,7 @@ Task<int> Semaphore::acquire_impl(detail::TimedWaitHelper helper) {
         insert_head = true;
 
         lk.unlock();
-        ret = co_await s;
+        ret = co_await std::move(s);
         lk.lock();
         --waiting;
 
@@ -105,7 +105,7 @@ Task<int> SharedMutex::lock_impl(detail::TimedWaitHelper helper) {
         insert_head = true;
 
         lk.unlock();
-        ret = co_await s;
+        ret = co_await std::move(s);
         lk.lock();
         --write_waiting;
 
@@ -143,7 +143,7 @@ Task<int> SharedMutex::lock_shared_impl(detail::TimedWaitHelper helper) {
         insert_head = true;
 
         lk.unlock();
-        ret = co_await s;
+        ret = co_await std::move(s);
         lk.lock();
         --read_waiting;
 

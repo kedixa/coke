@@ -6,8 +6,9 @@
 #include <cctype>
 #include <shared_mutex>
 
-#include "coke/coke.h"
-#include "coke/redis_server.h"
+#include "coke/task.h"
+#include "coke/sleep.h"
+#include "coke/redis/redis_server.h"
 
 /**
  * This example start a redis server on port 8379, shows how to use

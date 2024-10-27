@@ -58,7 +58,7 @@ bool next(long long &cur) {
 
 template<typename Awaiter>
 coke::Task<> detach(Awaiter awaiter) {
-    co_await awaiter;
+    co_await std::move(awaiter);
 }
 
 template<typename Awaiter>
@@ -72,7 +72,6 @@ coke::Task<> bench_wf_repeat() {
     std::mt19937_64 mt(current_msec());
     long long i;
 
-    coke::GenericAwaiter<void> g;
     auto create = [&] (WFRepeaterTask *) -> SubTask * {
         if (next(i)) {
             int nsec = dist(mt) * 1000;
@@ -80,12 +79,9 @@ coke::Task<> bench_wf_repeat() {
         }
         return nullptr;
     };
-    auto callback = [&] (WFRepeaterTask *) { g.done(); };
 
-    auto *rep = WFTaskFactory::create_repeater_task(create, callback);
-    g.take_over(rep);
-
-    co_await g;
+    auto *rep = WFTaskFactory::create_repeater_task(create, nullptr);
+    co_await RepeaterAwaiter(rep);
 }
 
 coke::Task<> bench_default_timer() {
@@ -136,7 +132,7 @@ coke::Task<> bench_cancel_by_name() {
         name = std::to_string(i);
         auto awaiter = coke::sleep(name, microseconds(dist(mt)));
         coke::cancel_sleep_by_name(name);
-        co_await awaiter;
+        co_await std::move(awaiter);
     }
 }
 
@@ -241,7 +237,7 @@ coke::Task<> bench_cancel_by_id() {
         id = coke::get_unique_id();
         auto awaiter = coke::sleep(id, microseconds(dist(mt)));
         coke::cancel_sleep_by_id(id);
-        co_await awaiter;
+        co_await std::move(awaiter);
     }
 }
 
@@ -455,9 +451,10 @@ int main(int argc, char *argv[]) {
     DO_BENCHMARK(timer_by_addr);
     DO_BENCHMARK(cancel_by_id);
     DO_BENCHMARK(detach_by_id);
-    DO_BENCHMARK(detach3_by_id);
+    // disable this test case, it always make workflow deadlock
+    //DO_BENCHMARK(detach3_by_id);
     DO_BENCHMARK(detach_inf_by_id);
-    DO_BENCHMARK(detach3_inf_by_id);
+    //DO_BENCHMARK(detach3_inf_by_id);
     DO_BENCHMARK(one_id);
     DO_BENCHMARK(two_id);
     DO_BENCHMARK(ten_id);

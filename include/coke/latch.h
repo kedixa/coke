@@ -62,13 +62,6 @@ public:
     }
 
     /**
-     * @brief Same as Latch::wait.
-    */
-    LatchAwaiter operator co_await() {
-        return wait();
-    }
-
-    /**
      * @brief Wait for the Latch to be counted to zero.
      * @return An awaiter that should be awaited immediately.
      * @retval coke::LATCH_SUCCESS.

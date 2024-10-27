@@ -3,10 +3,11 @@
 #include <string>
 #include <vector>
 
-#include "coke/coke.h"
+#include "coke/wait.h"
+#include "coke/go.h"
 #include "coke/tools/option_parser.h"
-#include "coke/mysql_client.h"
-#include "coke/mysql_utils.h"
+#include "coke/mysql/mysql_client.h"
+#include "coke/mysql/mysql_utils.h"
 
 #include "readline_helper.h"
 

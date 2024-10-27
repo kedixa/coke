@@ -82,7 +82,7 @@ public:
     DagContextBase(const DagContextBase &) = delete;
     ~DagContextBase() = default;
 
-    auto operator co_await() { return lt.wait(); }
+    auto wait() { return lt.wait(); }
 
     void count_down() { lt.count_down(); }
 
@@ -259,7 +259,7 @@ public:
     Task<> run(T &data) {
         detail::DagContext<T> ctx(Base::nodes.size(), data);
         Base::start(ctx);
-        co_await ctx;
+        co_await ctx.wait();
     }
 
 private:
@@ -284,7 +284,7 @@ public:
     Task<> run() {
         detail::DagContext<void> ctx(Base::nodes.size());
         Base::start(ctx);
-        co_await ctx;
+        co_await ctx.wait();
     }
 
 private:

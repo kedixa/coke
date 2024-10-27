@@ -2,9 +2,9 @@
 #include <string>
 #include <vector>
 
-#include "coke/coke.h"
-#include "coke/http_client.h"
-#include "coke/http_utils.h"
+#include "coke/wait.h"
+#include "coke/http/http_client.h"
+#include "coke/http/http_utils.h"
 
 /**
  * This example send multiple http requests, waits for the results

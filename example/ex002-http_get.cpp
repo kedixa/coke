@@ -1,9 +1,9 @@
 #include <iostream>
 #include <string>
 
-#include "coke/coke.h"
-#include "coke/http_client.h"
-#include "coke/http_utils.h"
+#include "coke/wait.h"
+#include "coke/http/http_client.h"
+#include "coke/http/http_utils.h"
 
 /**
  * This example uses coke::HttpClient to send an Http Get request

@@ -41,3 +41,29 @@ create_example_target("ex014-option_parser", ["//:tools"])
 create_example_target("ex015-async_queue")
 create_example_target("ex016-wait_group")
 create_example_target("ex017-backup_request")
+create_example_target("ex018-local_cache")
+
+# virtual target to build all examples
+cc_library(
+    name = "all_examples",
+    deps = [
+        ":helloworld",
+        ":http_get",
+        ":http_hello_server",
+        ":word_count",
+        ":merge_sort",
+        ":http_proxy",
+        ":redis_cli",
+        ":parallel_http_get",
+        ":mysql_cli",
+        ":timed_wait",
+        ":redis_server",
+        ":faster_merge_sort",
+        ":background_clock",
+        ":option_parser",
+        ":async_queue",
+        ":wait_group",
+        ":backup_request",
+        ":local_cache",
+    ],
+)

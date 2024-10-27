@@ -6,10 +6,10 @@
 #include <cstring>
 #include <cmath>
 
-#include "coke/coke.h"
+#include "coke/wait.h"
 #include "coke/tools/option_parser.h"
-#include "coke/redis_client.h"
-#include "coke/redis_utils.h"
+#include "coke/redis/redis_client.h"
+#include "coke/redis/redis_utils.h"
 #include "readline_helper.h"
 
 std::string prompt_str;

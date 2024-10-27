@@ -19,8 +19,8 @@
 #include <string>
 #include <cctype>
 
-#include "coke/redis_client.h"
-#include "coke/redis_utils.h"
+#include "coke/redis/redis_client.h"
+#include "coke/redis/redis_utils.h"
 
 #include "workflow/WFTaskFactory.h"
 #include "workflow/StringUtil.h"

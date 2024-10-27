@@ -64,12 +64,8 @@ coke::Task<> bench_wf_go_name(int max) {
         return nullptr;
     };
 
-    coke::GenericAwaiter<void> g;
-    WFRepeaterTask *task = WFTaskFactory::create_repeater_task(creater,
-        [&g](WFRepeaterTask *) { g.done(); }
-    );
-    g.take_over(task);
-    co_await g;
+    auto *rep = WFTaskFactory::create_repeater_task(creater, nullptr);
+    co_await RepeaterAwaiter(rep);
 }
 
 coke::Task<> bench_go_name(int max) {

@@ -183,7 +183,13 @@ private:
 
     template<typename U>
     void do_pop(U &u) {
-        u = std::move(que.top());
+        if constexpr (std::is_nothrow_assignable_v<U &, T &&>)
+            u = std::move(const_cast<T&>(que.top()));
+        else if constexpr (std::is_assignable_v<U &, const T &>)
+            u = que.top();
+        else
+            static_assert(!std::is_same_v<T, T>, "coke::PriorityQueue<T> requires 'const T &' is assignalbe to 'U &'");
+
         que.pop();
     }
 

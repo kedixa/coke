@@ -23,7 +23,7 @@
 #include <utility>
 #include <string>
 
-#include "coke/network.h"
+#include "coke/net/network.h"
 
 #include "workflow/RedisMessage.h"
 #include "workflow/URIParser.h"

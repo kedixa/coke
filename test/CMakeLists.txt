@@ -12,7 +12,6 @@ set(ALL_TESTS
     test_exception
     test_file
     test_future
-    test_generic_awaiter
     test_go
     test_http
     test_latch

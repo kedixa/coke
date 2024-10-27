@@ -61,6 +61,13 @@ TEST(CONCEPT, cokeable) {
     EXPECT_FALSE(coke::Cokeable<PrivateDestructor>);
 }
 
+TEST(CONCEPT, co_promise) {
+    EXPECT_TRUE(coke::IsCokePromise<coke::detail::CoPromise<void>>);
+    EXPECT_TRUE(coke::IsCokePromise<coke::detail::CoPromise<int>>);
+    EXPECT_FALSE(coke::IsCokePromise<void>);
+    EXPECT_FALSE(coke::IsCokePromise<int>);
+}
+
 int main(int argc, char *argv[]) {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

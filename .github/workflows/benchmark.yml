@@ -20,7 +20,7 @@ jobs:
       uses: actions/checkout@v4
     - name: Build and benchmark
       run: |
-        bazel build //benchmark/...
+        bazel build //benchmark:all_benchmarks
 
         (echo "# Benchmark"
         echo "The benchmark runs on Github Actions."

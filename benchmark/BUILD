@@ -5,7 +5,7 @@ cc_library(
     hdrs = [
         "bench_common.h",
     ],
-    deps = ["//:tools"],
+    deps = ["//:tools", "//:common"],
 )
 
 create_benchmark_target("bench_exception")
@@ -13,3 +13,15 @@ create_benchmark_target("bench_go")
 create_benchmark_target("bench_graph")
 create_benchmark_target("bench_queue")
 create_benchmark_target("bench_timer")
+
+# virtual target to build all benchmarks
+cc_library(
+    name = "all_benchmarks",
+    deps = [
+        ":bench_exception",
+        ":bench_go",
+        ":bench_graph",
+        ":bench_queue",
+        ":bench_timer",
+    ],
+)

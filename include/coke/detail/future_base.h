@@ -142,7 +142,7 @@ protected:
             co_return st;
 
         lk.unlock();
-        int ret = co_await s;
+        int ret = co_await std::move(s);
         lk.lock();
 
         st = get_state();
@@ -212,11 +212,11 @@ template<Cokeable T>
 Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
     try {
         if constexpr (std::is_void_v<T>) {
-            co_await task;
+            co_await std::move(task);
             promise.set_value();
         }
         else {
-            promise.set_value(co_await task);
+            promise.set_value(co_await std::move(task));
         }
     }
     catch (...) {

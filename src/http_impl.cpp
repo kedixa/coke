@@ -22,8 +22,8 @@
 #include <strings.h>
 #include <openssl/evp.h>
 
-#include "coke/http_client.h"
-#include "coke/http_utils.h"
+#include "coke/http/http_client.h"
+#include "coke/http/http_utils.h"
 
 #include "workflow/WFTaskFactory.h"
 

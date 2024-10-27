@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  wf_tag: v0.11.5
+  wf_tag: v0.11.6
 
 jobs:
   build-ubuntu-2404:
@@ -42,9 +42,9 @@ jobs:
         BAZEL_OPTS: ${{ matrix.compiler.opts }}
       run: |
         echo ${CC} ${CXX}
-        bazel build ... ${BAZEL_OPTS}
-        bazel test ... ${BAZEL_OPTS}
-        bazel test ... ${BAZEL_OPTS} --config=memcheck
+        bazel build //example:all_examples //benchmark:all_benchmarks ${BAZEL_OPTS}
+        bazel test //test/... ${BAZEL_OPTS}
+        bazel test //test/... ${BAZEL_OPTS} --config=memcheck
 
   build-ubuntu-2204:
     name: ubuntu-22.04
@@ -75,9 +75,9 @@ jobs:
         BAZEL_OPTS: ${{ matrix.compiler.opts }}
       run: |
         echo ${CC} ${CXX}
-        bazel build ... ${BAZEL_OPTS}
-        bazel test ... ${BAZEL_OPTS}
-        bazel test ... ${BAZEL_OPTS} --config=memcheck
+        bazel build //example:all_examples //benchmark:all_benchmarks ${BAZEL_OPTS}
+        bazel test //test/... ${BAZEL_OPTS}
+        bazel test //test/... ${BAZEL_OPTS} --config=memcheck
 
   build-ubuntu-2004:
     name: ubuntu-20.04

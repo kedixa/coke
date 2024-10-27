@@ -19,6 +19,8 @@
 #ifndef COKE_MUTEX_H
 #define COKE_MUTEX_H
 
+#include <system_error>
+
 #include "coke/semaphore.h"
 
 namespace coke {
@@ -81,6 +83,133 @@ public:
 
 private:
     Semaphore sem;
+};
+
+template<typename M>
+class UniqueLock {
+public:
+    using MutexType = M;
+
+    UniqueLock() : co_mtx(nullptr), owns(false) { }
+
+    /**
+     * @brief Create UniqueLock with mutex m.
+     *
+     * @param m The mutex to wrap.
+     * @param is_locked Whether m is already locked.
+     */
+    explicit UniqueLock(MutexType &m, bool is_locked = false) noexcept
+        : co_mtx(std::addressof(m)), owns(is_locked)
+    { }
+
+    /**
+     * @brief Move construct from other.
+     */
+    UniqueLock(UniqueLock &&other) noexcept
+        : co_mtx(std::exchange(other.co_mtx, nullptr)),
+          owns(std::exchange(other.owns, false))
+    { }
+
+    /**
+     * @brief Unlock *this and move assign from other.
+     */
+    UniqueLock &operator= (UniqueLock &&other) {
+        if (owns)
+            co_mtx->unlock();
+
+        co_mtx = std::exchange(other.co_mtx, nullptr);
+        owns = std::exchange(other.owns, false);
+    }
+
+    /**
+     * @brief Unlock the mutex if owns the lock.
+     */
+    ~UniqueLock() {
+        if (owns)
+            co_mtx->unlock();
+    }
+
+    /**
+     * @brief Test whether the lock owns its associated mutex.
+     */
+    bool owns_lock() const noexcept {
+        return owns;
+    }
+
+    void swap(UniqueLock &other) noexcept {
+        if (this != &other) {
+            std::swap(this->co_mtx, other.co_mtx);
+            std::swap(this->owns, other.owns);
+        }
+    }
+
+    /**
+     * @brief Disassociates the associated mutex without unlocking it.
+     */
+    MutexType *release() {
+        M *m = co_mtx;
+        co_mtx = nullptr;
+        owns = false;
+        return m;
+    }
+
+    /**
+     * @brief Try to lock the mutex without blocking.
+     * @throw std::system_error if already locked.
+     */
+    bool try_lock() {
+        if (owns)
+            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+
+        owns = co_mtx->try_lock();
+        return owns;
+    }
+
+    /**
+     * @brief Lock the mutex, see Mutex::lock.
+     * @throw std::system_error if already locked.
+     */
+    Task<int> lock() {
+        if (owns)
+            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+
+        int ret = co_await co_mtx->lock();
+        if (ret == coke::TOP_SUCCESS)
+            owns = true;
+
+        co_return ret;
+    }
+
+    /**
+     * @brief Try to lock the mutex, wait at most nsec, see Mutex::try_lock_for.
+     * @throw std::system_error if already locked.
+     */
+    Task<int> try_lock_for(NanoSec nsec) {
+        if (owns)
+            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+
+        int ret = co_await co_mtx->try_lock_for(nsec);
+        if (ret == coke::TOP_SUCCESS)
+            owns = true;
+
+        co_return ret;
+    }
+
+    /**
+     * @brief Unlock the associated mutex.
+     * @throw std::system_error if not owns lock.
+     */
+    void unlock() {
+        if (!owns)
+            throw std::system_error(std::make_error_code(std::errc::operation_not_permitted));
+
+        co_mtx->unlock();
+        owns = false;
+    }
+
+private:
+    MutexType *co_mtx;
+    bool owns;
 };
 
 } // namespace coke

@@ -52,14 +52,14 @@ coke::Task<> cancel_sleep() {
     uint64_t uid = coke::get_unique_id();
     auto awaiter = coke::sleep(uid, std::chrono::milliseconds(0));
     coke::cancel_sleep_by_id(uid);
-    int ret = co_await awaiter;
+    int ret = co_await std::move(awaiter);
     EXPECT_EQ(ret, coke::SLEEP_CANCELED);
 }
 
 coke::Task<> success_sleep() {
     uint64_t uid = coke::get_unique_id();
     auto awaiter = coke::sleep(uid, std::chrono::milliseconds(0));
-    int ret = co_await awaiter;
+    int ret = co_await std::move(awaiter);
     EXPECT_EQ(ret, coke::SLEEP_SUCCESS);
 }
 

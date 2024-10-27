@@ -38,16 +38,15 @@ public:
         this->set_task(series_task);
     }
 
-    SeriesAwaiter(SeriesAwaiter &&that)
-        : AwaiterBase(std::move(that)), series_task(that.series_task)
+    SeriesAwaiter(SeriesAwaiter &&that) noexcept
+        : AwaiterBase(std::move(that)),
+          series_task(std::exchange(that.series_task, nullptr))
     {
-        that.series_task = nullptr;
-
         if (series_task)
             series_task->set_awaiter(this);
     }
 
-    SeriesAwaiter &operator= (SeriesAwaiter &&that) {
+    SeriesAwaiter &operator= (SeriesAwaiter &&that) noexcept {
         if (this != &that) {
             AwaiterBase::operator=(std::move(that));
             std::swap(this->series_task, that.series_task);

@@ -3,8 +3,8 @@
 #include <string>
 
 #include "coke/global.h"
-#include "coke/http_server.h"
-#include "coke/http_client.h"
+#include "coke/http/http_server.h"
+#include "coke/http/http_client.h"
 #include "workflow/URIParser.h"
 
 coke::HttpClientParams cli_params {

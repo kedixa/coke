@@ -35,7 +35,6 @@
 #include "coke/sleep.h"
 #include "coke/qps_pool.h"
 #include "coke/wait.h"
-#include "coke/generic_awaiter.h"
 #include "coke/series.h"
 #include "coke/semaphore.h"
 #include "coke/task.h"

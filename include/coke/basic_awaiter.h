@@ -19,6 +19,8 @@
 #ifndef COKE_BASIC_AWAITER_H
 #define COKE_BASIC_AWAITER_H
 
+#include <optional>
+
 #include "coke/detail/awaiter_base.h"
 
 namespace coke {
@@ -53,7 +55,7 @@ class BasicAwaiter;
 */
 template<Cokeable T>
 struct AwaiterInfo {
-    AwaiterInfo(AwaiterBase *ptr) : ptr(ptr) { }
+    AwaiterInfo(AwaiterBase *ptr) noexcept : ptr(ptr) { }
     AwaiterInfo(const AwaiterBase &) = delete;
 
     // The caller make sure that type(*ptr) is Awaiter A
@@ -87,11 +89,10 @@ public:
      * @brief Move constructor, AwaiterInfo associate task with the new
      *        BasicAwaiter after move.
     */
-    BasicAwaiter(BasicAwaiter &&that)
-        : AwaiterBase(std::move(that)), info(that.info)
+    BasicAwaiter(BasicAwaiter &&that) noexcept
+        : AwaiterBase(std::move(that)),
+          info(std::exchange(that.info, nullptr))
     {
-        that.info = nullptr;
-
         if (this->info)
             this->info->ptr = this;
     }
@@ -100,7 +101,7 @@ public:
      * @brief Move assign operator, AwaiterInfo associate task with the new
      *        BasicAwaiter after move.
     */
-    BasicAwaiter &operator= (BasicAwaiter &&that) {
+    BasicAwaiter &operator= (BasicAwaiter &&that) noexcept {
         if (this != &that) {
             AwaiterBase::operator=(std::move(that));
             std::swap(this->info, that.info);

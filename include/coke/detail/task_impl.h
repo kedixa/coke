@@ -16,8 +16,8 @@
  * Authors: kedixa (https://github.com/kedixa)
 */
 
-#ifndef COKE_DETAIL_TASK_H
-#define COKE_DETAIL_TASK_H
+#ifndef COKE_DETAIL_TASK_IMPL_H
+#define COKE_DETAIL_TASK_IMPL_H
 
 #include <coroutine>
 #include <memory>
@@ -36,13 +36,21 @@ class PromiseBase {
     using void_handle = std::coroutine_handle<>;
 
 public:
+    constexpr static bool __is_coke_promise_type = true;
+
     PromiseBase() = default;
     PromiseBase(const PromiseBase &) = delete;
     PromiseBase(PromiseBase &&) = delete;
     virtual ~PromiseBase() {
         // Do not allow unhandled exceptions to escape.
-        if (eptr)
-            std::terminate();
+        if (eptr) {
+            try {
+                std::rethrow_exception(eptr);
+            }
+            catch (...) {
+                std::terminate();
+            }
+        }
     }
 
     void set_context(std::shared_ptr<void> ctx) noexcept { context = ctx; }
@@ -59,12 +67,21 @@ public:
     void unhandled_exception() { eptr = std::current_exception(); }
 
     void raise_exception() {
-        if (eptr) {
-            std::exception_ptr tmp(std::move(eptr));
-            eptr = nullptr;
+        if (eptr)
+            std::rethrow_exception(std::move(eptr));
+    }
 
-            std::rethrow_exception(tmp);
-        }
+    template<typename T>
+        requires IsCokeAwaitable<std::decay_t<T>>
+    auto await_transform(T &&t) const {
+        static_assert(std::is_rvalue_reference_v<T&&>, "Awaitable must be rvalue reference");
+        return std::forward<T>(t);
+    }
+
+    template<typename T>
+        requires (!IsCokeAwaitable<std::decay_t<T>>)
+    auto await_transform(T &&) const {
+        static_assert(!std::is_same_v<T, T>, "This type cannot be co awaited in coke::Task");
     }
 
 protected:
@@ -123,11 +140,15 @@ struct [[nodiscard]] TaskAwaiter {
             return std::move(hdl.promise().value());
     }
 
-    template<typename U>
-    auto await_suspend(std::coroutine_handle<CoPromise<U>> h) {
+    template<typename PromiseType>
+    auto await_suspend(std::coroutine_handle<PromiseType> h) {
         CoPromise<T> &p = hdl.promise();
         p.set_previous_handle(h);
-        p.set_series(h.promise().get_series());
+
+        // If this is awaited in coke::Task, share the same series
+        if constexpr (IsCokePromise<PromiseType>)
+            p.set_series(h.promise().get_series());
+
         return hdl;
     }
 
@@ -143,6 +164,7 @@ class [[nodiscard]] Task {
 public:
     using promise_type = CoPromise<T>;
     using handle_type = std::coroutine_handle<promise_type>;
+    constexpr static bool __is_coke_awaitable_type = true;
 
     Task() { }
     Task(Task &&that) : hdl(that.hdl) { that.hdl = nullptr; }
@@ -282,4 +304,4 @@ struct TaskHelper<Task<T>> {
 
 } // namespace coke::detail
 
-#endif //COKE_DETAIL_TASK_H
+#endif // COKE_DETAIL_TASK_IMPL_H
