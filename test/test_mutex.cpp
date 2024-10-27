@@ -97,6 +97,48 @@ void test_mutex(int test_method) {
     EXPECT_EQ(p.total.load(), (MAX_TASKS * p.loop_max));
 }
 
+coke::Task<> test_unique_lock() {
+    coke::Mutex mtx;
+
+    co_await mtx.lock();
+    mtx.unlock();
+
+    {
+        coke::UniqueLock<coke::Mutex> lock(mtx);
+        EXPECT_FALSE(lock.owns_lock());
+
+        EXPECT_THROW(lock.unlock(), std::system_error);
+    }
+
+    {
+        bool ret = mtx.try_lock();
+        coke::UniqueLock<coke::Mutex> lock(mtx, ret);
+        EXPECT_EQ(lock.owns_lock(), ret);
+    }
+
+    {
+        coke::UniqueLock<coke::Mutex> lock(mtx);
+        lock.try_lock();
+        EXPECT_TRUE(lock.owns_lock());
+        EXPECT_THROW(lock.try_lock(), std::system_error);
+
+        EXPECT_EQ(lock.release(), &mtx);
+        mtx.unlock();
+    }
+
+    {
+        coke::UniqueLock<coke::Mutex> lock(mtx);
+        co_await lock.lock();
+        EXPECT_TRUE(lock.owns_lock());
+    }
+
+    {
+        coke::UniqueLock<coke::Mutex> lock(mtx);
+        co_await lock.try_lock_for(coke::NanoSec(1000));
+        EXPECT_TRUE(lock.owns_lock());
+    }
+}
+
 TEST(MUTEX, try_lock) {
     test_mutex(TEST_TRY_LOCK);
 }
@@ -107,6 +149,10 @@ TEST(MUTEX, lock) {
 
 TEST(MUTEX, lock_for) {
     test_mutex(TEST_LOCK_FOR);
+}
+
+TEST(MUTEX, unique_lock) {
+    coke::sync_wait(test_unique_lock());
 }
 
 int main(int argc, char *argv[]) {
