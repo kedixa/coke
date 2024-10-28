@@ -9,7 +9,8 @@
 ```cpp
 #include <iostream>
 #include <chrono>
-#include "coke/coke.h"
+
+#include "coke/wait.h"
 #include "coke/sleep.h"
 
 coke::Task<> helloworld(size_t n, std::chrono::milliseconds ms) {
@@ -26,7 +27,6 @@ int main() {
 
     return 0;
 }
-
 ```
 
 - 使用`coke::HttpClient`发起一个`GET`请求
@@ -34,7 +34,9 @@ int main() {
 ```cpp
 #include <iostream>
 #include <string>
-#include "coke/http_client.h"
+
+#include "coke/wait.h"
+#include "coke/http/http_client.h"
 
 coke::Task<> http_get(const std::string &url) {
     coke::HttpClient cli;
@@ -61,7 +63,6 @@ int main(int argc, char *argv[]) {
     coke::sync_wait(http_get(std::string(argv[1])));
     return 0;
 }
-
 ```
 
 - 更多示例请到[example](./example/)查看
