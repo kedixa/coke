@@ -49,12 +49,14 @@ static_assert(CTOR_TRANSMIT_TIMEOUT == TOR_TRANSMIT_TIMEOUT);
 void library_init(const GlobalSettings &s) {
     WFGlobalSettings t = GLOBAL_SETTINGS_DEFAULT;
 
+    t.endpoint_params.address_family        = s.endpoint_params.address_family;
     t.endpoint_params.max_connections       = s.endpoint_params.max_connections;
     t.endpoint_params.connect_timeout       = s.endpoint_params.connect_timeout;
     t.endpoint_params.response_timeout      = s.endpoint_params.response_timeout;
     t.endpoint_params.ssl_connect_timeout   = s.endpoint_params.ssl_connect_timeout;
     t.endpoint_params.use_tls_sni           = s.endpoint_params.use_tls_sni;
 
+    t.dns_server_params.address_family      = s.dns_server_params.address_family;
     t.dns_server_params.max_connections     = s.dns_server_params.max_connections;
     t.dns_server_params.connect_timeout     = s.dns_server_params.connect_timeout;
     t.dns_server_params.response_timeout    = s.dns_server_params.response_timeout;

@@ -21,6 +21,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <sys/socket.h>
 
 #define COKE_VERSION_NUMBER 0x000400L
 
@@ -70,6 +71,7 @@ constexpr int TOP_CLOSED = 3;
 
 
 struct EndpointParams {
+    int address_family          = AF_UNSPEC;
     std::size_t max_connections = 200;
     int     connect_timeout     = 10 * 1000;
     int     response_timeout    = 10 * 1000;
@@ -80,8 +82,8 @@ struct EndpointParams {
 struct GlobalSettings {
     EndpointParams endpoint_params;
     EndpointParams dns_server_params;
-    unsigned int dns_ttl_default        = 12 * 3600;
-    unsigned int dns_ttl_min            = 180;
+    unsigned int dns_ttl_default        = 3600;
+    unsigned int dns_ttl_min            = 60;
     int dns_threads                     = 4;
     int poller_threads                  = 4;
     int handler_threads                 = 20;
