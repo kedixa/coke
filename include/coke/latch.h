@@ -41,7 +41,7 @@ public:
      * @brief Create a latch that can be counted EXACTLY `n` times.
      * @param n Number to be counted and should >= 0.
     */
-    explicit Latch(long n)
+    explicit Latch(long n) noexcept
         : mtx(detail::get_mutex(get_addr())), expected(n)
     { }
 
@@ -56,7 +56,7 @@ public:
     /**
      * @brief Return whether the internal counter has reached zero.
     */
-    bool try_wait() const noexcept {
+    bool try_wait() const {
         std::lock_guard<std::mutex> lg(this->mtx);
         return this->expected >= 0;
     }
@@ -66,7 +66,7 @@ public:
      * @return An awaiter that should be awaited immediately.
      * @retval coke::LATCH_SUCCESS.
      */
-    LatchAwaiter wait() noexcept {
+    LatchAwaiter wait() {
         return wait_impl(detail::TimedWaitHelper{});
     }
 
@@ -76,7 +76,7 @@ public:
      * @retval coke::LATCH_SUCCESS if Latch is counted to zero.
      * @retval coke::LATCH_TIMEOUT if `nsec` timeout.
      */
-    LatchAwaiter wait_for(NanoSec nsec) noexcept {
+    LatchAwaiter wait_for(NanoSec nsec) {
         return wait_impl(detail::TimedWaitHelper{nsec});
     }
 
@@ -88,7 +88,7 @@ public:
      * @param n Count the Latch by n. n should >= 1.
      * @return An awaiter needs to be awaited immediately.
      */
-    LatchAwaiter arrive_and_wait(long n = 1) noexcept {
+    LatchAwaiter arrive_and_wait(long n = 1) {
         return create_awaiter(n);
     }
 
@@ -99,16 +99,16 @@ public:
      *
      * @param n Count the Latch by n. n should >= 1.
     */
-    void count_down(long n = 1) noexcept;
+    void count_down(long n = 1);
 
 private:
     const void *get_addr() const noexcept {
         return (const char *)this + 1;
     }
 
-    LatchAwaiter wait_impl(detail::TimedWaitHelper helper) noexcept;
+    LatchAwaiter wait_impl(detail::TimedWaitHelper helper);
 
-    LatchAwaiter create_awaiter(long n) noexcept;
+    LatchAwaiter create_awaiter(long n);
 
 private:
     std::mutex &mtx;
@@ -121,7 +121,7 @@ public:
 
     void count_down(long n = 1) { lt.count_down(n); }
 
-    void wait() const noexcept;
+    void wait() const;
 
 private:
     std::latch lt;

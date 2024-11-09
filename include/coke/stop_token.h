@@ -35,7 +35,7 @@ public:
      * @param cnt When set_finished() is called exactly `cnt` times, the state
      *        of stop token become finished.
     */
-    explicit StopToken(std::size_t cnt = 1)
+    explicit StopToken(std::size_t cnt = 1) noexcept
         : mtx(detail::get_mutex(this)), n(cnt), should_stop(false)
     { }
 
@@ -48,7 +48,7 @@ public:
      * @brief Reset the inner state, prepare for next use.
      * @pre The previous process has ended normally.
     */
-    void reset(std::size_t cnt) {
+    void reset(std::size_t cnt) noexcept {
         n = cnt;
         should_stop.store(false, std::memory_order_relaxed);
     }
@@ -66,7 +66,7 @@ public:
     /**
      * @brief Return whether stop is requested.
     */
-    bool stop_requested() const {
+    bool stop_requested() const noexcept {
         return should_stop.load(std::memory_order_acquire);
     }
 
@@ -112,13 +112,15 @@ public:
     }
 
     struct FinishGuard {
-        explicit FinishGuard(StopToken *sptr = nullptr) : ptr(sptr) { }
+        explicit FinishGuard(StopToken *sptr = nullptr) noexcept
+            : ptr(sptr)
+        { }
 
         FinishGuard(const FinishGuard &) = delete;
         FinishGuard &operator= (const FinishGuard &) = delete;
 
-        void reset(StopToken *sptr) { ptr = sptr; }
-        void release() { ptr = nullptr; }
+        void reset(StopToken *sptr) noexcept { ptr = sptr; }
+        void release() noexcept { ptr = nullptr; }
 
         ~FinishGuard() {
             if (ptr)
@@ -134,11 +136,11 @@ private:
 
     Task<bool> wait_stop_impl(detail::TimedWaitHelper helper);
 
-    const void *get_stop_addr() const {
+    const void *get_stop_addr() const noexcept {
         return (const char *)this + 1;
     }
 
-    const void *get_finish_addr() const {
+    const void *get_finish_addr() const noexcept {
         return (const char *)this + 2;
     }
 

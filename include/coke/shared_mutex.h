@@ -41,7 +41,7 @@ public:
     /**
      * @brief Create a SharedMutex.
     */
-    SharedMutex()
+    SharedMutex() noexcept
         : read_doing(0), read_waiting(0), write_waiting(0), state(State::Idle)
     { }
 
@@ -207,7 +207,7 @@ class SharedLock {
 public:
     using MutexType = M;
 
-    SharedLock() : co_mtx(nullptr), owns(false) { }
+    SharedLock() noexcept : co_mtx(nullptr), owns(false) { }
 
     /**
      * @brief Create SharedLock with mutex m.
@@ -215,7 +215,7 @@ public:
      * @param m The shared mutex to wrap.
      * @param is_locked Whether m is already locked.
      */
-    explicit SharedLock(MutexType &m, bool is_locked = false)
+    explicit SharedLock(MutexType &m, bool is_locked = false) noexcept
         : co_mtx(std::addressof(m)), owns(is_locked)
     { }
 
@@ -249,11 +249,11 @@ public:
     /**
      * @brief Test whether the lock owns its associated mutex.
      */
-    bool owns_lock() const {
+    bool owns_lock() const noexcept {
         return owns;
     }
 
-    void swap(SharedLock &other) {
+    void swap(SharedLock &other) noexcept {
         if (this != &other) {
             std::swap(this->co_mtx, other.co_mtx);
             std::swap(this->owns, other.owns);
@@ -263,7 +263,7 @@ public:
     /**
      * @brief Disassociates the associated mutex without unlocking it.
      */
-    MutexType *release() {
+    MutexType *release() noexcept {
         M *m = co_mtx;
         co_mtx = nullptr;
         owns = false;

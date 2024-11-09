@@ -49,10 +49,10 @@ private:
 
 class SeriesTask final : public SubTask {
 public:
-    SeriesTask() : awaiter(nullptr) { }
+    SeriesTask() noexcept : awaiter(nullptr) { }
 
-    AwaiterBase *get_awaiter() const { return awaiter; }
-    void set_awaiter(AwaiterBase *awaiter) { this->awaiter = awaiter; }
+    AwaiterBase *get_awaiter() const noexcept { return awaiter; }
+    void set_awaiter(AwaiterBase *awaiter) noexcept { this->awaiter = awaiter; }
 
 private:
     virtual void dispatch() override {

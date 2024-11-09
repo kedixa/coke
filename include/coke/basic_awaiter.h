@@ -60,7 +60,7 @@ struct AwaiterInfo {
 
     // The caller make sure that type(*ptr) is Awaiter A
     template<typename A = BasicAwaiter<T>>
-    A *get_awaiter() {
+    A *get_awaiter() noexcept {
         return static_cast<A *>(ptr);
     }
 
@@ -119,7 +119,7 @@ public:
      * @brief Get the AwaiterInfo on this BasicAwaiter. See code example of
      *        this class to find how to use it.
     */
-    AwaiterInfo<T> *get_info() const {
+    AwaiterInfo<T> *get_info() const noexcept {
         return info;
     }
 

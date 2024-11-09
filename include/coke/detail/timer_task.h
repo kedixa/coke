@@ -32,19 +32,19 @@ class TimerTask : public SleepRequest {
 public:
     using NanoSec = std::chrono::nanoseconds;
 
-    TimerTask(CommScheduler *scheduler, NanoSec nsec)
+    TimerTask(CommScheduler *scheduler, NanoSec nsec) noexcept
         : SleepRequest(scheduler), awaiter(nullptr), nsec(nsec)
     { }
 
     virtual ~TimerTask() = default;
 
-    int get_state() const { return this->state; }
-    int get_error() const { return this->error; }
+    int get_state() const noexcept { return this->state; }
+    int get_error() const noexcept { return this->error; }
 
-    AwaiterBase *get_awaiter() const { return awaiter; }
-    void set_awaiter(AwaiterBase *awaiter) { this->awaiter = awaiter; }
+    AwaiterBase *get_awaiter() const noexcept { return awaiter; }
+    void set_awaiter(AwaiterBase *awaiter) noexcept { this->awaiter = awaiter; }
 
-    int get_result();
+    int get_result() noexcept;
 
 protected:
     virtual SubTask *done() override {
@@ -79,7 +79,7 @@ protected:
 
 class YieldTask : public TimerTask {
 public:
-    YieldTask(CommScheduler *scheduler)
+    YieldTask(CommScheduler *scheduler) noexcept
         : TimerTask(scheduler, std::chrono::seconds(1)),
           cancel_done(false), ref(2)
     { }

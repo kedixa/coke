@@ -56,7 +56,7 @@ public:
      * @brief Create a SleepAwaiter that returns SLEEP_SUCCESS immediately,
      *        this awaiter will not switch thread.
     */
-    SleepAwaiter() : SleepAwaiter(ImmediateTag{}, SLEEP_SUCCESS) { }
+    SleepAwaiter() noexcept : SleepAwaiter(ImmediateTag{}, SLEEP_SUCCESS) { }
 
     /**
      * @brief Create a SleepAwaiter that will sleep `nsec`.
@@ -108,7 +108,7 @@ public:
     SleepAwaiter(const void *addr, InfiniteDuration, bool insert_head);
 
     // Inner use only
-    SleepAwaiter(ImmediateTag, int state);
+    SleepAwaiter(ImmediateTag, int state) noexcept;
     SleepAwaiter(YieldTag);
 };
 

@@ -41,6 +41,7 @@ public:
     PromiseBase() = default;
     PromiseBase(const PromiseBase &) = delete;
     PromiseBase(PromiseBase &&) = delete;
+
     virtual ~PromiseBase() {
         // Do not allow unhandled exceptions to escape.
         if (eptr) {
@@ -104,11 +105,11 @@ struct FinalAwaiter {
     using void_handle = std::coroutine_handle<>;
     using handle_type = std::coroutine_handle<promise_type>;
 
-    FinalAwaiter(bool detached) : detached(detached) { }
+    FinalAwaiter(bool detached) noexcept : detached(detached) { }
     FinalAwaiter(FinalAwaiter &&) = delete;
 
-    bool await_ready() noexcept { return detached; }
-    void await_resume() noexcept { }
+    bool await_ready() const noexcept { return detached; }
+    void await_resume() const noexcept { }
 
     void_handle await_suspend(handle_type h) noexcept {
         auto prev = h.promise().previous_handle();
@@ -128,10 +129,10 @@ struct [[nodiscard]] TaskAwaiter {
     using promise_type = CoPromise<T>;
     using handle_type = std::coroutine_handle<promise_type>;
 
-    TaskAwaiter(handle_type hdl) : hdl(hdl) { }
+    TaskAwaiter(handle_type hdl) noexcept : hdl(hdl) { }
     TaskAwaiter(TaskAwaiter &&) = delete;
 
-    bool await_ready() noexcept { return false; }
+    bool await_ready() const noexcept { return false; }
 
     T await_resume() {
         if constexpr (std::is_same_v<T, void>)
@@ -141,7 +142,7 @@ struct [[nodiscard]] TaskAwaiter {
     }
 
     template<typename PromiseType>
-    auto await_suspend(std::coroutine_handle<PromiseType> h) {
+    auto await_suspend(std::coroutine_handle<PromiseType> h) noexcept {
         CoPromise<T> &p = hdl.promise();
         p.set_previous_handle(h);
 
@@ -166,8 +167,8 @@ public:
     using handle_type = std::coroutine_handle<promise_type>;
     constexpr static bool __is_coke_awaitable_type = true;
 
-    Task() { }
-    Task(Task &&that) : hdl(that.hdl) { that.hdl = nullptr; }
+    Task() noexcept { }
+    Task(Task &&that) noexcept : hdl(that.hdl) { that.hdl = nullptr; }
     ~Task() { if (hdl) hdl.destroy(); }
 
     Task &operator=(Task &&that) noexcept {
@@ -248,8 +249,11 @@ public:
         return Task<T>(handle_type::from_promise(*this));
     }
 
-    auto initial_suspend() noexcept { return std::suspend_always{}; }
-    auto final_suspend() noexcept { return FinalAwaiter<T>(get_detached()); }
+    auto initial_suspend() const noexcept { return std::suspend_always{}; }
+
+    auto final_suspend() const noexcept {
+        return FinalAwaiter<T>(get_detached());
+    }
 
     void return_value(const T &t)
         noexcept(std::is_nothrow_copy_constructible_v<T>)
@@ -282,9 +286,13 @@ public:
         return Task<void>(handle_type::from_promise(*this));
     }
 
-    auto initial_suspend() noexcept { return std::suspend_always{}; }
-    auto final_suspend() noexcept { return FinalAwaiter<void>(get_detached()); }
-    void return_void() noexcept { }
+    auto initial_suspend() const noexcept { return std::suspend_always{}; }
+
+    auto final_suspend() const noexcept {
+        return FinalAwaiter<void>(get_detached());
+    }
+
+    void return_void() const noexcept { }
 
     void value() { raise_exception(); }
 };

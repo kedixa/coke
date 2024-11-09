@@ -52,10 +52,10 @@ struct FutureStateBase {
     constexpr static auto release = std::memory_order_release;
 
 public:
-    FutureStateBase() : state(FUTURE_STATE_NOTSET)
+    FutureStateBase() noexcept : state(FUTURE_STATE_NOTSET)
     { }
 
-    int get_state() const { return state.load(acquire); }
+    int get_state() const noexcept { return state.load(acquire); }
 
     bool set_broken() {
         return set_once([](bool *flag) {
@@ -156,7 +156,7 @@ protected:
         co_return st;
     }
 
-    const void *get_addr() const {
+    const void *get_addr() const noexcept {
         return (const char *)this + 1;
     }
 
@@ -228,7 +228,7 @@ Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
 
 class FutureWaitHelper {
 public:
-    FutureWaitHelper(std::size_t n)
+    FutureWaitHelper(std::size_t n) noexcept
         : lt(1), x(0), n(n)
     { }
 

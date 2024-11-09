@@ -38,7 +38,7 @@ public:
     /**
      * @brief Create an empty WaitGroup.
      */
-    WaitGroup() : count(0) { }
+    WaitGroup() noexcept : count(0) { }
 
     /**
      * @brief WaitGroup is neither copyable nor movable.
@@ -54,7 +54,7 @@ public:
      *
      * The number of calls to done must match the sum of n in add.
      */
-    void add(long n) {
+    void add(long n) noexcept {
         count.fetch_add(n, std::memory_order_relaxed);
     }
 

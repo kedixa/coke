@@ -102,7 +102,7 @@ const char *get_error_string(int state, int error);
  * @brief Get a globally unique id, which must be greater than zero,
  *        so zero can be treated as an illegal id.
 */
-uint64_t get_unique_id();
+uint64_t get_unique_id() noexcept;
 
 /**
  * @brief Invalid unique id.

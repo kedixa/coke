@@ -23,7 +23,7 @@
 
 namespace coke {
 
-static int get_sleep_state(int state, int error) {
+static int get_sleep_state(int state, int error) noexcept {
     switch (state) {
     case WFT_STATE_SUCCESS: return SLEEP_SUCCESS;
     case WFT_STATE_ABORTED: return SLEEP_ABORTED;
@@ -36,12 +36,12 @@ static int get_sleep_state(int state, int error) {
     }
 }
 
-static NanoSec to_nsec(double sec) {
+static NanoSec to_nsec(double sec) noexcept {
     auto dur = std::chrono::duration<double>(sec);
     return std::chrono::duration_cast<std::chrono::nanoseconds>(dur);
 }
 
-static std::pair<time_t, long> split_nano(NanoSec nano) {
+static std::pair<time_t, long> split_nano(NanoSec nano) noexcept {
     constexpr uint64_t NANO = 1'000'000'000;
     NanoSec::rep cnt = nano.count();
 
@@ -79,13 +79,13 @@ SleepBase &SleepBase::operator=(SleepBase &&that) noexcept {
     return *this;
 }
 
-int SleepBase::await_resume() {
+int SleepBase::await_resume() noexcept {
     if (this->timer)
         return ((TimerTask *)this->timer)->get_result();
     return result;
 }
 
-int TimerTask::get_result() {
+int TimerTask::get_result() noexcept {
     return get_sleep_state(this->state, this->error);
 }
 
@@ -159,7 +159,7 @@ SleepAwaiter::SleepAwaiter(const void *addr, InfiniteDuration,
     this->set_task(time_task);
 }
 
-SleepAwaiter::SleepAwaiter(ImmediateTag, int state) {
+SleepAwaiter::SleepAwaiter(ImmediateTag, int state) noexcept {
     this->result = state;
 }
 

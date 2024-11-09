@@ -32,7 +32,7 @@ public:
     /**
      * @brief Create a Condition.
     */
-    Condition() : wait_cnt(0) { }
+    Condition() noexcept : wait_cnt(0) { }
 
     /**
      * @brief Condition is neither copyable nor movable.

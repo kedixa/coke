@@ -24,7 +24,7 @@
 
 namespace coke {
 
-static int64_t __get_current_nano() {
+static int64_t __get_current_nano() noexcept {
     auto now = std::chrono::steady_clock::now().time_since_epoch();
     return std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
 }
@@ -36,7 +36,7 @@ QpsPool::QpsPool(long query, long seconds) {
     reset_qps(query, seconds);
 }
 
-void QpsPool::reset_qps(long query, long seconds) noexcept {
+void QpsPool::reset_qps(long query, long seconds) {
     assert(query >= 0 && seconds >= 1);
 
     std::lock_guard<std::mutex> lg(mtx);
@@ -56,7 +56,7 @@ void QpsPool::reset_qps(long query, long seconds) noexcept {
 }
 
 QpsPool::AwaiterType
-QpsPool::get_if(unsigned count, NanoSec nsec) noexcept {
+QpsPool::get_if(unsigned count, NanoSec nsec) {
     std::lock_guard<std::mutex> lg(mtx);
     NanoType current, next_nano, next_sub;
 

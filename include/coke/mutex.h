@@ -30,7 +30,7 @@ public:
     /**
      * @brief Create a Mutex.
     */
-    Mutex() : sem(1) { }
+    Mutex() noexcept : sem(1) { }
 
     /**
      * @brief Mutex is neither copyable nor movable.
@@ -90,7 +90,7 @@ class UniqueLock {
 public:
     using MutexType = M;
 
-    UniqueLock() : co_mtx(nullptr), owns(false) { }
+    UniqueLock() noexcept : co_mtx(nullptr), owns(false) { }
 
     /**
      * @brief Create UniqueLock with mutex m.
@@ -146,7 +146,7 @@ public:
     /**
      * @brief Disassociates the associated mutex without unlocking it.
      */
-    MutexType *release() {
+    MutexType *release() noexcept {
         M *m = co_mtx;
         co_mtx = nullptr;
         owns = false;

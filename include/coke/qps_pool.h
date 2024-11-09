@@ -44,13 +44,13 @@ public:
      * @brief Reset another `qps` limit, even if pool is already in use.
      *        The new limit will take effect the next time `get` is called.
     */
-    void reset_qps(long query, long seconds = 1) noexcept;
+    void reset_qps(long query, long seconds = 1);
 
     /**
      * @brief Acquire `count` license from QpsPool.
      * @return An awaitable object that should be co awaited immediately.
     */
-    AwaiterType get(unsigned count = 1) noexcept {
+    AwaiterType get(unsigned count = 1) {
         return get_if(count, NanoSec::max());
     }
 
@@ -60,7 +60,7 @@ public:
      * @retval coke::SLEEP_SUCCESS if the license if acquired.
      * @retval coke::SLEEP_CANCELED if cannot be acquired in nsec.
     */
-    AwaiterType get_if(unsigned count, NanoSec nsec) noexcept;
+    AwaiterType get_if(unsigned count, NanoSec nsec);
 
 private:
     std::mutex mtx;

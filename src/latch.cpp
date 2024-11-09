@@ -23,7 +23,7 @@
 
 namespace coke {
 
-void Latch::count_down(long n) noexcept {
+void Latch::count_down(long n) {
     const void *addr = nullptr;
 
     {
@@ -43,7 +43,7 @@ void Latch::count_down(long n) noexcept {
     // ATTENTION: *this maybe destroyed
 }
 
-LatchAwaiter Latch::create_awaiter(long n) noexcept {
+LatchAwaiter Latch::create_awaiter(long n) {
     LatchAwaiter a;
     const void *addr = nullptr;
 
@@ -69,7 +69,7 @@ LatchAwaiter Latch::create_awaiter(long n) noexcept {
     return a;
 }
 
-LatchAwaiter Latch::wait_impl(detail::TimedWaitHelper helper) noexcept {
+LatchAwaiter Latch::wait_impl(detail::TimedWaitHelper helper) {
     std::lock_guard<std::mutex> lg(mtx);
     if (this->expected > 0)
         return sleep(get_addr(), helper);
@@ -77,7 +77,7 @@ LatchAwaiter Latch::wait_impl(detail::TimedWaitHelper helper) noexcept {
         return SleepAwaiter();
 }
 
-void SyncLatch::wait() const noexcept {
+void SyncLatch::wait() const {
     if (!lt.try_wait()) {
         int cookie = WFGlobal::sync_operation_begin();
         lt.wait();

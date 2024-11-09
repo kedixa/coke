@@ -115,7 +115,7 @@ void *AwaiterBase::create_series(SubTask *first) {
     return coke_series_creater(first);
 }
 
-uint64_t get_unique_id() {
+uint64_t get_unique_id() noexcept {
     static std::atomic<uint64_t> uid{1};
     // Assume uid will not exhausted before process ends
     return uid.fetch_add(1, std::memory_order_relaxed);
@@ -144,7 +144,7 @@ struct alignas(DESTRUCTIVE_ALIGN) AlignedMutex {
     std::mutex mtx;
 };
 
-std::mutex &get_mutex(const void *ptr) {
+std::mutex &get_mutex(const void *ptr) noexcept {
     static AlignedMutex m[MUTEX_TABLE_SIZE];
 
     uintptr_t h = (uintptr_t)(void *)ptr;

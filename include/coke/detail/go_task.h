@@ -43,11 +43,11 @@ public:
 
     virtual ~GoTaskBase() = default;
 
-    int get_state() const { return this->state; }
-    int get_error() const { return this->error; }
+    int get_state() const noexcept { return this->state; }
+    int get_error() const noexcept { return this->error; }
 
-    AwaiterBase *get_awaiter() const { return awaiter; }
-    void set_awaiter(AwaiterBase *awaiter) { this->awaiter = awaiter; }
+    AwaiterBase *get_awaiter() const noexcept { return awaiter; }
+    void set_awaiter(AwaiterBase *awaiter) noexcept { this->awaiter = awaiter; }
 
 private:
     virtual SubTask *done() override;

@@ -33,10 +33,10 @@ public:
     SleepBase &operator= (SleepBase &&that) noexcept;
     ~SleepBase() = default;
 
-    int await_resume();
+    int await_resume() noexcept;
 
 protected:
-    SleepBase() : timer(nullptr), result(-1) { }
+    SleepBase() noexcept : timer(nullptr), result(-1) { }
 
 protected:
     SubTask *timer;
@@ -49,20 +49,20 @@ public:
     using ClockType = std::chrono::steady_clock;
     using TimePoint = ClockType::time_point;
 
-    constexpr static TimePoint max() { return TimePoint::max(); }
-    static TimePoint now() { return ClockType::now(); }
+    constexpr static TimePoint max() noexcept { return TimePoint::max(); }
+    static TimePoint now() noexcept { return ClockType::now(); }
 
-    TimedWaitHelper() : abs_time(max()) { }
+    TimedWaitHelper() noexcept : abs_time(max()) { }
 
-    TimedWaitHelper(NanoSec nano)
+    TimedWaitHelper(NanoSec nano) noexcept
         : abs_time(now() + nano)
     { }
 
-    bool infinite() const { return abs_time == max(); }
+    bool infinite() const noexcept { return abs_time == max(); }
 
-    NanoSec time_left() const { return abs_time - now(); }
+    NanoSec time_left() const noexcept { return abs_time - now(); }
 
-    bool timeout() const { return abs_time <= now(); }
+    bool timeout() const noexcept { return abs_time <= now(); }
 
 private:
     TimePoint abs_time;
