@@ -19,10 +19,6 @@
 #ifndef COKE_COKE_H
 #define COKE_COKE_H
 
-#include <functional>
-#include <concepts>
-#include <memory>
-
 /**
  * coke.h includes most of the headers, except for network-related parts.
 */

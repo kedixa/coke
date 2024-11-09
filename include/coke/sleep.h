@@ -181,12 +181,6 @@ sleep(const void *addr, detail::TimedWaitHelper helper,
 }
 
 
-[[deprecated]] inline
-SleepAwaiter sleep(long sec, long nsec) {
-    auto dur = std::chrono::seconds(sec) + std::chrono::nanoseconds(nsec);
-    return SleepAwaiter(dur);
-}
-
 inline SleepAwaiter yield() {
     return SleepAwaiter(SleepAwaiter::YieldTag{});
 }
