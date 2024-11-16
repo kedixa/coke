@@ -20,6 +20,7 @@ set(ALL_EXAMPLES
     ex017-backup_request
     ex018-local_cache
     ex019-task_and_series
+    ex020-dag
 )
 
 include (../cmake/find-workflow.cmake)
