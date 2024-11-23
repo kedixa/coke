@@ -63,7 +63,7 @@ public:
      * @param alloc Allocator used to create std::queue.
     */
     template<typename Alloc>
-        requires std::is_same_v<Alloc, typename Container::allocator_type>
+        requires std::uses_allocator_v<QueueType, Alloc>
     Queue(SizeType max_size, const Alloc &alloc)
         : BaseType(max_size), que(alloc)
     { }
@@ -137,7 +137,7 @@ public:
      * @param alloc Allocator used to create std::priority_queue.
     */
     template<typename Alloc>
-        requires std::is_same_v<Alloc, typename Container::allocator_type>
+        requires std::uses_allocator_v<QueueType, Alloc>
     PriorityQueue(SizeType max_size, const Alloc &alloc)
         : BaseType(max_size), que(alloc)
     { }
@@ -160,7 +160,7 @@ public:
      * @param alloc Allocator used to create std::priority_queue.
     */
     template<typename Alloc>
-        requires std::is_same_v<Alloc, typename Container::allocator_type>
+        requires std::uses_allocator_v<QueueType, Alloc>
     PriorityQueue(SizeType max_size, const CompareType &comp,
                   const Alloc &alloc)
         : BaseType(max_size), que(comp, alloc)
@@ -234,7 +234,7 @@ public:
      * @param alloc Allocator used to create std::stack.
     */
     template<typename Alloc>
-        requires std::is_same_v<Alloc, typename Container::allocator_type>
+        requires std::uses_allocator_v<QueueType, Alloc>
     Stack(SizeType max_size, const Alloc &alloc)
         : BaseType(max_size), que(alloc)
     { }
