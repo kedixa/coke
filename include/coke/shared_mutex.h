@@ -21,8 +21,8 @@
 
 #include <cstdint>
 #include <mutex>
-#include <system_error>
 
+#include "coke/detail/exception_config.h"
 #include "coke/task.h"
 #include "coke/sleep.h"
 
@@ -276,7 +276,7 @@ public:
      */
     bool try_lock() {
         if (owns)
-            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+            detail::throw_system_error(std::errc::resource_deadlock_would_occur);
 
         owns = co_mtx->try_lock_shared();
         return owns;
@@ -288,7 +288,7 @@ public:
      */
     Task<int> lock() {
         if (owns)
-            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+            detail::throw_system_error(std::errc::resource_deadlock_would_occur);
 
         int ret = co_await co_mtx->lock_shared();
         if (ret == coke::TOP_SUCCESS)
@@ -304,7 +304,7 @@ public:
      */
     Task<int> try_lock_for(NanoSec nsec) {
         if (owns)
-            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+            detail::throw_system_error(std::errc::resource_deadlock_would_occur);
 
         int ret = co_await co_mtx->try_lock_shared_for(nsec);
         if (ret == coke::TOP_SUCCESS)
@@ -319,7 +319,7 @@ public:
      */
     void unlock() {
         if (!owns)
-            throw std::system_error(std::make_error_code(std::errc::operation_not_permitted));
+            detail::throw_system_error(std::errc::operation_not_permitted);
 
         co_mtx->unlock_shared();
         owns = false;

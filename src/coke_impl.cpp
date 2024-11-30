@@ -21,7 +21,7 @@
 #include "coke/detail/awaiter_base.h"
 #include "coke/detail/mutex_table.h"
 #include "coke/detail/constant.h"
-#include "coke/global.h"
+#include "coke/detail/exception_config.h"
 #include "coke/coke.h"
 
 #include "workflow/Workflow.h"
@@ -136,9 +136,9 @@ AwaiterBase::~AwaiterBase() {
 }
 
 
-// detail/mutex_table.h impl
-
 namespace detail {
+
+// detail/mutex_table.h impl
 
 struct alignas(DESTRUCTIVE_ALIGN) AlignedMutex {
     std::mutex mtx;
@@ -150,6 +150,22 @@ std::mutex &get_mutex(const void *ptr) noexcept {
     uintptr_t h = (uintptr_t)(void *)ptr;
     return m[h%MUTEX_TABLE_SIZE].mtx;
 }
+
+// detail/exception_config.h
+
+#ifdef COKE_NO_EXCEPTIONS
+
+void throw_system_error(std::errc) {
+    std::terminate();
+}
+
+#else // COKE_NO_EXCEPTIONS not defined
+
+void throw_system_error(std::errc e) {
+    throw std::system_error(std::make_error_code(e));
+}
+
+#endif // COKE_NO_EXCEPTIONS
 
 } // namespace detail
 

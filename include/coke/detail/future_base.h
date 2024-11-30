@@ -25,6 +25,7 @@
 #include <mutex>
 #include <functional>
 
+#include "coke/detail/exception_config.h"
 #include "coke/task.h"
 #include "coke/sleep.h"
 #include "coke/latch.h"
@@ -210,7 +211,7 @@ public:
 
 template<Cokeable T>
 Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
-    try {
+    coke_try {
         if constexpr (std::is_void_v<T>) {
             co_await std::move(task);
             promise.set_value();
@@ -219,7 +220,7 @@ Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
             promise.set_value(co_await std::move(task));
         }
     }
-    catch (...) {
+    coke_catch (...) {
         promise.set_exception(std::current_exception());
     }
 

@@ -27,6 +27,9 @@
 
 #include "coke/detail/basic_concept.h"
 
+// Not used, but make sure exception_config.h is included by coke/task.h
+#include "coke/detail/exception_config.h"
+
 namespace coke::detail {
 
 /**
@@ -42,16 +45,10 @@ public:
     PromiseBase(const PromiseBase &) = delete;
     PromiseBase(PromiseBase &&) = delete;
 
-    virtual ~PromiseBase() {
+    virtual ~PromiseBase() noexcept {
         // Do not allow unhandled exceptions to escape.
-        if (eptr) {
-            try {
-                std::rethrow_exception(eptr);
-            }
-            catch (...) {
-                std::terminate();
-            }
-        }
+        if (eptr)
+            std::rethrow_exception(eptr);
     }
 
     void set_context(std::shared_ptr<void> ctx) noexcept { context = ctx; }
