@@ -36,7 +36,7 @@ class Deque {
 public:
     using SizeType = std::size_t;
     using ContainerType = std::deque<T, Alloc>;
-    using AllocatorType = ContainerType::allocator_type;
+    using AllocatorType = typename ContainerType::allocator_type;
     using ValueType = T;
     using QueueType = ContainerType;
 
