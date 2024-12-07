@@ -77,12 +77,4 @@ LatchAwaiter Latch::wait_impl(detail::TimedWaitHelper helper) {
         return SleepAwaiter();
 }
 
-void SyncLatch::wait() const {
-    if (!lt.try_wait()) {
-        int cookie = WFGlobal::sync_operation_begin();
-        lt.wait();
-        WFGlobal::sync_operation_end(cookie);
-    }
-}
-
 } // namespace coke

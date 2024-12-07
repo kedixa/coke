@@ -23,6 +23,7 @@
 
 #include "coke/detail/mutex_table.h"
 #include "coke/sleep.h"
+#include "coke/sync_guard.h"
 
 namespace coke {
 
@@ -121,7 +122,12 @@ public:
 
     void count_down(long n = 1) { lt.count_down(n); }
 
-    void wait() const;
+    void wait() const {
+        if (!lt.try_wait()) {
+            SyncGuard guard(true);
+            lt.wait();
+        }
+    }
 
 private:
     std::latch lt;
