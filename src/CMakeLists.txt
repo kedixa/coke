@@ -16,6 +16,7 @@ set(SRCS
     redis_impl.cpp
     sleep.cpp
     stop_token.cpp
+    sync_guard.cpp
 )
 
 if (COKE_BUILD_STATIC)
