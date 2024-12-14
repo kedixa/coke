@@ -245,6 +245,23 @@ TEST(FUTURE, wait_future) {
     coke::sync_wait(wait_future());
 }
 
+TEST(FUTURE, cancel) {
+    coke::Promise<int> pro;
+    coke::Future<int> fut = pro.get_future();
+
+    coke::detach([](coke::Promise<int> pro) -> coke::Task<> {
+        while (!pro.is_canceled())
+            co_await coke::sleep(0.1);
+        pro.set_value(0);
+    }(std::move(pro)));
+
+    fut.cancel();
+
+    int ret = coke::sync_wait(fut.wait());
+    EXPECT_EQ(ret, coke::FUTURE_STATE_READY);
+    EXPECT_EQ(fut.get(), 0);
+}
+
 int main(int argc, char *argv[]) {
     coke::GlobalSettings s;
     s.poller_threads = 2;

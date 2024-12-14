@@ -53,7 +53,8 @@ struct FutureStateBase {
     constexpr static auto release = std::memory_order_release;
 
 public:
-    FutureStateBase() noexcept : state(FUTURE_STATE_NOTSET)
+    FutureStateBase() noexcept
+        : canceled(false), state(FUTURE_STATE_NOTSET)
     { }
 
     int get_state() const noexcept { return state.load(acquire); }
@@ -99,6 +100,14 @@ public:
     void remove_callback() {
         std::lock_guard<std::mutex> lg(mtx);
         callback = nullptr;
+    }
+
+    void set_canceled() {
+        canceled.store(true, release);
+    }
+
+    bool is_canceled() const noexcept {
+        return canceled.load(acquire);
     }
 
 protected:
@@ -163,6 +172,7 @@ protected:
 
 protected:
     std::once_flag once_flag;
+    std::atomic<bool> canceled;
     std::atomic<int> state;
 
     std::mutex mtx;

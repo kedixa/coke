@@ -101,6 +101,12 @@ public:
     }
 
     /**
+     * @brief Notify the associated Promise to cancel the current process.
+     * @pre valid() returns true.
+     */
+    void cancel() { state->set_canceled(); }
+
+    /**
      * @brief Gets the value set by the Promise associated with the Future.
      *        If there is an exception set by Promise, it will be rethrow.
      *        This function can only be called at most once.
@@ -155,6 +161,7 @@ private:
     std::shared_ptr<State> state;
 }; // class Future
 
+
 template<Cokeable Res>
 class Promise {
     using State = detail::FutureState<Res>;
@@ -208,6 +215,13 @@ public:
     */
     bool set_exception(const std::exception_ptr &eptr) {
         return state->set_exception(eptr);
+    }
+
+    /**
+     * @brief Check whether `cancel` is called by the associated Future.
+     */
+    bool is_canceled() const noexcept {
+        return state->is_canceled();
     }
 
 private:
