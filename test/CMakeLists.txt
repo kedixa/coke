@@ -19,6 +19,7 @@ set(ALL_TESTS
     test_option_parser
     test_parallel
     test_queue
+    test_scope
     test_semaphore
     test_series
     test_shared_mutex
