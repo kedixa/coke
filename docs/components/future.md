@@ -131,6 +131,14 @@ class Future;
     void remove_callback();
     ```
 
+- 发送取消信号
+
+    向关联的`Promise`发送一个取消信号，但如何处理该信号取决于`Promise`。
+
+    ```cpp
+    void cancel();
+    ```
+
 
 ## coke::Promise
 `Promise`用于设置异步操作的结果，与唯一一个`Future`关联。
@@ -157,10 +165,18 @@ class Promise;
 
 - 获取与`Promise`关联的`Future`
 
-    获取与该`Promise`关联的`Future`，该函数最多只能调用一次。
+    获取与该`Promise`关联的`Future`，该函数至多调用一次。
 
     ```cpp
     coke::Future<Res> get_future();
+    ```
+
+- 查看取消信号
+
+    查看关联的`Future`是否设置了取消信号。
+
+    ```cpp
+    bool is_canceled() const noexcept;
     ```
 
 - 设置值并唤醒`Future`
