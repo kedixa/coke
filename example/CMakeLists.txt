@@ -21,6 +21,7 @@ set(ALL_EXAMPLES
     ex018-local_cache
     ex019-task_and_series
     ex020-dag
+    ex021-scope_guard
 )
 
 include (../cmake/find-workflow.cmake)
