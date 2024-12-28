@@ -1,4 +1,5 @@
 localtest
 Makefile
+MODULE.bazel.lock
 bazel-*
 build.*
