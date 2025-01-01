@@ -43,31 +43,35 @@ public:
      * A default constructed Future is not valid, and a Future get from Promise
      * is valid.
     */
-    bool valid() const { return (bool)state; }
+    bool valid() const noexcept { return (bool)state; }
 
     /**
      * @brief Get the internal state of this future. See the global constants
      *        named coke::FUTURE_STATE_XXX.
     */
-    int get_state() const { return state->get_state(); }
+    int get_state() const noexcept { return state->get_state(); }
 
     /**
      * @brief Return whether the state of this Future is ready.
      * @pre valid() returns true.
     */
-    bool ready() const { return state->get_state() == FUTURE_STATE_READY; }
+    bool ready() const noexcept {
+        return state->get_state() == FUTURE_STATE_READY;
+    }
 
     /**
      * @brief Return whether the promise destroyed without set value.
      * @pre valid() returns true.
     */
-    bool broken() const { return state->get_state() == FUTURE_STATE_BROKEN; }
+    bool broken() const noexcept {
+        return state->get_state() == FUTURE_STATE_BROKEN;
+    }
 
     /**
      * @brief Return whether there is an exception.
      * @pre valid() returns true.
     */
-    bool has_exception() const {
+    bool has_exception() const noexcept {
         return state->get_state() == FUTURE_STATE_EXCEPTION;
     }
 
@@ -95,6 +99,12 @@ public:
     Task<int> wait_for(const NanoSec &nsec) {
         return state->wait_for(nsec);
     }
+
+    /**
+     * @brief Notify the associated Promise to cancel the current process.
+     * @pre valid() returns true.
+     */
+    void cancel() { state->set_canceled(); }
 
     /**
      * @brief Gets the value set by the Promise associated with the Future.
@@ -141,7 +151,9 @@ private:
     /**
      * @brief Future can only be created by Promise.
     */
-    Future(std::shared_ptr<State> ptr) : state(ptr) { }
+    Future(std::shared_ptr<State> ptr) noexcept
+        : state(ptr)
+    { }
 
     friend Promise<Res>;
 
@@ -149,12 +161,14 @@ private:
     std::shared_ptr<State> state;
 }; // class Future
 
+
 template<Cokeable Res>
 class Promise {
     using State = detail::FutureState<Res>;
 
 public:
     Promise() { state = std::make_shared<State>(); }
+
     ~Promise() {
         if (state && state->get_state() == FUTURE_STATE_NOTSET)
             state->set_broken();
@@ -164,7 +178,7 @@ public:
     Promise &operator=(Promise &&) = default;
 
     Promise(const Promise &) = delete;
-    Promise &operator=(const Promise &)  = delete;
+    Promise &operator=(const Promise &) = delete;
 
     /**
      * @brief Get the Future associated with this Promise. This function can
@@ -201,6 +215,13 @@ public:
     */
     bool set_exception(const std::exception_ptr &eptr) {
         return state->set_exception(eptr);
+    }
+
+    /**
+     * @brief Check whether `cancel` is called by the associated Future.
+     */
+    bool is_canceled() const noexcept {
+        return state->is_canceled();
     }
 
 private:

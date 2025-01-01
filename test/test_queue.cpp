@@ -22,6 +22,7 @@
 #include <optional>
 #include <iterator>
 #include <memory>
+#include <memory_resource>
 #include <gtest/gtest.h>
 
 #include "coke/global.h"
@@ -468,6 +469,14 @@ TEST(QUEUE, priority_queue_move_only) {
     EXPECT_TRUE(b2);
     EXPECT_EQ(*ptr, 1234);
     EXPECT_FALSE(que.try_pop(ptr));
+}
+
+TEST(QUEUE, allocator) {
+    auto *res = std::pmr::get_default_resource();
+    coke::Queue<int, std::pmr::deque<int>> q(10, res);
+    coke::PriorityQueue<std::string, std::pmr::vector<std::string>> p(20, res);
+    coke::Stack<long, std::pmr::deque<long>> s(30, res);
+    coke::Deque<short, std::pmr::polymorphic_allocator<short>> d(40, res);
 }
 
 int main(int argc, char *argv[]) {

@@ -21,7 +21,7 @@
 #include "coke/detail/awaiter_base.h"
 #include "coke/detail/mutex_table.h"
 #include "coke/detail/constant.h"
-#include "coke/global.h"
+#include "coke/detail/exception_config.h"
 #include "coke/coke.h"
 
 #include "workflow/Workflow.h"
@@ -49,12 +49,14 @@ static_assert(CTOR_TRANSMIT_TIMEOUT == TOR_TRANSMIT_TIMEOUT);
 void library_init(const GlobalSettings &s) {
     WFGlobalSettings t = GLOBAL_SETTINGS_DEFAULT;
 
+    t.endpoint_params.address_family        = s.endpoint_params.address_family;
     t.endpoint_params.max_connections       = s.endpoint_params.max_connections;
     t.endpoint_params.connect_timeout       = s.endpoint_params.connect_timeout;
     t.endpoint_params.response_timeout      = s.endpoint_params.response_timeout;
     t.endpoint_params.ssl_connect_timeout   = s.endpoint_params.ssl_connect_timeout;
     t.endpoint_params.use_tls_sni           = s.endpoint_params.use_tls_sni;
 
+    t.dns_server_params.address_family      = s.dns_server_params.address_family;
     t.dns_server_params.max_connections     = s.dns_server_params.max_connections;
     t.dns_server_params.connect_timeout     = s.dns_server_params.connect_timeout;
     t.dns_server_params.response_timeout    = s.dns_server_params.response_timeout;
@@ -113,7 +115,7 @@ void *AwaiterBase::create_series(SubTask *first) {
     return coke_series_creater(first);
 }
 
-uint64_t get_unique_id() {
+uint64_t get_unique_id() noexcept {
     static std::atomic<uint64_t> uid{1};
     // Assume uid will not exhausted before process ends
     return uid.fetch_add(1, std::memory_order_relaxed);
@@ -134,20 +136,36 @@ AwaiterBase::~AwaiterBase() {
 }
 
 
-// detail/mutex_table.h impl
-
 namespace detail {
+
+// detail/mutex_table.h impl
 
 struct alignas(DESTRUCTIVE_ALIGN) AlignedMutex {
     std::mutex mtx;
 };
 
-std::mutex &get_mutex(const void *ptr) {
+std::mutex &get_mutex(const void *ptr) noexcept {
     static AlignedMutex m[MUTEX_TABLE_SIZE];
 
     uintptr_t h = (uintptr_t)(void *)ptr;
     return m[h%MUTEX_TABLE_SIZE].mtx;
 }
+
+// detail/exception_config.h
+
+#ifdef COKE_NO_EXCEPTIONS
+
+void throw_system_error(std::errc) {
+    std::terminate();
+}
+
+#else // COKE_NO_EXCEPTIONS not defined
+
+void throw_system_error(std::errc e) {
+    throw std::system_error(std::make_error_code(e));
+}
+
+#endif // COKE_NO_EXCEPTIONS
 
 } // namespace detail
 

@@ -19,6 +19,9 @@ set(ALL_EXAMPLES
     ex016-wait_group
     ex017-backup_request
     ex018-local_cache
+    ex019-task_and_series
+    ex020-dag
+    ex021-scope_guard
 )
 
 include (../cmake/find-workflow.cmake)

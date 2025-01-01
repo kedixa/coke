@@ -36,6 +36,7 @@ class Deque {
 public:
     using SizeType = std::size_t;
     using ContainerType = std::deque<T, Alloc>;
+    using AllocatorType = typename ContainerType::allocator_type;
     using ValueType = T;
     using QueueType = ContainerType;
 
@@ -63,8 +64,12 @@ public:
      * @param max_size Max size of the container.
     */
     explicit Deque(SizeType max_size)
+        : Deque(max_size, AllocatorType())
+    { }
+
+    Deque(SizeType max_size, const AllocatorType &alloc)
         : que_max_size(max_size), que_cur_size(0), que_closed(false),
-          push_wait_cnt(0), pop_wait_cnt(0)
+          push_wait_cnt(0), pop_wait_cnt(0), que(alloc)
     {
         // empty queue not supported
         if (que_max_size == 0)

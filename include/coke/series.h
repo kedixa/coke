@@ -62,7 +62,7 @@ public:
 
     ~SeriesAwaiter() = default;
 
-    SeriesWork *await_resume() { return series_of(series_task); }
+    SeriesWork *await_resume() const noexcept { return series_of(series_task); }
 
 private:
     detail::SeriesTask *series_task;

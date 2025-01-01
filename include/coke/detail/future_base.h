@@ -25,6 +25,7 @@
 #include <mutex>
 #include <functional>
 
+#include "coke/detail/exception_config.h"
 #include "coke/task.h"
 #include "coke/sleep.h"
 #include "coke/latch.h"
@@ -52,10 +53,11 @@ struct FutureStateBase {
     constexpr static auto release = std::memory_order_release;
 
 public:
-    FutureStateBase() : state(FUTURE_STATE_NOTSET)
+    FutureStateBase() noexcept
+        : canceled(false), state(FUTURE_STATE_NOTSET)
     { }
 
-    int get_state() const { return state.load(acquire); }
+    int get_state() const noexcept { return state.load(acquire); }
 
     bool set_broken() {
         return set_once([](bool *flag) {
@@ -98,6 +100,14 @@ public:
     void remove_callback() {
         std::lock_guard<std::mutex> lg(mtx);
         callback = nullptr;
+    }
+
+    void set_canceled() {
+        canceled.store(true, release);
+    }
+
+    bool is_canceled() const noexcept {
+        return canceled.load(acquire);
     }
 
 protected:
@@ -156,12 +166,13 @@ protected:
         co_return st;
     }
 
-    const void *get_addr() const {
+    const void *get_addr() const noexcept {
         return (const char *)this + 1;
     }
 
 protected:
     std::once_flag once_flag;
+    std::atomic<bool> canceled;
     std::atomic<int> state;
 
     std::mutex mtx;
@@ -210,7 +221,7 @@ public:
 
 template<Cokeable T>
 Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
-    try {
+    coke_try {
         if constexpr (std::is_void_v<T>) {
             co_await std::move(task);
             promise.set_value();
@@ -219,7 +230,7 @@ Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
             promise.set_value(co_await std::move(task));
         }
     }
-    catch (...) {
+    coke_catch (...) {
         promise.set_exception(std::current_exception());
     }
 
@@ -228,7 +239,7 @@ Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
 
 class FutureWaitHelper {
 public:
-    FutureWaitHelper(std::size_t n)
+    FutureWaitHelper(std::size_t n) noexcept
         : lt(1), x(0), n(n)
     { }
 

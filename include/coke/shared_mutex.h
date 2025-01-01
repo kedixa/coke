@@ -21,8 +21,8 @@
 
 #include <cstdint>
 #include <mutex>
-#include <system_error>
 
+#include "coke/detail/exception_config.h"
 #include "coke/task.h"
 #include "coke/sleep.h"
 
@@ -41,7 +41,7 @@ public:
     /**
      * @brief Create a SharedMutex.
     */
-    SharedMutex()
+    SharedMutex() noexcept
         : read_doing(0), read_waiting(0), write_waiting(0), state(State::Idle)
     { }
 
@@ -207,7 +207,7 @@ class SharedLock {
 public:
     using MutexType = M;
 
-    SharedLock() : co_mtx(nullptr), owns(false) { }
+    SharedLock() noexcept : co_mtx(nullptr), owns(false) { }
 
     /**
      * @brief Create SharedLock with mutex m.
@@ -215,7 +215,7 @@ public:
      * @param m The shared mutex to wrap.
      * @param is_locked Whether m is already locked.
      */
-    explicit SharedLock(MutexType &m, bool is_locked = false)
+    explicit SharedLock(MutexType &m, bool is_locked = false) noexcept
         : co_mtx(std::addressof(m)), owns(is_locked)
     { }
 
@@ -249,11 +249,11 @@ public:
     /**
      * @brief Test whether the lock owns its associated mutex.
      */
-    bool owns_lock() const {
+    bool owns_lock() const noexcept {
         return owns;
     }
 
-    void swap(SharedLock &other) {
+    void swap(SharedLock &other) noexcept {
         if (this != &other) {
             std::swap(this->co_mtx, other.co_mtx);
             std::swap(this->owns, other.owns);
@@ -263,7 +263,7 @@ public:
     /**
      * @brief Disassociates the associated mutex without unlocking it.
      */
-    MutexType *release() {
+    MutexType *release() noexcept {
         M *m = co_mtx;
         co_mtx = nullptr;
         owns = false;
@@ -276,7 +276,7 @@ public:
      */
     bool try_lock() {
         if (owns)
-            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+            detail::throw_system_error(std::errc::resource_deadlock_would_occur);
 
         owns = co_mtx->try_lock_shared();
         return owns;
@@ -288,7 +288,7 @@ public:
      */
     Task<int> lock() {
         if (owns)
-            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+            detail::throw_system_error(std::errc::resource_deadlock_would_occur);
 
         int ret = co_await co_mtx->lock_shared();
         if (ret == coke::TOP_SUCCESS)
@@ -304,7 +304,7 @@ public:
      */
     Task<int> try_lock_for(NanoSec nsec) {
         if (owns)
-            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+            detail::throw_system_error(std::errc::resource_deadlock_would_occur);
 
         int ret = co_await co_mtx->try_lock_shared_for(nsec);
         if (ret == coke::TOP_SUCCESS)
@@ -319,7 +319,7 @@ public:
      */
     void unlock() {
         if (!owns)
-            throw std::system_error(std::make_error_code(std::errc::operation_not_permitted));
+            detail::throw_system_error(std::errc::operation_not_permitted);
 
         co_mtx->unlock_shared();
         owns = false;

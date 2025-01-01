@@ -31,6 +31,7 @@ cc_library(
         "src/random.cpp",
         "src/sleep.cpp",
         "src/stop_token.cpp",
+        "src/sync_guard.cpp",
     ],
     hdrs = [
         "include/coke/basic_awaiter.h",
@@ -53,6 +54,7 @@ cc_library(
         "include/coke/shared_mutex.h",
         "include/coke/sleep.h",
         "include/coke/stop_token.h",
+        "include/coke/sync_guard.h",
         "include/coke/task.h",
         "include/coke/wait_group.h",
         "include/coke/wait.h",

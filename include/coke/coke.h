@@ -19,10 +19,6 @@
 #ifndef COKE_COKE_H
 #define COKE_COKE_H
 
-#include <functional>
-#include <concepts>
-#include <memory>
-
 /**
  * coke.h includes most of the headers, except for network-related parts.
 */
@@ -44,6 +40,7 @@
 #include "coke/make_task.h"
 #include "coke/condition.h"
 #include "coke/stop_token.h"
+#include "coke/sync_guard.h"
 #include "coke/wait_group.h"
 
 #endif // COKE_COKE_H

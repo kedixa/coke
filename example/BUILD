@@ -42,6 +42,9 @@ create_example_target("ex015-async_queue")
 create_example_target("ex016-wait_group")
 create_example_target("ex017-backup_request")
 create_example_target("ex018-local_cache")
+create_example_target("ex019-task_and_series")
+create_example_target("ex020-dag")
+create_example_target("ex021-scope_guard", ["//:tools"])
 
 # virtual target to build all examples
 cc_library(
@@ -65,5 +68,8 @@ cc_library(
         ":wait_group",
         ":backup_request",
         ":local_cache",
+        ":task_and_series",
+        ":dag",
+        ":scope_guard",
     ],
 )

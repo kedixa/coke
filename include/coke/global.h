@@ -21,17 +21,18 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <sys/socket.h>
 
-#define COKE_VERSION_NUMBER 0x000400L
+#define COKE_VERSION_NUMBER 0x000401L
 
 namespace coke {
 
 // version
 constexpr int COKE_MAJOR_VERSION = 0;
 constexpr int COKE_MINOR_VERSION = 4;
-constexpr int COKE_PATCH_VERSION = 0;
+constexpr int COKE_PATCH_VERSION = 1;
 
-constexpr const char COKE_VERSION_STR[] = "0.4.0";
+constexpr const char COKE_VERSION_STR[] = "0.4.1";
 
 // state constant from workflow, see WFTask.h
 constexpr int STATE_UNDEFINED = -1;
@@ -70,6 +71,7 @@ constexpr int TOP_CLOSED = 3;
 
 
 struct EndpointParams {
+    int address_family          = AF_UNSPEC;
     std::size_t max_connections = 200;
     int     connect_timeout     = 10 * 1000;
     int     response_timeout    = 10 * 1000;
@@ -80,8 +82,8 @@ struct EndpointParams {
 struct GlobalSettings {
     EndpointParams endpoint_params;
     EndpointParams dns_server_params;
-    unsigned int dns_ttl_default        = 12 * 3600;
-    unsigned int dns_ttl_min            = 180;
+    unsigned int dns_ttl_default        = 3600;
+    unsigned int dns_ttl_min            = 60;
     int dns_threads                     = 4;
     int poller_threads                  = 4;
     int handler_threads                 = 20;
@@ -100,7 +102,7 @@ const char *get_error_string(int state, int error);
  * @brief Get a globally unique id, which must be greater than zero,
  *        so zero can be treated as an illegal id.
 */
-uint64_t get_unique_id();
+uint64_t get_unique_id() noexcept;
 
 /**
  * @brief Invalid unique id.

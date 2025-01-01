@@ -34,7 +34,7 @@ public:
     /**
      * @brief Create a Semaphore, with initial count `n`.
     */
-    explicit Semaphore(CountType n)
+    explicit Semaphore(CountType n) noexcept
         : count(n), waiting(0)
     { }
 

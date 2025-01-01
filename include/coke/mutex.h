@@ -19,8 +19,7 @@
 #ifndef COKE_MUTEX_H
 #define COKE_MUTEX_H
 
-#include <system_error>
-
+#include "coke/detail/exception_config.h"
 #include "coke/semaphore.h"
 
 namespace coke {
@@ -30,7 +29,7 @@ public:
     /**
      * @brief Create a Mutex.
     */
-    Mutex() : sem(1) { }
+    Mutex() noexcept : sem(1) { }
 
     /**
      * @brief Mutex is neither copyable nor movable.
@@ -90,7 +89,7 @@ class UniqueLock {
 public:
     using MutexType = M;
 
-    UniqueLock() : co_mtx(nullptr), owns(false) { }
+    UniqueLock() noexcept : co_mtx(nullptr), owns(false) { }
 
     /**
      * @brief Create UniqueLock with mutex m.
@@ -146,7 +145,7 @@ public:
     /**
      * @brief Disassociates the associated mutex without unlocking it.
      */
-    MutexType *release() {
+    MutexType *release() noexcept {
         M *m = co_mtx;
         co_mtx = nullptr;
         owns = false;
@@ -159,7 +158,7 @@ public:
      */
     bool try_lock() {
         if (owns)
-            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+            detail::throw_system_error(std::errc::resource_deadlock_would_occur);
 
         owns = co_mtx->try_lock();
         return owns;
@@ -171,7 +170,7 @@ public:
      */
     Task<int> lock() {
         if (owns)
-            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+            detail::throw_system_error(std::errc::resource_deadlock_would_occur);
 
         int ret = co_await co_mtx->lock();
         if (ret == coke::TOP_SUCCESS)
@@ -186,7 +185,7 @@ public:
      */
     Task<int> try_lock_for(NanoSec nsec) {
         if (owns)
-            throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
+            detail::throw_system_error(std::errc::resource_deadlock_would_occur);
 
         int ret = co_await co_mtx->try_lock_for(nsec);
         if (ret == coke::TOP_SUCCESS)
@@ -201,7 +200,7 @@ public:
      */
     void unlock() {
         if (!owns)
-            throw std::system_error(std::make_error_code(std::errc::operation_not_permitted));
+            detail::throw_system_error(std::errc::operation_not_permitted);
 
         co_mtx->unlock();
         owns = false;

@@ -26,6 +26,7 @@
 
 #include "coke/detail/constant.h"
 #include "coke/detail/timer_task.h"
+#include "coke/sync_guard.h"
 #include "workflow/WFTask.h" // WFT_STATE_XXX
 #include "workflow/WFGlobal.h"
 
@@ -251,7 +252,13 @@ std::size_t CancelableTimerMap::cancel(uint64_t uid, std::size_t max) {
     List &lst = miter->second;
     CancelInterface *timer;
 
-    while (cnt < max && !lst.empty()) {
+    if (max > lst.size())
+        max = lst.size();
+
+    bool need_sync = max > 128;
+    SyncGuard guard(need_sync);
+
+    while (cnt < max) {
         timer = lst.front();
         lst.pop_front();
         ++cnt;
@@ -259,6 +266,9 @@ std::size_t CancelableTimerMap::cancel(uint64_t uid, std::size_t max) {
         timer->cancel_timer_in_map();
         // The timer may have been destroyed at this time
     }
+
+    if (need_sync)
+        guard.sync_operation_end();
 
     if (lst.empty())
         timer_map.erase(miter);

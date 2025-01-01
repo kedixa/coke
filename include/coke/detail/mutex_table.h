@@ -29,7 +29,7 @@ namespace coke::detail {
  * @param ptr The same ptr obtains same mutex, `this` pointer is always used.
  * @return The reference of std::mutex.
 */
-std::mutex &get_mutex(const void *ptr);
+std::mutex &get_mutex(const void *ptr) noexcept;
 
 } // namespace coke::detail
 
