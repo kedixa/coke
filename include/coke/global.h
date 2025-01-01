@@ -23,16 +23,16 @@
 #include <cstdint>
 #include <sys/socket.h>
 
-#define COKE_VERSION_NUMBER 0x000400L
+#define COKE_VERSION_NUMBER 0x000401L
 
 namespace coke {
 
 // version
 constexpr int COKE_MAJOR_VERSION = 0;
 constexpr int COKE_MINOR_VERSION = 4;
-constexpr int COKE_PATCH_VERSION = 0;
+constexpr int COKE_PATCH_VERSION = 1;
 
-constexpr const char COKE_VERSION_STR[] = "0.4.0";
+constexpr const char COKE_VERSION_STR[] = "0.4.1";
 
 // state constant from workflow, see WFTask.h
 constexpr int STATE_UNDEFINED = -1;
