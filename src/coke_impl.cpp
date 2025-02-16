@@ -17,6 +17,7 @@
 */
 
 #include <atomic>
+#include <type_traits>
 
 #include "coke/detail/awaiter_base.h"
 #include "coke/detail/mutex_table.h"
@@ -45,6 +46,11 @@ static_assert(CTOR_WAIT_TIMEOUT     == TOR_WAIT_TIMEOUT);
 static_assert(CTOR_CONNECT_TIMEOUT  == TOR_CONNECT_TIMEOUT);
 static_assert(CTOR_TRANSMIT_TIMEOUT == TOR_TRANSMIT_TIMEOUT);
 
+#ifdef __cpp_lib_is_layout_compatible
+static_assert(std::is_layout_compatible_v<EndpointParams, ::EndpointParams>);
+#else
+static_assert(sizeof(EndpointParams) == sizeof(::EndpointParams));
+#endif
 
 void library_init(const GlobalSettings &s) {
     WFGlobalSettings t = GLOBAL_SETTINGS_DEFAULT;

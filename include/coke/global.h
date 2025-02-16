@@ -72,7 +72,7 @@ constexpr int TOP_CLOSED = 3;
 
 struct EndpointParams {
     int address_family          = AF_UNSPEC;
-    std::size_t max_connections = 200;
+    size_t max_connections      = 200;
     int     connect_timeout     = 10 * 1000;
     int     response_timeout    = 10 * 1000;
     int     ssl_connect_timeout = 10 * 1000;
