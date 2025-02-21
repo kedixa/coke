@@ -62,17 +62,10 @@ constexpr int TOP_CLOSED = 3;
 
 
 ## 全局配置
-这些配置项均位于`coke`命名空间，与`Workflow`中的`EndpointParams`、`WFGlobalSettings`含义一致。
+`coke::GlobalSettings`与`Workflow`中的`WFGlobalSettings`含义一致。`coke::EndpointParams`是`::EndpointParams`的一个别名。
 
 ```cpp
-struct EndpointParams {
-    int address_family          = AF_UNSPEC;
-    std::size_t max_connections = 200;
-    int     connect_timeout     = 10 * 1000;
-    int     response_timeout    = 10 * 1000;
-    int     ssl_connect_timeout = 10 * 1000;
-    bool    use_tls_sni         = false;
-};
+using EndpointParams = ::EndpointParams;
 
 struct GlobalSettings {
     EndpointParams endpoint_params;

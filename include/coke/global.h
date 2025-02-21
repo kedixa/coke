@@ -21,7 +21,8 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <sys/socket.h>
+
+#include "workflow/EndpointParams.h"
 
 #define COKE_VERSION_NUMBER 0x000401L
 
@@ -70,18 +71,11 @@ constexpr int TOP_ABORTED = 2;
 constexpr int TOP_CLOSED = 3;
 
 
-struct EndpointParams {
-    int address_family          = AF_UNSPEC;
-    size_t max_connections      = 200;
-    int     connect_timeout     = 10 * 1000;
-    int     response_timeout    = 10 * 1000;
-    int     ssl_connect_timeout = 10 * 1000;
-    bool    use_tls_sni         = false;
-};
+using EndpointParams = ::EndpointParams;
 
 struct GlobalSettings {
-    EndpointParams endpoint_params;
-    EndpointParams dns_server_params;
+    EndpointParams endpoint_params      = ENDPOINT_PARAMS_DEFAULT;
+    EndpointParams dns_server_params    = ENDPOINT_PARAMS_DEFAULT;
     unsigned int dns_ttl_default        = 3600;
     unsigned int dns_ttl_min            = 60;
     int dns_threads                     = 4;
