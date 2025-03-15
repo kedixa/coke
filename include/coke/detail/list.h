@@ -29,6 +29,7 @@ struct ListNode {
     ListNode *prev;
 };
 
+
 template<typename T, ListNode T::*Member>
 struct ListTraits {
     static auto get_offset() noexcept {
@@ -116,6 +117,7 @@ struct ListIterator {
     // Only for inner use
     Node *node_ptr;
 };
+
 
 template<typename T, ListNode T::*Member>
 struct ListConstIterator {
@@ -238,7 +240,7 @@ public:
     const_iterator cend() const noexcept { return const_iterator(&head); }
 
     bool empty() const noexcept { return size() == 0; }
-    std::size_t size() const noexcept { return list_size; }
+    size_type size() const noexcept { return list_size; }
 
     void clear_unsafe() noexcept {
         reinit();
@@ -317,7 +319,7 @@ private:
 
 private:
     ListNode head;
-    std::size_t list_size;
+    size_type list_size;
 };
 
 } // namespace coke::detail
