@@ -45,6 +45,7 @@ cc_library(
         "include/coke/global.h",
         "include/coke/go.h",
         "include/coke/latch.h",
+        "include/coke/lru_cache.h",
         "include/coke/make_task.h",
         "include/coke/mutex.h",
         "include/coke/qps_pool.h",
