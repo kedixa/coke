@@ -15,6 +15,7 @@ set(ALL_TESTS
     test_go
     test_http
     test_latch
+    test_lru_cache
     test_mutex
     test_option_parser
     test_parallel
