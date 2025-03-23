@@ -70,8 +70,8 @@ template<typename K, typename V>
 class LruHandle {
 public:
     using Entry = LruEntry<K, V>;
-    using Key = Entry::Key;
-    using Value = Entry::Value;
+    using Key = typename Entry::Key;
+    using Value = typename Entry::Value;
 
     /**
      * @brief Create an empty handle.
