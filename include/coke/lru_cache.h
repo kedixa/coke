@@ -502,9 +502,9 @@ private:
 
 private:
     mutable std::mutex mtx;
-    SizeType cap;
     Set entry_set;
     List entry_list;
+    SizeType cap;
 
     // mutex table for entry
     std::atomic<unsigned> mid;

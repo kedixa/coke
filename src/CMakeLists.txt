@@ -13,6 +13,7 @@ set(SRCS
     mysql_impl.cpp
     qps_pool.cpp
     random.cpp
+    rbtree.cpp
     redis_impl.cpp
     sleep.cpp
     stop_token.cpp
