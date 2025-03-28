@@ -16,6 +16,9 @@
  * Authors: kedixa (https://github.com/kedixa)
 */
 
+#ifndef COKE_LRU_CACHE_H
+#define COKE_LRU_CACHE_H
+
 #include <concepts>
 #include <memory>
 #include <mutex>
@@ -512,3 +515,5 @@ private:
 };
 
 } // namespace coke
+
+#endif // COKE_LRU_CACHE_H
