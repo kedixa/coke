@@ -18,7 +18,7 @@ set(ALL_EXAMPLES
     ex015-async_queue
     ex016-wait_group
     ex017-backup_request
-    ex018-local_cache
+    ex018-lru_cache
     ex019-task_and_series
     ex020-dag
     ex021-scope_guard
