@@ -53,19 +53,19 @@ struct LruEntry : public detail::RefCounted<LruEntry<K, V>> {
 
     template<typename U>
     LruEntry(uint16_t state, std::mutex *mtx, const U &key)
-        : state(state), removed(false), mtx(mtx), key(key)
+        : key(key), removed(false), state(state), mtx(mtx)
     { }
-
-    std::atomic<uint16_t> state;
-    bool removed;
-    std::mutex *mtx;
-    coke::Condition cv;
 
     Key key;
     std::optional<Value> value;
 
     coke::detail::ListNode lst;
     coke::detail::RBTreeNode rb;
+
+    bool removed;
+    std::atomic<uint16_t> state;
+    coke::Condition cv;
+    std::mutex *mtx;
 };
 
 
