@@ -32,7 +32,7 @@ template<typename T>
 constexpr inline bool is_task_v = detail::TaskHelper<T>::value;
 
 /**
- * If T is coke::Task<U>, then task_inner_t is U
+ * If T is coke::Task<U>, then TaskRetType<T> is U
 */
 template<typename T>
 using TaskRetType = typename detail::TaskHelper<T>::RetType;
