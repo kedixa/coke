@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_NSPOLICY_ADDRESS_INFO_H
 #define COKE_NSPOLICY_ADDRESS_INFO_H
@@ -40,7 +40,6 @@ enum {
 
 constexpr static uint16_t ADDRESS_WEIGHT_MAX = 1000;
 
-
 struct AddressParams {
     EndpointParams endpoint_params = ENDPOINT_PARAMS_DEFAULT;
     unsigned dns_ttl_default{3600};
@@ -49,7 +48,6 @@ struct AddressParams {
     uint16_t weight{100}; // must in [1, ADDRESS_WEIGHT_MAX]
 };
 
-
 struct AddressPack {
     int state{0};
     std::string host;
@@ -57,19 +55,16 @@ struct AddressPack {
     AddressParams params;
 };
 
-
 struct HostPortPack {
     std::string host;
     std::string port;
 };
 
-
 class AddressInfo : public detail::RefCounted<AddressInfo> {
 public:
     AddressInfo(const std::string &host, const std::string &port,
                 const AddressParams &params)
-        : state(ADDR_STATE_GOOD),
-          host(host), port(port), addr_params(params),
+        : state(ADDR_STATE_GOOD), host(host), port(port), addr_params(params),
           fail_cnt(0), first_fail_time(0), recover_at_time(0)
     {
         if (addr_params.weight == 0)
@@ -87,22 +82,16 @@ public:
     const std::string &get_port() const & { return port; }
     const AddressParams &get_addr_params() const & { return addr_params; }
 
-    uint16_t get_weight() const {
-        return addr_params.weight;
-    }
+    uint16_t get_weight() const { return addr_params.weight; }
 
     /**
      * @brief Get the state of the address, one of ADDR_STATE_GOOD,
      *        ADDR_STATE_FAILING, ADDR_STATE_DISABLED, ADDR_STATE_REMOVED.
      */
-    int get_state() const {
-        return state.load(std::memory_order_relaxed);
-    }
+    int get_state() const { return state.load(std::memory_order_relaxed); }
 
 protected:
-    void set_state(int s) {
-        state.store(s, std::memory_order_relaxed);
-    }
+    void set_state(int s) { state.store(s, std::memory_order_relaxed); }
 
     virtual ~AddressInfo() = default;
 
@@ -126,28 +115,28 @@ protected:
     friend std::default_delete<AddressInfo>;
 };
 
-
 struct AddressInfoDeleter {
-    void operator()(AddressInfo *addr) const {
-        addr->dec_ref();
-    }
+    void operator()(AddressInfo *addr) const { addr->dec_ref(); }
 };
-
 
 class HostPortRef {
 public:
     HostPortRef(const std::string &host, const std::string &port)
         : host(host), port(port)
-    { }
+    {
+    }
 
     HostPortRef(const AddressInfo &addr)
         : host(addr.get_host()), port(addr.get_port())
-    { }
+    {
+    }
 
     HostPortRef(const HostPortRef &other) = default;
+
     ~HostPortRef() = default;
 
-    bool operator< (const HostPortRef &other) const noexcept {
+    bool operator<(const HostPortRef &other) const noexcept
+    {
         int ret = host.compare(other.host);
         if (ret == 0)
             return port < other.port;
@@ -159,10 +148,10 @@ private:
     const std::string &port;
 };
 
-
 struct AddressInfoCmp {
-    template<typename T, typename U>
-    bool operator() (const T &lhs, const U &rhs) const noexcept {
+    template <typename T, typename U>
+    bool operator()(const T &lhs, const U &rhs) const noexcept
+    {
         return HostPortRef(lhs) < HostPortRef(rhs);
     }
 };

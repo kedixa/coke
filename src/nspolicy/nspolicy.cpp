@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include "workflow/WFDnsResolver.h"
 #include "workflow/WFTaskError.h"
@@ -27,23 +27,22 @@ class TracingData {
 public:
     explicit TracingData(NSPolicy *p)
         : policy(p), prev_success(false), prev_notified(false)
-    { }
+    {
+    }
 
-    void add_addr(AddressInfo *addr) {
-        prev_success = false;
+    void add_addr(AddressInfo *addr)
+    {
+        prev_success  = false;
         prev_notified = false;
         history.push_back(addr);
     }
 
-    const NSPolicy::SelectHistory &get_history() const {
-        return history;
-    }
+    const NSPolicy::SelectHistory &get_history() const { return history; }
 
-    void set_prev_state(bool success) {
-        prev_success = success;
-    }
+    void set_prev_state(bool success) { prev_success = success; }
 
-    void notify_addr() {
+    void notify_addr()
+    {
         if (!prev_notified) {
             AddressInfo *addr = history.back();
             if (prev_success)
@@ -55,7 +54,8 @@ public:
         }
     }
 
-    ~TracingData() {
+    ~TracingData()
+    {
         notify_addr();
 
         for (AddressInfo *addr : history)
@@ -69,26 +69,27 @@ private:
     NSPolicy::SelectHistory history;
 };
 
-
-static void tracing_deleter(void *data) {
+static void tracing_deleter(void *data)
+{
     delete (TracingData *)data;
 }
-
 
 class BasicRouterTask : public WFResolverTask {
 public:
     BasicRouterTask(NSPolicy *policy, const WFNSParams *params,
                     router_callback_t &&callback)
         : WFResolverTask(params, std::move(callback)), policy(policy)
-    { }
+    {
+    }
 
 protected:
-    virtual void dispatch() override {
+    virtual void dispatch() override
+    {
         if (!policy)
             return WFResolverTask::dispatch();
 
-        ParsedURI &ns_uri = ns_params_.uri;
-        WFNSTracing *tracing = ns_params_.tracing;
+        ParsedURI &ns_uri         = ns_params_.uri;
+        WFNSTracing *tracing      = ns_params_.tracing;
         TracingData *tracing_data = (TracingData *)(tracing->data);
         AddressInfo *addr;
 
@@ -107,8 +108,8 @@ protected:
         }
 
         if (!tracing_data) {
-            tracing_data = new TracingData(policy);
-            tracing->data = tracing_data;
+            tracing_data     = new TracingData(policy);
+            tracing->data    = tracing_data;
             tracing->deleter = tracing_deleter;
         }
 
@@ -128,11 +129,13 @@ protected:
         }
 
         const AddressParams &addr_params = addr->get_addr_params();
-        ep_params_ = addr_params.endpoint_params;
+
+        ep_params_       = addr_params.endpoint_params;
         dns_ttl_default_ = addr_params.dns_ttl_default;
-        dns_ttl_min_ = addr_params.dns_ttl_min;
+        dns_ttl_min_     = addr_params.dns_ttl_min;
 
         policy = nullptr;
+
         return WFResolverTask::dispatch();
     }
 
@@ -140,10 +143,10 @@ private:
     NSPolicy *policy;
 };
 
-
 // NSPolicy impl
 
-NSPolicy::~NSPolicy() {
+NSPolicy::~NSPolicy()
+{
     AddressInfo *addr;
 
     while (!addr_set.empty()) {
@@ -155,37 +158,31 @@ NSPolicy::~NSPolicy() {
     recover_list.clear_unsafe();
 }
 
-
-WFRouterTask *
-NSPolicy::create_router_task(const WFNSParams *params,
-                             router_callback_t callback)
+WFRouterTask *NSPolicy::create_router_task(const WFNSParams *params,
+                                           router_callback_t callback)
 {
     return new BasicRouterTask(this, params, std::move(callback));
 }
 
-
-void
-NSPolicy::success(RouteManager::RouteResult *result,
-                  WFNSTracing *tracing, CommTarget *target)
+void NSPolicy::success(RouteManager::RouteResult *result, WFNSTracing *tracing,
+                       CommTarget *target)
 {
     auto tracing_data = (TracingData *)(tracing->data);
     tracing_data->set_prev_state(true);
     return WFNSPolicy::success(result, tracing, target);
 }
 
-
-void
-NSPolicy::failed(RouteManager::RouteResult *result,
-                 WFNSTracing *tracing, CommTarget *target)
+void NSPolicy::failed(RouteManager::RouteResult *result, WFNSTracing *tracing,
+                      CommTarget *target)
 {
     auto tracing_data = (TracingData *)(tracing->data);
     tracing_data->set_prev_state(false);
     return WFNSPolicy::failed(result, tracing, target);
 }
 
-
-AddressInfo *
-NSPolicy::get_address(const std::string &host, const std::string &port) const {
+AddressInfo *NSPolicy::get_address(const std::string &host,
+                                   const std::string &port) const
+{
     AddressInfo *addr = nullptr;
     AddrSetLock addr_set_lk(addr_set_mtx);
 
@@ -198,24 +195,24 @@ NSPolicy::get_address(const std::string &host, const std::string &port) const {
     return addr;
 }
 
-
-std::vector<AddressPack> NSPolicy::get_all_address() const {
+std::vector<AddressPack> NSPolicy::get_all_address() const
+{
     std::vector<AddressPack> v;
 
     AddrSetLock addr_set_lk(addr_set_mtx);
     v.reserve(addr_set.size());
 
     for (const AddressInfo &addr : addr_set) {
-        v.emplace_back(addr.get_state(), addr.get_host(),
-                       addr.get_port(), addr.get_addr_params());
+        v.emplace_back(addr.get_state(), addr.get_host(), addr.get_port(),
+                       addr.get_addr_params());
     }
 
     return v;
 }
 
-
-std::vector<bool>
-NSPolicy::add_addresses(const std::vector<AddressPack> &addrs, bool replace) {
+std::vector<bool> NSPolicy::add_addresses(const std::vector<AddressPack> &addrs,
+                                          bool replace)
+{
     std::vector<bool> v;
     v.reserve(addrs.size());
 
@@ -225,9 +222,9 @@ NSPolicy::add_addresses(const std::vector<AddressPack> &addrs, bool replace) {
     return v;
 }
 
-
 std::vector<bool>
-NSPolicy::remove_addresses(const std::vector<HostPortPack> &addrs) {
+NSPolicy::remove_addresses(const std::vector<HostPortPack> &addrs)
+{
     std::vector<bool> v;
     v.reserve(addrs.size());
 
@@ -237,9 +234,9 @@ NSPolicy::remove_addresses(const std::vector<HostPortPack> &addrs) {
     return v;
 }
 
-
 std::vector<bool>
-NSPolicy::remove_addresses(const std::vector<AddressPack> &addrs) {
+NSPolicy::remove_addresses(const std::vector<AddressPack> &addrs)
+{
     std::vector<HostPortPack> packs;
     for (const auto &p : addrs)
         packs.emplace_back(p.host, p.port);
@@ -247,16 +244,16 @@ NSPolicy::remove_addresses(const std::vector<AddressPack> &addrs) {
     return remove_addresses(packs);
 }
 
-
-void NSPolicy::add_to_recover_list(AddressInfo *addr) {
+void NSPolicy::add_to_recover_list(AddressInfo *addr)
+{
     if (recover_list.empty())
         next_recover_time = addr->recover_at_time;
 
     recover_list.push_back(addr);
 }
 
-
-void NSPolicy::remove_from_recover_list(AddressInfo *addr) {
+void NSPolicy::remove_from_recover_list(AddressInfo *addr)
+{
     bool need_reset = (addr == recover_list.front());
 
     recover_list.erase(addr);
@@ -269,8 +266,8 @@ void NSPolicy::remove_from_recover_list(AddressInfo *addr) {
     }
 }
 
-
-void NSPolicy::try_recover(bool all_break) {
+void NSPolicy::try_recover(bool all_break)
+{
     if (recover_list.empty())
         return;
 
@@ -290,7 +287,7 @@ void NSPolicy::try_recover(bool all_break) {
         recover_list.pop_front();
 
         addr->set_state(ADDR_STATE_GOOD);
-        addr->fail_cnt = 0;
+        addr->fail_cnt        = 0;
         addr->first_fail_time = 0;
         addr->recover_at_time = 0;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_NSPOLICY_NSPOLICY_H
 #define COKE_NSPOLICY_NSPOLICY_H
@@ -22,8 +22,8 @@
 #include <chrono>
 #include <mutex>
 
-#include "workflow/WFNameService.h"
 #include "coke/nspolicy/address_info.h"
+#include "workflow/WFNameService.h"
 
 namespace coke {
 
@@ -82,21 +82,21 @@ struct NSPolicyParams {
     uint32_t break_timeout_ms{60 * 1000};
 };
 
-
 class NSPolicy : public WFNSPolicy {
 protected:
     static constexpr int64_t INF_RECOVER_TIME = INT64_MAX;
 
     using RecoverList = detail::List<AddressInfo, &AddressInfo::recover_node>;
-    using AddrSet = detail::RBTree<AddressInfo, &AddressInfo::addr_node,
-                                   AddressInfoCmp>;
+    using AddrSet =
+        detail::RBTree<AddressInfo, &AddressInfo::addr_node, AddressInfoCmp>;
     using AddrSetMutex = std::mutex;
-    using AddrSetLock = std::unique_lock<AddrSetMutex>;
+    using AddrSetLock  = std::unique_lock<AddrSetMutex>;
 
-    static inline int64_t steady_milliseconds() {
+    static inline int64_t steady_milliseconds()
+    {
         using std::chrono::milliseconds;
         auto now = std::chrono::steady_clock::now().time_since_epoch();
-        auto ms = std::chrono::duration_cast<milliseconds>(now);
+        auto ms  = std::chrono::duration_cast<milliseconds>(now);
         return static_cast<int64_t>(ms.count());
     }
 
@@ -128,18 +128,18 @@ public:
     create_router_task(const WFNSParams *params,
                        router_callback_t callback) override;
 
-    virtual void
-    success(RouteManager::RouteResult *result,
-            WFNSTracing *tracing, CommTarget *target) override final;
+    virtual void success(RouteManager::RouteResult *result,
+                         WFNSTracing *tracing,
+                         CommTarget *target) override final;
 
-    virtual void
-    failed(RouteManager::RouteResult *result,
-           WFNSTracing *tracing, CommTarget *target) override final;
+    virtual void failed(RouteManager::RouteResult *result, WFNSTracing *tracing,
+                        CommTarget *target) override final;
 
     /**
      * @brief Returns the number of addresses in the policy.
      */
-    std::size_t address_count() const {
+    std::size_t address_count() const
+    {
         AddrSetLock addr_set_lk(addr_set_mtx);
         return addr_set.size();
     }
@@ -156,7 +156,8 @@ public:
      * @param port The port of address.
      * @return true if contains, false otherwise.
      */
-    bool has_address(const std::string &host, const std::string &port) const {
+    bool has_address(const std::string &host, const std::string &port) const
+    {
         AddrSetLock addr_set_lk(addr_set_mtx);
         return addr_set.contains(HostPortRef{host, port});
     }
@@ -171,8 +172,8 @@ public:
      *       addr->dec_ref() after use.
      */
     [[nodiscard]]
-    AddressInfo *
-    get_address(const std::string &host, const std::string &port) const;
+    AddressInfo *get_address(const std::string &host,
+                             const std::string &port) const;
 
     /**
      * @brief Get all addresses in the policy.
@@ -189,9 +190,9 @@ public:
      *                and port.
      * @return true if the address was added successfully, false otherwise.
      */
-    virtual bool 
-    add_address(const std::string &host, const std::string &port,
-                const AddressParams &params, bool replace = false) = 0;
+    virtual bool add_address(const std::string &host, const std::string &port,
+                             const AddressParams &params,
+                             bool replace = false) = 0;
 
     /**
      * @brief Breaks down the address with the given host and port.
@@ -199,8 +200,8 @@ public:
      * @param port The port of address.
      * @return true if the address is broken down, false if not exists.
      */
-    virtual bool
-    break_address(const std::string &host, const std::string &port) = 0;
+    virtual bool break_address(const std::string &host,
+                               const std::string &port) = 0;
 
     /**
      * @brief Recovers the address with the given host and port.
@@ -208,8 +209,8 @@ public:
      * @param port The port of address.
      * @return true if the address is recoverd, false if not exists.
      */
-    virtual bool
-    recover_address(const std::string &host, const std::string &port) = 0;
+    virtual bool recover_address(const std::string &host,
+                                 const std::string &port) = 0;
 
     /**
      * @brief Removes the address with the given host and port.
@@ -217,8 +218,8 @@ public:
      * @param port The port of address.
      * @return true if the address was removed, false if not exists.
      */
-    virtual bool
-    remove_address(const std::string &host, const std::string &port) = 0;
+    virtual bool remove_address(const std::string &host,
+                                const std::string &port) = 0;
 
     /**
      * @brief Selects an address based on the given URI and history.
@@ -233,8 +234,8 @@ public:
      *         addr_failed or addr_finish exactly once.
      */
     [[nodiscard]]
-    virtual AddressInfo *
-    select_address(const ParsedURI &uri, const SelectHistory &history) = 0;
+    virtual AddressInfo *select_address(const ParsedURI &uri,
+                                        const SelectHistory &history) = 0;
 
     /**
      * @brief Notify the policy that the address is successfully used.
@@ -299,7 +300,8 @@ protected:
 
     void remove_from_recover_list(AddressInfo *addr);
 
-    bool need_recover() const {
+    bool need_recover() const
+    {
         if (!params.enable_auto_break_recover)
             return false;
 
