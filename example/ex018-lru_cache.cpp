@@ -1,7 +1,7 @@
 #include <chrono>
 #include <iostream>
+#include <mutex>
 #include <string>
-#include <syncstream>
 
 #include "coke/lru_cache.h"
 #include "coke/sleep.h"
@@ -15,31 +15,35 @@
  * and other coroutines wait to be awakened.
  */
 
-#define LOG std::osyncstream(std::cout)
 using StrCache = coke::LruCache<std::string, std::string>;
 
 StrCache cache(5);
+std::mutex print_mtx;
 
-std::string current() {
-    static auto start = std::chrono::steady_clock::now();
-    auto now = std::chrono::steady_clock::now();
-    std::chrono::duration<double> d = now - start;
-    return "[" + std::to_string(d.count()) + "s] ";
+std::string current();
+
+template<typename... Args>
+void print(const Args &...args)
+{
+    std::lock_guard<std::mutex> lg(print_mtx);
+    std::cout << current();
+    (std::cout << ... << args) << std::endl;
 }
 
-coke::Task<void> get_or_create(const std::string &key) {
+coke::Task<void> get_or_create(const std::string &key)
+{
     co_await coke::yield();
 
     auto [hdl, created] = cache.get_or_create(key);
     if (created) {
         // We created this data, and it's up to us to update and share it
         // for everyone to use.
-        LOG << current() << "Handle created\n";
+        print("Handle created");
 
         // Simulate the process of updating data.
         co_await coke::sleep(0.2);
 
-        LOG << current() << "Update value\n";
+        print("Update value");
 
         hdl.emplace_value("world");
         hdl.notify_all();
@@ -47,7 +51,7 @@ coke::Task<void> get_or_create(const std::string &key) {
     else {
         if (hdl.waiting()) {
             // Someone is updating it, just wait
-            LOG << current() << "Wait value\n";
+            print("Wait value");
 
             co_await hdl.wait();
 
@@ -55,35 +59,40 @@ coke::Task<void> get_or_create(const std::string &key) {
         }
 
         if (hdl.success())
-            LOG << current() << "Get value " << hdl.value() << "\n";
+            print("Get value ", hdl.value());
         else if (hdl.failed())
-            LOG << current() << "Value is faield\n";
+            print("Value is failed");
     }
 }
 
-coke::Task<void> get(const std::string &key) {
+coke::Task<void> get(const std::string &key)
+{
     co_await coke::yield();
 
     auto hdl = cache.get(key);
-    if (hdl) {
-        const std::string &value = hdl.value();
-        LOG << current() << "Get value " << value << "\n";
-    }
-    else {
-        LOG << current() << "No such key " << key << "\n";
-    }
+    if (hdl)
+        print("Get value ", hdl.value());
+    else
+        print("No such key ", key);
 }
 
-int main() {
+int main()
+{
     coke::sync_wait(get("hello"));
 
-    coke::sync_wait(
-        get_or_create("hello"),
-        get_or_create("hello"),
-        get_or_create("hello")
-    );
+    coke::sync_wait(get_or_create("hello"), get_or_create("hello"),
+                    get_or_create("hello"));
 
     coke::sync_wait(get("hello"));
 
     return 0;
+}
+
+std::string current()
+{
+    static auto start = std::chrono::steady_clock::now();
+    auto now          = std::chrono::steady_clock::now();
+
+    std::chrono::duration<double> d = now - start;
+    return "[" + std::to_string(d.count()) + "s] ";
 }
