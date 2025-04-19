@@ -65,8 +65,11 @@ public:
     void unhandled_exception() { eptr = std::current_exception(); }
 
     void raise_exception() {
-        if (eptr)
-            std::rethrow_exception(std::move(eptr));
+        if (eptr) {
+            std::exception_ptr tmp_eptr = std::move(eptr);
+            eptr = nullptr;
+            std::rethrow_exception(std::move(tmp_eptr));
+        }
     }
 
     template<typename T>
