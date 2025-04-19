@@ -23,7 +23,7 @@
 
 namespace coke {
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 bool WeightedPolicyBase<PolicyImpl>::add_address(const std::string &host,
                                                  const std::string &port,
                                                  const AddressParams &params,
@@ -63,7 +63,7 @@ bool WeightedPolicyBase<PolicyImpl>::add_address(const std::string &host,
     return true;
 }
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 bool WeightedPolicyBase<PolicyImpl>::break_address(const std::string &host,
                                                    const std::string &port)
 {
@@ -93,7 +93,7 @@ bool WeightedPolicyBase<PolicyImpl>::break_address(const std::string &host,
     return true;
 }
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 bool WeightedPolicyBase<PolicyImpl>::recover_address(const std::string &host,
                                                      const std::string &port)
 {
@@ -119,7 +119,7 @@ bool WeightedPolicyBase<PolicyImpl>::recover_address(const std::string &host,
     return true;
 }
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 bool WeightedPolicyBase<PolicyImpl>::remove_address(const std::string &host,
                                                     const std::string &port)
 {
@@ -145,7 +145,7 @@ bool WeightedPolicyBase<PolicyImpl>::remove_address(const std::string &host,
     return true;
 }
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 AddressInfo *
 WeightedPolicyBase<PolicyImpl>::select_address(const ParsedURI &uri,
                                                const SelectHistory &history)
@@ -164,7 +164,7 @@ WeightedPolicyBase<PolicyImpl>::select_address(const ParsedURI &uri,
     return self().select_addr(uri, history);
 }
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 void WeightedPolicyBase<PolicyImpl>::addr_success(AddressInfo *addr)
 {
     if constexpr (fast_success) {
@@ -189,7 +189,7 @@ void WeightedPolicyBase<PolicyImpl>::addr_success(AddressInfo *addr)
     }
 }
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 void WeightedPolicyBase<PolicyImpl>::addr_failed(AddressInfo *addr)
 {
     if (params.enable_auto_break_recover) {
@@ -201,7 +201,7 @@ void WeightedPolicyBase<PolicyImpl>::addr_failed(AddressInfo *addr)
     }
 }
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 void WeightedPolicyBase<PolicyImpl>::addr_finish(AddressInfo *addr)
 {
     if constexpr (need_finish) {
@@ -210,7 +210,7 @@ void WeightedPolicyBase<PolicyImpl>::addr_finish(AddressInfo *addr)
     }
 }
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 void WeightedPolicyBase<PolicyImpl>::handle_success(AddrInfo *addr)
 {
     self().handle_finish(addr);
@@ -240,7 +240,7 @@ void WeightedPolicyBase<PolicyImpl>::handle_success(AddrInfo *addr)
     }
 }
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 void WeightedPolicyBase<PolicyImpl>::handle_failed(AddrInfo *addr)
 {
     self().handle_finish(addr);
@@ -269,7 +269,7 @@ void WeightedPolicyBase<PolicyImpl>::handle_failed(AddrInfo *addr)
     }
 }
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 std::vector<bool> WeightedPolicyBase<PolicyImpl>::add_addresses(
     const std::vector<AddressPack> &addr_packs, bool replace)
 {
@@ -325,7 +325,7 @@ std::vector<bool> WeightedPolicyBase<PolicyImpl>::add_addresses(
     return rets;
 }
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 std::vector<bool> WeightedPolicyBase<PolicyImpl>::remove_addresses(
     const std::vector<HostPortPack> &addr_packs)
 {

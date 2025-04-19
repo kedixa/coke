@@ -25,10 +25,10 @@
 
 namespace coke {
 
-template <typename Policy>
+template<typename Policy>
 struct NSPolicyTrait;
 
-template <typename PolicyImpl>
+template<typename PolicyImpl>
 class WeightedPolicyBase : public NSPolicy {
 protected:
     using Policy      = PolicyImpl;
@@ -40,14 +40,17 @@ protected:
     using PolicySelectLock = typename PolicyTrait::PolicySelectLock;
     using AddrUniquePtr    = std::unique_ptr<AddrInfo, AddressInfoDeleter>;
 
-    static constexpr bool efficient_select =
-        requires { typename PolicyTrait::EfficientSelectTag; };
+    static constexpr bool efficient_select = requires {
+        typename PolicyTrait::EfficientSelectTag;
+    };
 
-    static constexpr bool fast_success =
-        requires { typename PolicyTrait::FastSuccessTag; };
+    static constexpr bool fast_success = requires {
+        typename PolicyTrait::FastSuccessTag;
+    };
 
-    static constexpr bool need_finish =
-        requires { typename PolicyTrait::NeedFinishTag; };
+    static constexpr bool need_finish = requires {
+        typename PolicyTrait::NeedFinishTag;
+    };
 
     static AddrInfo *addr_cast(AddressInfo *addr)
     {

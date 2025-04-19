@@ -149,7 +149,7 @@ private:
 };
 
 struct AddressInfoCmp {
-    template <typename T, typename U>
+    template<typename T, typename U>
     bool operator()(const T &lhs, const U &rhs) const noexcept
     {
         return HostPortRef(lhs) < HostPortRef(rhs);
