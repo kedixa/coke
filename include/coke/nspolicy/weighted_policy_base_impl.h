@@ -16,8 +16,8 @@
  * Authors: kedixa (https://github.com/kedixa)
  */
 
-#ifndef COKE_NSPOLICY_WEIGHTED_POLICY_BASE_TPP
-#define COKE_NSPOLICY_WEIGHTED_POLICY_BASE_TPP
+#ifndef COKE_NSPOLICY_WEIGHTED_POLICY_BASE_IMPL_H
+#define COKE_NSPOLICY_WEIGHTED_POLICY_BASE_IMPL_H
 
 #include "coke/nspolicy/weighted_policy_base.h"
 
@@ -367,4 +367,4 @@ std::vector<bool> WeightedPolicyBase<PolicyImpl>::remove_addresses(
 
 } // namespace coke
 
-#endif // COKE_NSPOLICY_WEIGHTED_POLICY_BASE_TPP
+#endif // COKE_NSPOLICY_WEIGHTED_POLICY_BASE_IMPL_H
