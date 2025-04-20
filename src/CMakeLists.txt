@@ -18,6 +18,9 @@ set(SRCS
     sleep.cpp
     stop_token.cpp
     sync_guard.cpp
+
+    nspolicy/nspolicy.cpp
+    nspolicy/weighted_random_policy.cpp
 )
 
 if (COKE_BUILD_STATIC)

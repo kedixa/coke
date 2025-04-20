@@ -70,6 +70,19 @@ cc_library(
 )
 
 cc_library(
+    name = "nspolicy",
+    srcs = [
+        "src/nspolicy/nspolicy.cpp",
+        "src/nspolicy/weighted_random_policy.cpp",
+    ],
+    hdrs = glob(["include/coke/nspolicy/*.h"]),
+    includes = ["include"],
+    deps = [
+        "//:common",
+    ],
+)
+
+cc_library(
     name = "net",
     srcs = [],
     hdrs = glob(["include/coke/net/*.h"]),
