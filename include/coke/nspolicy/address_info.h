@@ -65,7 +65,7 @@ public:
     AddressInfo(const std::string &host, const std::string &port,
                 const AddressParams &params)
         : state(ADDR_STATE_GOOD), host(host), port(port), addr_params(params),
-          fail_cnt(0), first_fail_time(0), recover_at_time(0)
+          fail_marks(0), first_fail_time(0), recover_at_time(0)
     {
         if (addr_params.weight == 0)
             addr_params.weight = 1;
@@ -104,7 +104,7 @@ protected:
 
     // Protected by policy's lock
 
-    uint64_t fail_cnt;
+    uint64_t fail_marks;
     int64_t first_fail_time;
     int64_t recover_at_time;
 

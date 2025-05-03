@@ -287,7 +287,7 @@ void NSPolicy::try_recover(bool all_break)
         recover_list.pop_front();
 
         addr->set_state(ADDR_STATE_GOOD);
-        addr->fail_cnt        = 0;
+        addr->fail_marks      = 0;
         addr->first_fail_time = 0;
         addr->recover_at_time = 0;
 

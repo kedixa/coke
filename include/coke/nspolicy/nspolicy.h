@@ -56,24 +56,30 @@ struct NSPolicyParams {
     uint32_t min_available_percent{0};
 
     /**
-     * When an address fails continuously for max_fail_cnt times, it will be set
-     * to disabled state.
-     * The value of this parameter should greater than 0.
+     * When the fail marks reaches max_fail_marks, the address will be set to
+     * disabled state.
+     * The value of this parameter must greater than 0.
      */
-    uint32_t max_fail_cnt{100};
+    uint32_t max_fail_marks{100};
 
     /**
      * When an address fails continuously for max_fail_ms time, it will be set
      * to disabled state.
-     * When qps is low, this option will take effect faster than max_fail_cnt.
+     * When qps is low, this option will take effect faster than max_fail_marks.
      */
     uint32_t max_fail_ms{10 * 1000};
 
     /**
-     * When an address needs to be recovered, its fail count is decreased by
-     * max_recover_cnt. This value must in (0, max_fail_cnt].
+     * When a request to the address succeeds, the fail marks will be
+     * decremented by success_dec_marks. This value must in (0, max_fail_marks].
      */
-    uint32_t max_recover_cnt{10};
+    uint32_t success_dec_marks{1};
+
+    /**
+     * When a request to the address fails, the fail marks will be incremented
+     * by fail_inc_marks. This value must in (0, max_fail_marks].
+     */
+    uint32_t fail_inc_marks{1};
 
     /**
      * When an address is broken, try to recover it after break_timeout_ms.
@@ -110,14 +116,17 @@ public:
         if (params.min_available_percent > 100)
             params.min_available_percent = 100;
 
-        if (params.max_fail_cnt == 0)
-            params.max_fail_cnt = 1;
+        if (params.max_fail_marks == 0)
+            params.max_fail_marks = 1;
 
         if (params.max_fail_ms == 0)
             params.max_fail_ms = 1;
 
-        if (params.max_recover_cnt == 0)
-            params.max_recover_cnt = 1;
+        if (params.success_dec_marks == 0)
+            params.success_dec_marks = 1;
+
+        if (params.fail_inc_marks == 0)
+            params.fail_inc_marks = 1;
     }
 
     NSPolicy(const NSPolicy &) = delete;

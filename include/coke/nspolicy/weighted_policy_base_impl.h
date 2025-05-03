@@ -84,7 +84,7 @@ bool WeightedPolicyBase<PolicyImpl>::break_address(const std::string &host,
     auto steady_ms = steady_milliseconds();
 
     addr->set_state(ADDR_STATE_DISABLED);
-    addr->fail_cnt        = params.max_fail_cnt;
+    addr->fail_marks      = params.max_fail_marks;
     addr->first_fail_time = steady_ms;
     addr->recover_at_time = steady_ms + params.break_timeout_ms;
 
@@ -112,7 +112,7 @@ bool WeightedPolicyBase<PolicyImpl>::recover_address(const std::string &host,
     }
 
     addr->set_state(ADDR_STATE_GOOD);
-    addr->fail_cnt        = 0;
+    addr->fail_marks      = 0;
     addr->first_fail_time = 0;
     addr->recover_at_time = 0;
 
@@ -219,23 +219,20 @@ void WeightedPolicyBase<PolicyImpl>::handle_success(AddrInfo *addr)
     if (addr_state == ADDR_STATE_REMOVED || addr_state == ADDR_STATE_GOOD)
         return;
 
-    if (addr->fail_cnt > params.max_fail_cnt)
-        addr->fail_cnt -= params.max_fail_cnt;
+    if (addr_state == ADDR_STATE_DISABLED)
+        return;
+
+    if (addr->fail_marks > params.success_dec_marks)
+        addr->fail_marks -= params.success_dec_marks;
     else
-        addr->fail_cnt = 0;
+        addr->fail_marks = 0;
 
-    if (addr_state == ADDR_STATE_DISABLED) {
-        remove_from_recover_list(addr);
-        addr->recover_at_time = 0;
-        self().add_to_policy(addr);
-    }
-
-    if (addr->fail_cnt == 0) {
+    if (addr->fail_marks == 0) {
         addr->set_state(ADDR_STATE_GOOD);
         addr->first_fail_time = 0;
     }
     else {
-        addr->set_state(ADDR_STATE_FAILING);
+        // The address is still in failing state, reset first fail time.
         addr->first_fail_time = steady_milliseconds();
     }
 }
@@ -250,10 +247,14 @@ void WeightedPolicyBase<PolicyImpl>::handle_failed(AddrInfo *addr)
         return;
 
     int64_t steady_ms = steady_milliseconds();
+    bool was_good     = (addr_state == ADDR_STATE_GOOD);
     bool disable;
 
-    addr->fail_cnt++;
-    disable = addr->fail_cnt >= params.max_fail_cnt ||
+    addr->fail_marks += params.fail_inc_marks;
+    if (addr->fail_marks > params.max_fail_marks)
+        addr->fail_marks = params.max_fail_marks;
+
+    disable = addr->fail_marks >= params.max_fail_marks ||
               (addr->first_fail_time &&
                steady_ms - addr->first_fail_time > params.max_fail_ms);
 
@@ -263,7 +264,7 @@ void WeightedPolicyBase<PolicyImpl>::handle_failed(AddrInfo *addr)
         self().remove_from_policy(addr);
         add_to_recover_list(addr);
     }
-    else if (addr->fail_cnt == 1) {
+    else if (was_good) {
         addr->set_state(ADDR_STATE_FAILING);
         addr->first_fail_time = steady_ms;
     }
