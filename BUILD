@@ -74,6 +74,7 @@ cc_library(
     srcs = [
         "src/nspolicy/nspolicy.cpp",
         "src/nspolicy/weighted_random_policy.cpp",
+        "src/nspolicy/weighted_round_robin_policy.cpp",
         "src/nspolicy/weighted_least_conn_policy.cpp",
     ],
     hdrs = glob(["include/coke/nspolicy/*.h"]),
