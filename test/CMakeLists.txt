@@ -17,6 +17,7 @@ set(ALL_TESTS
     test_latch
     test_lru_cache
     test_mutex
+    test_nspolicy
     test_option_parser
     test_parallel
     test_queue
