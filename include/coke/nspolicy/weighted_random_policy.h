@@ -41,6 +41,7 @@ struct NSPolicyTrait<WeightedRandomPolicy> {
 
     using EfficientSelectTag = void;
     using FastSuccessTag     = void;
+    using NoNeedFinishTag    = void;
 };
 
 class WeightedRandomAddressInfo : public AddressInfo {

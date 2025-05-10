@@ -34,8 +34,6 @@ struct NSPolicyTrait<WeightedLeastConnPolicy> {
     using PolicyMutex      = std::mutex;
     using PolicyModifyLock = std::unique_lock<PolicyMutex>;
     using PolicySelectLock = std::unique_lock<PolicyMutex>;
-
-    using NeedFinishTag = void;
 };
 
 class WeightedLeastConnAddressInfo : public AddressInfo {
@@ -139,8 +137,6 @@ public:
     virtual ~WeightedLeastConnPolicy() { policy_set.clear_unsafe(); }
 
 protected:
-    // needed by PolicyBase
-
     void add_to_policy(AddrInfo *addr);
     void remove_from_policy(AddrInfo *addr);
 

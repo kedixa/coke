@@ -35,7 +35,8 @@ struct NSPolicyTrait<WeightedRoundRobinPolicy> {
     using PolicyModifyLock = std::unique_lock<PolicyMutex>;
     using PolicySelectLock = std::unique_lock<PolicyMutex>;
 
-    using FastSuccessTag = void;
+    using FastSuccessTag  = void;
+    using NoNeedFinishTag = void;
 };
 
 class WeightedRoundRobinAddressInfo : public AddressInfo {

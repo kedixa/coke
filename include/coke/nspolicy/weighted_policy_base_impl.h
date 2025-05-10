@@ -204,7 +204,7 @@ void WeightedPolicyBase<PolicyImpl>::addr_failed(AddressInfo *addr)
 template<typename PolicyImpl>
 void WeightedPolicyBase<PolicyImpl>::addr_finish(AddressInfo *addr)
 {
-    if constexpr (need_finish) {
+    if constexpr (!no_need_finish) {
         PolicyModifyLock lk(policy_mtx);
         self().handle_finish(addr_cast(addr));
     }

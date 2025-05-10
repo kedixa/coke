@@ -48,8 +48,8 @@ protected:
         typename PolicyTrait::FastSuccessTag;
     };
 
-    static constexpr bool need_finish = requires {
-        typename PolicyTrait::NeedFinishTag;
+    static constexpr bool no_need_finish = requires {
+        typename PolicyTrait::NoNeedFinishTag;
     };
 
     static AddrInfo *addr_cast(AddressInfo *addr)
