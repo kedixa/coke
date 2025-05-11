@@ -6,6 +6,7 @@ set(ALL_BENCHMARK
     bench_graph
     bench_queue
     bench_timer
+    bench_weighted_policy
 )
 
 include (../cmake/find-workflow.cmake)

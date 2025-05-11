@@ -13,6 +13,7 @@ create_benchmark_target("bench_go")
 create_benchmark_target("bench_graph")
 create_benchmark_target("bench_queue")
 create_benchmark_target("bench_timer")
+create_benchmark_target("bench_weighted_policy", extra_deps=["//:nspolicy"])
 
 # virtual target to build all benchmarks
 cc_library(
@@ -23,5 +24,6 @@ cc_library(
         ":bench_graph",
         ":bench_queue",
         ":bench_timer",
+        ":bench_weighted_policy",
     ],
 )
