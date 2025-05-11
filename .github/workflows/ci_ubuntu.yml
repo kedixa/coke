@@ -19,6 +19,9 @@ jobs:
     strategy:
       matrix:
         compiler:
+        - cc: gcc-12
+          cxx: g++-12
+          opts: ""
         - cc: gcc-13
           cxx: g++-13
           opts: ""
@@ -27,6 +30,12 @@ jobs:
           opts: ""
         - cc: clang-16
           cxx: clang-16
+          opts: ""
+        - cc: clang-17
+          cxx: clang-17
+          opts: ""
+        - cc: clang-18
+          cxx: clang-18
           opts: ""
 
     steps:

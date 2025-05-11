@@ -203,8 +203,8 @@ std::vector<AddressPack> NSPolicy::get_all_address() const
     v.reserve(addr_set.size());
 
     for (const AddressInfo &addr : addr_set) {
-        v.emplace_back(addr.get_state(), addr.get_host(), addr.get_port(),
-                       addr.get_addr_params());
+        v.emplace_back(AddressPack{addr.get_state(), addr.get_host(),
+                                   addr.get_port(), addr.get_addr_params()});
     }
 
     return v;
@@ -239,7 +239,7 @@ NSPolicy::remove_addresses(const std::vector<AddressPack> &addrs)
 {
     std::vector<HostPortPack> packs;
     for (const auto &p : addrs)
-        packs.emplace_back(p.host, p.port);
+        packs.emplace_back(HostPortPack{p.host, p.port});
 
     return remove_addresses(packs);
 }
