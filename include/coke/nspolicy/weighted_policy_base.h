@@ -65,7 +65,7 @@ public:
 
     virtual ~WeightedPolicyBase() = default;
 
-    virtual std::size_t available_address_count() const
+    virtual std::size_t available_address_count() const override
     {
         PolicyModifyLock lk(policy_mtx);
         return self().policy_set_size();
