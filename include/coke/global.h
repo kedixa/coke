@@ -24,16 +24,19 @@
 
 #include "workflow/EndpointParams.h"
 
-#define COKE_VERSION_NUMBER 0x000401L
+#define COKE_BUILD_VERSION_NUMBER(major, minor, patch) \
+        (major * 0x010000L + minor * 0x0100L + patch * 0x01L)
+
+#define COKE_VERSION_NUMBER COKE_BUILD_VERSION_NUMBER(0, 5, 0)
 
 namespace coke {
 
 // version
 constexpr int COKE_MAJOR_VERSION = 0;
-constexpr int COKE_MINOR_VERSION = 4;
-constexpr int COKE_PATCH_VERSION = 1;
+constexpr int COKE_MINOR_VERSION = 5;
+constexpr int COKE_PATCH_VERSION = 0;
 
-constexpr const char COKE_VERSION_STR[] = "0.4.1";
+constexpr const char COKE_VERSION_STR[] = "0.5.0";
 
 // state constant from workflow, see WFTask.h
 constexpr int STATE_UNDEFINED = -1;
