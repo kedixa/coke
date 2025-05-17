@@ -4,7 +4,7 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "cmake build type")
 
 project(
     coke
-    VERSION 0.4.1
+    VERSION 0.5.0
     LANGUAGES CXX
 )
 
@@ -34,6 +34,10 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-interference-size")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
+endif ()
+
+if (APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 endif ()
 
 if (NOT WORKFLOW_INCLUDE_DIR)

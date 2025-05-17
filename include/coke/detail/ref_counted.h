@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_REF_COUNTED_H
 #define COKE_DETAIL_REF_COUNTED_H
@@ -32,13 +32,16 @@ class RefCounted {
 public:
     explicit RefCounted(Deleter deleter = Deleter{})
         : deleter(std::move(deleter))
-    { }
+    {
+    }
 
-    void inc_ref() const noexcept {
+    void inc_ref() const noexcept
+    {
         ref_count.fetch_add(1, std::memory_order_relaxed);
     }
 
-    void dec_ref() const noexcept {
+    void dec_ref() const noexcept
+    {
         if (ref_count.fetch_sub(1, std::memory_order_acq_rel) == 1) {
             Deleter local_deleter(std::move(deleter));
             T *ptr = static_cast<T *>(const_cast<RefCounted *>(this));
@@ -50,7 +53,7 @@ protected:
     ~RefCounted() = default;
 
 private:
-    mutable std::atomic<std::size_t> ref_count{1};
+    mutable std::atomic<uint32_t> ref_count{1};
     [[no_unique_address]] mutable Deleter deleter;
 };
 

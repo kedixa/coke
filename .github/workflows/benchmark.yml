@@ -88,6 +88,16 @@ jobs:
         echo "</p> </details>"
         echo ""
 
+        echo "## Weighted NSPolicy"
+        echo "Bench command \`./bazel-bin/benchmark/bench_weighted_policy --concurrency 1 --total 1000000 --times 5 -y\`"
+        echo ""
+        echo "<details><summary>Details</summary> <p>"
+        echo ""
+        ./bazel-bin/benchmark/bench_weighted_policy --concurrency 1 --total 1000000 --times 5 -y
+        echo ""
+        echo "</p> </details>"
+        echo ""
+
         ) > bench.md
 
     - name: Comment

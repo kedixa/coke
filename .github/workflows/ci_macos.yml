@@ -1,0 +1,35 @@
+name: CI on macOS
+
+on:
+  push:
+    branches:
+    - 'dev*'
+  pull_request:
+    branches:
+    - master
+  workflow_dispatch:
+
+env:
+  wf_tag: v0.11.6
+
+jobs:
+  build-macos-15:
+    name: macos-15
+    runs-on: macos-15
+    steps:
+    - name: Prepare
+      run: |
+        brew install googletest
+    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+      with:
+        repository: sogou/workflow
+        ref: ${{ env.wf_tag }}
+        path: workflow
+    - name: Build
+      run: |
+        cmake -Wno-dev -S workflow -B build.workflow -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+        cmake --build build.workflow -j 8
+        cmake -S . -B build.coke -DWorkflow_DIR=workflow -DCMAKE_CXX_COMPILER=clang++ -DCOKE_ENABLE_EXAMPLE=y -DCOKE_ENABLE_TEST=y
+        cmake --build build.coke -j 8
+        ctest -j 2 --test-dir build.coke/test --output-on-failure
