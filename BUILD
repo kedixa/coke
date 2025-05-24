@@ -86,7 +86,9 @@ cc_library(
 
 cc_library(
     name = "net",
-    srcs = [],
+    srcs = [
+        "src/net/client_conn_info.cpp",
+    ],
     hdrs = glob(["include/coke/net/*.h"]),
     includes = ["include"],
     deps = [
