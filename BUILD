@@ -56,11 +56,14 @@ cc_library(
         "include/coke/shared_mutex.h",
         "include/coke/sleep.h",
         "include/coke/stop_token.h",
-        "include/coke/str_holder.h",
         "include/coke/sync_guard.h",
         "include/coke/task.h",
         "include/coke/wait_group.h",
         "include/coke/wait.h",
+
+        "include/coke/utils/list.h",
+        "include/coke/utils/rbtree.h",
+        "include/coke/utils/str_holder.h",
     ],
     includes = ["include"],
     deps = [

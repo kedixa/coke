@@ -92,9 +92,9 @@ class NSPolicy : public WFNSPolicy {
 protected:
     static constexpr int64_t INF_RECOVER_TIME = INT64_MAX;
 
-    using RecoverList = detail::List<AddressInfo, &AddressInfo::recover_node>;
+    using RecoverList = List<AddressInfo, &AddressInfo::recover_node>;
     using AddrSet =
-        detail::RBTree<AddressInfo, &AddressInfo::addr_node, AddressInfoCmp>;
+        RBTree<AddressInfo, &AddressInfo::addr_node, AddressInfoCmp>;
     using AddrSetMutex = std::mutex;
     using AddrSetLock  = std::unique_lock<AddrSetMutex>;
 
