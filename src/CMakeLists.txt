@@ -20,6 +20,8 @@ set(SRCS
     sync_guard.cpp
 
     net/client_conn_info.cpp
+    net/tlv_client.cpp
+    net/tlv_task.cpp
 
     nspolicy/nspolicy.cpp
     nspolicy/weighted_random_policy.cpp

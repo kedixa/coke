@@ -101,6 +101,19 @@ cc_library(
 )
 
 cc_library(
+    name = "tlv",
+    srcs = [
+        "src/net/tlv_task.cpp",
+        "src/net/tlv_client.cpp",
+    ],
+    hdrs = glob(["include/coke/tlv/*.h"]),
+    includes = ["include"],
+    deps = [
+        "//:net",
+    ],
+)
+
+cc_library(
     name = "http",
     srcs = [
         "src/http_impl.cpp"
