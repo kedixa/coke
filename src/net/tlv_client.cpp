@@ -83,16 +83,28 @@ Task<TlvResult> TlvClient::request(int32_t type, StrHolder value)
     }
 
     auto *task = new TlvClientTask(retry_max, nullptr);
-
-    ParsedURI uri;
-    uri.state = URI_STATE_SUCCESS;
-    uri.host  = strdup(params.host.c_str());
-    uri.port  = strdup(params.port.c_str());
-
     task->set_client_info(&cli_info);
-    task->init(std::move(uri));
+    task->set_ssl_ctx(params.ssl_ctx.get());
 
-    task->set_transport_type(params.transport_type);
+    if (params.host.empty()) {
+        const sockaddr *addr = (const sockaddr *)&params.addr_storage;
+        task->init(params.transport_type, addr, params.addr_len,
+                   cli_info.conn_info.get_short_info());
+    }
+    else {
+        ParsedURI uri;
+        uri.host = strdup(params.host.c_str());
+        uri.port = strdup(params.port.c_str());
+
+        if (uri.host && uri.port)
+            uri.state = URI_STATE_SUCCESS;
+        else
+            uri.state = URI_STATE_ERROR;
+
+        task->set_transport_type(params.transport_type);
+        task->init(std::move(uri));
+    }
+
     task->set_send_timeout(params.send_timeout);
     task->set_receive_timeout(params.receive_timeout);
     task->set_keep_alive(params.keep_alive_timeout);
@@ -102,7 +114,6 @@ Task<TlvResult> TlvClient::request(int32_t type, StrHolder value)
         task->set_close_connection();
 
     auto *req = task->get_req();
-
     req->set_type(type);
 
     if (value.holds_string()) {

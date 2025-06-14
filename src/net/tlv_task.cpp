@@ -147,7 +147,6 @@ bool TlvClientTask::init_success()
         return false;
     }
 
-    WFComplexClientTask::set_transport_type(TT_TCP);
     WFComplexClientTask::set_info(cli_info->conn_info.get_short_info());
 
     auto conn_id = cli_info->conn_info.get_conn_id();

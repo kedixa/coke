@@ -21,7 +21,11 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
+
+#include <openssl/ssl.h>
+#include <sys/socket.h>
 
 #include "coke/task.h"
 #include "coke/tlv/basic_types.h"
@@ -31,16 +35,21 @@
 namespace coke {
 
 struct TlvClientParams {
-    TransportType transport_type{TT_TCP};
-
     int retry_max{0};
     int send_timeout{-1};
     int receive_timeout{-1};
     int keep_alive_timeout{60 * 1000};
     int watch_timeout{0};
 
+    TransportType transport_type{TT_TCP};
+    std::shared_ptr<SSL_CTX> ssl_ctx{nullptr};
+
     std::string host;
     std::string port;
+
+    // If host is empty, the addr will be used.
+    sockaddr_storage addr_storage{};
+    socklen_t addr_len{0};
 
     bool enable_auth{false};
     int32_t auth_type{0};
@@ -63,7 +72,7 @@ struct TlvClientParams {
  * ```cpp
  * coke::TlvClientParams params = {
  *     .host = "127.0.0.1",
- *     .port = "5678",
+ *     .port = "6789",
  * };
  *
  * coke::TlvClient cli(params);
@@ -79,7 +88,7 @@ public:
     }
 
     /**
-     * @brief The TlvClient is neither copyable nore movable.
+     * @brief The TlvClient is neither copyable nor movable.
      */
     TlvClient(const TlvClient &) = delete;
     TlvClient(TlvClient &&)      = delete;
