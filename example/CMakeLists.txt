@@ -22,6 +22,7 @@ set(ALL_EXAMPLES
     ex019-task_and_series
     ex020-dag
     ex021-scope_guard
+    ex022-tlv_server
 )
 
 include (../cmake/find-workflow.cmake)
