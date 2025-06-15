@@ -46,6 +46,7 @@ create_example_target("ex019-task_and_series")
 create_example_target("ex020-dag")
 create_example_target("ex021-scope_guard", ["//:tools"])
 create_example_target("ex022-tlv_server", ["//:tools", "//:tlv"])
+create_example_target("ex023-tlv_client", ["//:tools", "//:tlv"])
 
 # virtual target to build all examples
 cc_library(
@@ -73,5 +74,6 @@ cc_library(
         ":dag",
         ":scope_guard",
         ":tlv_server",
+        ":tlv_client",
     ],
 )
