@@ -16,8 +16,8 @@
  * Authors: kedixa (https://github.com/kedixa)
  */
 
-#ifndef COKE_STR_HOLDER_H
-#define COKE_STR_HOLDER_H
+#ifndef COKE_UTILS_STR_HOLDER_H
+#define COKE_UTILS_STR_HOLDER_H
 
 #include <concepts>
 #include <string>
@@ -106,6 +106,14 @@ public:
             return get_string();
     }
 
+    std::size_t size() const
+    {
+        if (holds_view())
+            return get_view().size();
+        else
+            return get_string().size();
+    }
+
 private:
     std::variant<std::string, std::string_view> value;
 };
@@ -134,4 +142,4 @@ StrHolderVec make_shv(Strs &&...strs)
 
 } // namespace coke
 
-#endif // COKE_STR_HOLDER_H
+#endif // COKE_UTILS_STR_HOLDER_H
