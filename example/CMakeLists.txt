@@ -24,6 +24,7 @@ set(ALL_EXAMPLES
     ex021-scope_guard
     ex022-tlv_server
     ex023-tlv_client
+    ex024-tlv_uds
 )
 
 include (../cmake/find-workflow.cmake)
