@@ -24,21 +24,19 @@
 
 namespace coke {
 
-using TlvServerContext = ServerContext<TlvRequest, TlvResponse>;
+struct TlvServerParams {
+    TransportType transport_type{TT_TCP};
+    std::size_t max_connections{2000};
+    int peer_response_timeout{10 * 1000};
+    int receive_timeout{-1};
+    int keep_alive_timeout{60 * 1000};
+    std::size_t request_size_limit{(std::size_t)-1};
+    int ssl_accept_timeout{10 * 1000};
 
-constexpr ServerParams TLV_SERVER_PARAMS_DEFAULT = {
-    .transport_type        = TT_TCP,
-    .max_connections       = 2000,
-    .peer_response_timeout = 10 * 1000,
-    .receive_timeout       = -1,
-    .keep_alive_timeout    = 60 * 1000,
-    .request_size_limit    = (size_t)-1,
-    .ssl_accept_timeout    = 5000,
-};
-
-struct TlvServerParams : public ServerParams {
-    TlvServerParams() : ServerParams(TLV_SERVER_PARAMS_DEFAULT) {}
-    ~TlvServerParams() = default;
+    operator ServerParams() const noexcept
+    {
+        return detail::to_server_params(*this);
+    }
 };
 
 class TlvServer : public BasicServer<TlvRequest, TlvResponse> {
@@ -51,10 +49,13 @@ public:
     }
 
     TlvServer(ProcessorType co_proc)
-        : Base(TLV_SERVER_PARAMS_DEFAULT, std::move(co_proc))
+        : Base(TlvServerParams{}, std::move(co_proc))
     {
     }
 };
+
+using TlvServerContext = TlvServer::ServerContextType;
+using TlvProcessorType = TlvServer::ProcessorType;
 
 } // namespace coke
 
