@@ -44,8 +44,8 @@ struct TlvClientParams {
     TransportType transport_type{TT_TCP};
     std::shared_ptr<SSL_CTX> ssl_ctx{nullptr};
 
-    std::string host;
-    std::string port;
+    std::string host{};
+    std::string port{};
 
     // If host is empty, the addr will be used.
     sockaddr_storage addr_storage{};
@@ -54,7 +54,7 @@ struct TlvClientParams {
     bool enable_auth{false};
     int32_t auth_type{0};
     int32_t auth_success_type{0};
-    std::string auth_value;
+    std::string auth_value{};
 
     std::size_t response_size_limit{(std::size_t)-1};
 };
