@@ -40,10 +40,10 @@ public:
 TlvClient::TlvClient(const TlvClientParams &params, bool unique_conn)
     : close_connection(false), params(params)
 {
-    cli_info.enable_auth       = params.enable_auth;
-    cli_info.auth_type         = params.auth_type;
+    cli_info.enable_auth = params.enable_auth;
+    cli_info.auth_type = params.auth_type;
     cli_info.auth_success_type = params.auth_success_type;
-    cli_info.auth_value        = params.auth_value;
+    cli_info.auth_value = params.auth_value;
 
     std::string info;
 
@@ -75,10 +75,10 @@ TlvClient::TlvClient(const TlvClientParams &params, bool unique_conn)
 Task<TlvResult> TlvClient::request(int32_t type, StrHolder value)
 {
     bool is_close_request = close_connection;
-    int retry_max         = params.retry_max;
+    int retry_max = params.retry_max;
 
     if (is_close_request) {
-        retry_max        = 0;
+        retry_max = 0;
         close_connection = false;
     }
 

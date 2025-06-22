@@ -21,7 +21,7 @@
 
 coke::Task<> process(coke::TlvServerContext ctx)
 {
-    coke::TlvRequest &req   = ctx.get_req();
+    coke::TlvRequest &req = ctx.get_req();
     coke::TlvResponse &resp = ctx.get_resp();
 
     std::string *val = req.get_value();
@@ -62,7 +62,7 @@ coke::Task<> run_client(coke::TlvConnectionClient &cli)
         if (data == "quit")
             break;
 
-        res   = co_await cli.request(0, data);
+        res = co_await cli.request(0, data);
         state = res.get_state();
 
         if (state != coke::STATE_SUCCESS) {
@@ -90,7 +90,7 @@ int main()
     sockaddr_un *addr;
 
     std::memset(&addr_storage, 0, sizeof(addr_storage));
-    addr             = (sockaddr_un *)&addr_storage;
+    addr = (sockaddr_un *)&addr_storage;
     addr->sun_family = AF_UNIX;
 
     // Use abstract namespace socket in case we do not have write permission,
@@ -109,8 +109,8 @@ int main()
 
     coke::TlvClientParams cli_params = {
         .transport_type = TT_TCP,
-        .addr_storage   = addr_storage,
-        .addr_len       = sizeof(sockaddr_un),
+        .addr_storage = addr_storage,
+        .addr_len = sizeof(sockaddr_un),
     };
 
     coke::TlvConnectionClient cli(cli_params);

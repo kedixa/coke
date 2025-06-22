@@ -91,7 +91,7 @@ public:
      * @brief The TlvClient is neither copyable nor movable.
      */
     TlvClient(const TlvClient &) = delete;
-    TlvClient(TlvClient &&)      = delete;
+    TlvClient(TlvClient &&) = delete;
 
     ~TlvClient() = default;
 

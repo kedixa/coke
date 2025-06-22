@@ -40,7 +40,7 @@ coke::Task<> show_qps(coke::StopToken &st)
 
 coke::Task<> process(coke::TlvServerContext ctx)
 {
-    coke::TlvRequest &req   = ctx.get_req();
+    coke::TlvRequest &req = ctx.get_req();
     coke::TlvResponse &resp = ctx.get_resp();
 
     resp.set_type(req.get_type());
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 
     coke::GlobalSettings gs;
     gs.handler_threads = handler_threads;
-    gs.poller_threads  = poller_threads;
+    gs.poller_threads = poller_threads;
     coke::library_init(gs);
 
     coke::TlvServerParams srv_params;

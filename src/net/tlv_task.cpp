@@ -24,7 +24,7 @@ namespace coke {
 constexpr static int TLV_KEEPALIVE_DEFAULT = 60 * 1000;
 
 enum : int {
-    TLV_CONN_AUTH      = 0,
+    TLV_CONN_AUTH = 0,
     TLV_USER_FIRST_REQ = 1,
     TLV_USER_OTHER_REQ = 2,
 };
@@ -42,10 +42,10 @@ static void tlv_conn_info_deleter(void *ptr)
 TlvClientTask::TlvClientTask(int retry_max, tlv_callback_t &&cb)
     : WFComplexClientTask(retry_max, std::move(cb))
 {
-    is_user_req      = false;
-    auth_failed      = false;
+    is_user_req = false;
+    auth_failed = false;
     close_connection = false;
-    cli_info         = nullptr;
+    cli_info = nullptr;
 }
 
 WFConnection *TlvClientTask::get_connection() const
@@ -64,11 +64,11 @@ WFConnection *TlvClientTask::get_connection() const
 
 CommMessageOut *TlvClientTask::message_out()
 {
-    auto *conn     = WFComplexClientTask::get_connection();
+    auto *conn = WFComplexClientTask::get_connection();
     auto *tlv_conn = (TlvConnInfo *)conn->get_context();
 
     if (!tlv_conn) {
-        tlv_conn            = new TlvConnInfo();
+        tlv_conn = new TlvConnInfo();
         tlv_conn->conn_info = cli_info->conn_info;
         conn->set_context(tlv_conn, tlv_conn_info_deleter);
     }
