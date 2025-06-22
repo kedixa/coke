@@ -140,8 +140,8 @@ ClientConnInfo ClientConnInfo::create_instance(const std::string &full_info,
                                                bool unique_conn)
 {
     auto manager = detail::ConnInfoManager::get_instance();
-    auto ptr     = std::make_shared<detail::ConnInfoImpl>(manager, full_info,
-                                                          unique_conn);
+    auto ptr = std::make_shared<detail::ConnInfoImpl>(manager, full_info,
+                                                      unique_conn);
 
     return ClientConnInfo(ptr);
 }

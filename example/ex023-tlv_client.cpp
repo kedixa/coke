@@ -96,8 +96,8 @@ int main(int argc, char *argv[])
     }
 
     coke::GlobalSettings gs;
-    gs.handler_threads                 = handler_threads;
-    gs.poller_threads                  = poller_threads;
+    gs.handler_threads = handler_threads;
+    gs.poller_threads = poller_threads;
     gs.endpoint_params.max_connections = max_connections;
 
     coke::library_init(gs);

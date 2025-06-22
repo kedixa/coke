@@ -27,10 +27,10 @@
 
 namespace coke {
 
-using TlvRequest  = protocol::TLVRequest;
+using TlvRequest = protocol::TLVRequest;
 using TlvResponse = protocol::TLVResponse;
 
-using TlvTask        = WFNetworkTask<TlvRequest, TlvResponse>;
+using TlvTask = WFNetworkTask<TlvRequest, TlvResponse>;
 using tlv_callback_t = std::function<void(TlvTask *)>;
 
 /**
@@ -38,7 +38,7 @@ using tlv_callback_t = std::function<void(TlvTask *)>;
  */
 enum : int {
     TLV_ERR_CLI_INFO = 1,
-    TLV_ERR_AUTH     = 2,
+    TLV_ERR_AUTH = 2,
 };
 
 struct TlvClientInfo {
@@ -57,10 +57,10 @@ public:
     TlvResult() = default;
 
     TlvResult(const TlvResult &) = default;
-    TlvResult(TlvResult &&)      = default;
+    TlvResult(TlvResult &&) = default;
 
     TlvResult &operator=(const TlvResult &) = default;
-    TlvResult &operator=(TlvResult &&)      = default;
+    TlvResult &operator=(TlvResult &&) = default;
 
     void set_state(int state) { this->state = state; }
     void set_error(int error) { this->error = error; }
