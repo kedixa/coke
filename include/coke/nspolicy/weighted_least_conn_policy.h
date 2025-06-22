@@ -112,7 +112,7 @@ protected:
     uint64_t virtual_count;
     uint64_t key;
 
-    detail::RBTreeNode policy_node;
+    RBTreeNode policy_node;
 
     friend WeightedPolicyBase<WeightedLeastConnPolicy>;
     friend WeightedLeastConnPolicy;
@@ -123,7 +123,7 @@ class WeightedLeastConnPolicy
 protected:
     using PolicyBase = WeightedPolicyBase<WeightedLeastConnPolicy>;
     using PolicySet =
-        detail::RBTree<AddrInfo, &AddrInfo::policy_node, AddrInfo::AddrCmp>;
+        RBTree<AddrInfo, &AddrInfo::policy_node, AddrInfo::AddrCmp>;
 
     static constexpr uint64_t SEATINGS = AddrInfo::SEATINGS;
 

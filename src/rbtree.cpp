@@ -14,13 +14,14 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
-#include "coke/detail/rbtree.h"
+#include "coke/utils/rbtree.h"
 
-namespace coke::detail {
+namespace coke {
 
-RBTreeNode *rbtree_next(RBTreeNode *node) noexcept {
+RBTreeNode *rbtree_next(RBTreeNode *node) noexcept
+{
     if (node->rb_right) {
         node = node->rb_right;
         while (node->rb_left)
@@ -31,14 +32,15 @@ RBTreeNode *rbtree_next(RBTreeNode *node) noexcept {
 
     RBTreeNode *parent = node->rb_parent;
     while (node == parent->rb_right) {
-        node = parent;
+        node   = parent;
         parent = node->rb_parent;
     }
 
     return (node->rb_right == parent) ? node : parent;
 }
 
-RBTreeNode *rbtree_prev(RBTreeNode *node) noexcept {
+RBTreeNode *rbtree_prev(RBTreeNode *node) noexcept
+{
     // node is end, prev is rightmost
     if (node->rb_color == RB_RED && node->rb_parent->rb_parent == node)
         return node->rb_right;
@@ -53,31 +55,34 @@ RBTreeNode *rbtree_prev(RBTreeNode *node) noexcept {
 
     RBTreeNode *parent = node->rb_parent;
     while (node == parent->rb_left) {
-        node = parent;
+        node   = parent;
         parent = node->rb_parent;
     }
 
     return parent;
 }
 
-const RBTreeNode *rbtree_next(const RBTreeNode *node) noexcept {
+const RBTreeNode *rbtree_next(const RBTreeNode *node) noexcept
+{
     return rbtree_next(const_cast<RBTreeNode *>(node));
 }
 
-const RBTreeNode *rbtree_prev(const RBTreeNode *node) noexcept {
+const RBTreeNode *rbtree_prev(const RBTreeNode *node) noexcept
+{
     return rbtree_prev(const_cast<RBTreeNode *>(node));
 }
 
-void rbtree_clear(RBTreeNode *node) noexcept {
+void rbtree_clear(RBTreeNode *node) noexcept
+{
     while (node) {
         RBTreeNode *next = node->rb_right;
         rbtree_clear(node->rb_left);
 
         node->rb_parent = nullptr;
-        node->rb_left = nullptr;
-        node->rb_right = nullptr;
-        node->rb_color = RB_BLACK;
-        node = next;
+        node->rb_left   = nullptr;
+        node->rb_right  = nullptr;
+        node->rb_color  = RB_BLACK;
+        node            = next;
     }
 }
 
@@ -98,7 +103,7 @@ void rbtree_insert(RBTreeNode *head, struct rb_root *root, RBTreeNode *parent,
             head->rb_right = parent->rb_right;
     }
     else {
-        head->rb_left = node;
+        head->rb_left  = node;
         head->rb_right = node;
     }
 
@@ -106,7 +111,7 @@ void rbtree_insert(RBTreeNode *head, struct rb_root *root, RBTreeNode *parent,
 
     // relink to head
     root->rb_node->rb_parent = head;
-    head->rb_parent = root->rb_node;
+    head->rb_parent          = root->rb_node;
 }
 
-} // namespace coke::detail
+} // namespace coke

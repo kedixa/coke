@@ -109,7 +109,7 @@ protected:
     uint64_t offset;
     uint64_t key;
 
-    detail::RBTreeNode policy_node;
+    RBTreeNode policy_node;
 
     friend WeightedPolicyBase<WeightedRoundRobinPolicy>;
     friend WeightedRoundRobinPolicy;
@@ -120,7 +120,7 @@ class WeightedRoundRobinPolicy
 protected:
     using PolicyBase = WeightedPolicyBase<WeightedRoundRobinPolicy>;
     using PolicySet =
-        detail::RBTree<AddrInfo, &AddrInfo::policy_node, AddrInfo::AddrCmp>;
+        RBTree<AddrInfo, &AddrInfo::policy_node, AddrInfo::AddrCmp>;
 
     static constexpr uint64_t SEATINGS = AddrInfo::SEATINGS;
 

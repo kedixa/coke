@@ -24,10 +24,10 @@
 #include <string>
 #include <vector>
 
-#include "coke/detail/list.h"
-#include "coke/detail/rbtree.h"
 #include "coke/detail/ref_counted.h"
 #include "coke/global.h"
+#include "coke/utils/list.h"
+#include "coke/utils/rbtree.h"
 
 namespace coke {
 
@@ -108,8 +108,8 @@ protected:
     int64_t first_fail_time;
     int64_t recover_at_time;
 
-    detail::ListNode recover_node;
-    detail::RBTreeNode addr_node;
+    ListNode recover_node;
+    RBTreeNode addr_node;
 
     friend class NSPolicy;
     friend std::default_delete<AddressInfo>;

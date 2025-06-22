@@ -60,6 +60,10 @@ cc_library(
         "include/coke/task.h",
         "include/coke/wait_group.h",
         "include/coke/wait.h",
+
+        "include/coke/utils/list.h",
+        "include/coke/utils/rbtree.h",
+        "include/coke/utils/str_holder.h",
     ],
     includes = ["include"],
     deps = [
@@ -86,11 +90,26 @@ cc_library(
 
 cc_library(
     name = "net",
-    srcs = [],
+    srcs = [
+        "src/net/client_conn_info.cpp",
+    ],
     hdrs = glob(["include/coke/net/*.h"]),
     includes = ["include"],
     deps = [
         "//:common",
+    ],
+)
+
+cc_library(
+    name = "tlv",
+    srcs = [
+        "src/net/tlv_task.cpp",
+        "src/net/tlv_client.cpp",
+    ],
+    hdrs = glob(["include/coke/tlv/*.h"]),
+    includes = ["include"],
+    deps = [
+        "//:net",
     ],
 )
 

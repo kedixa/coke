@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_LRU_CACHE_H
 #define COKE_LRU_CACHE_H
@@ -26,18 +26,17 @@
 #include <type_traits>
 
 #include "coke/condition.h"
-#include "coke/detail/list.h"
-#include "coke/detail/rbtree.h"
 #include "coke/detail/ref_counted.h"
+#include "coke/utils/list.h"
+#include "coke/utils/rbtree.h"
 
 namespace coke {
 
 enum : uint16_t {
     LRU_WAITING = 0,
     LRU_SUCCESS = 1,
-    LRU_FAILED = 2,
+    LRU_FAILED  = 2,
 };
-
 
 template<typename R, typename T, typename U>
 concept LruComparable = std::predicate<R, T, U> && std::predicate<R, U, T>;
@@ -45,49 +44,45 @@ concept LruComparable = std::predicate<R, T, U> && std::predicate<R, U, T>;
 template<typename, typename, typename>
 class LruCache;
 
-
 template<typename K, typename V>
 struct LruEntry : public detail::RefCounted<LruEntry<K, V>> {
-    using Key = K;
+    using Key   = K;
     using Value = V;
 
     template<typename U>
     LruEntry(uint16_t state, std::mutex *mtx, const U &key)
         : key(key), removed(false), state(state), mtx(mtx)
-    { }
+    {
+    }
 
     Key key;
     std::optional<Value> value;
 
-    coke::detail::ListNode lst;
-    coke::detail::RBTreeNode rb;
+    ListNode lst;
+    RBTreeNode rb;
 
     bool removed;
     std::atomic<uint16_t> state;
-    coke::Condition cv;
+    Condition cv;
     std::mutex *mtx;
 };
-
 
 template<typename K, typename V>
 class LruHandle {
 public:
     using Entry = LruEntry<K, V>;
-    using Key = typename Entry::Key;
+    using Key   = typename Entry::Key;
     using Value = typename Entry::Value;
 
     /**
      * @brief Create an empty handle.
      */
-    LruHandle() noexcept
-        : entry(nullptr)
-    { }
+    LruHandle() noexcept : entry(nullptr) {}
 
     /**
      * @brief Create from other handle, they share the same entry.
      */
-    LruHandle(const LruHandle &other) noexcept
-        : entry(other.entry)
+    LruHandle(const LruHandle &other) noexcept : entry(other.entry)
     {
         if (entry)
             entry->inc_ref();
@@ -96,8 +91,7 @@ public:
     /**
      * @brief Move from other handle.
      */
-    LruHandle(LruHandle &&other) noexcept
-        : entry(other.entry)
+    LruHandle(LruHandle &&other) noexcept : entry(other.entry)
     {
         other.entry = nullptr;
     }
@@ -105,7 +99,8 @@ public:
     /**
      * @brief Assign from other handle, they share the same entry.
      */
-    LruHandle &operator=(const LruHandle &other) noexcept {
+    LruHandle &operator=(const LruHandle &other) noexcept
+    {
         if (this != &other) {
             if (entry)
                 entry->dec_ref();
@@ -121,12 +116,13 @@ public:
     /**
      * @brief Move assign from other handle.
      */
-    LruHandle &operator=(LruHandle &&other) noexcept {
+    LruHandle &operator=(LruHandle &&other) noexcept
+    {
         if (this != &other) {
             if (entry)
                 entry->dec_ref();
 
-            entry = other.entry;
+            entry       = other.entry;
             other.entry = nullptr;
         }
 
@@ -136,25 +132,22 @@ public:
     /**
      * @brief Check if the handle is not empty.
      */
-    operator bool () const noexcept { return entry != nullptr; }
+    operator bool() const noexcept { return entry != nullptr; }
 
-    uint16_t get_state() const noexcept {
+    uint16_t get_state() const noexcept
+    {
         return entry->state.load(std::memory_order_acquire);
     }
 
     /**
      * @brief Check if the handle is waiting for value.
      */
-    bool waiting() const noexcept {
-        return get_state() == LRU_WAITING;
-    }
+    bool waiting() const noexcept { return get_state() == LRU_WAITING; }
 
     /**
      * @brief Check if the handle's value is emplaced or created.
      */
-    bool success() const noexcept {
-        return get_state() == LRU_SUCCESS;
-    }
+    bool success() const noexcept { return get_state() == LRU_SUCCESS; }
 
     /**
      * @brief Check if give up to create value for this handle.
@@ -162,9 +155,7 @@ public:
      * For example, the coroutine that created the handle failed to obtain value
      * and give up updating it.
      */
-    bool failed() const noexcept {
-        return get_state() == LRU_FAILED;
-    }
+    bool failed() const noexcept { return get_state() == LRU_FAILED; }
 
     /**
      * @brief Emplace value to the handle.
@@ -173,7 +164,8 @@ public:
      *            notify_one/notify_all, even if the emplace throws.
      */
     template<typename... Args>
-    void emplace_value(Args&&... args) {
+    void emplace_value(Args &&...args)
+    {
         std::unique_lock lk(*entry->mtx);
         entry->value.emplace(std::forward<Args>(args)...);
         entry->state.store(LRU_SUCCESS, std::memory_order_release);
@@ -189,7 +181,8 @@ public:
      *            notify_one/notify_all, even if the creater throws.
      */
     template<typename ValueCreater>
-    void create_value(ValueCreater &&creater) {
+    void create_value(ValueCreater &&creater)
+    {
         std::unique_lock lk(*entry->mtx);
         creater(entry->value);
         entry->state.store(LRU_SUCCESS, std::memory_order_release);
@@ -200,34 +193,30 @@ public:
      * @attention The user should wake up the waiting coroutine by
      *            notify_one/notify_all.
      */
-    void set_failed() noexcept {
+    void set_failed() noexcept
+    {
         entry->state.store(LRU_FAILED, std::memory_order_release);
     }
 
     /**
      * @brief Wake up one coroutine that waiting for the handle.
      */
-    void notify_one() {
-        entry->cv.notify_one();
-    }
+    void notify_one() { entry->cv.notify_one(); }
 
     /**
      * @brief Wake up all coroutines waiting for the handle.
      */
-    void notify_all() {
-        entry->cv.notify_all();
-    }
+    void notify_all() { entry->cv.notify_all(); }
 
     /**
      * @brief Wait for the handle's value to be emplaced or created, or
      *        set_failed to be called.
      * @return See coke::Condition::wait.
      */
-    Task<int> wait() {
+    Task<int> wait()
+    {
         std::unique_lock lk(*entry->mtx);
-        int ret = co_await entry->cv.wait(lk, [this] {
-            return !waiting();
-        });
+        int ret = co_await entry->cv.wait(lk, [this] { return !waiting(); });
 
         co_return ret;
     }
@@ -237,11 +226,11 @@ public:
      *        set_failed to be called.
      * @return See coke::Condition::wait_for.
      */
-    Task<int> wait_for(NanoSec nsec) {
+    Task<int> wait_for(NanoSec nsec)
+    {
         std::unique_lock lk(*entry->mtx);
-        int ret = co_await entry->cv.wait_for(lk, nsec, [this] {
-            return !waiting();
-        });
+        int ret = co_await entry->cv.wait_for(lk, nsec,
+                                              [this] { return !waiting(); });
 
         co_return ret;
     }
@@ -268,21 +257,22 @@ public:
      * @brief Release the handle.
      * @post The handle is empty, the associated entry's ref count is decreased.
      */
-    void release() noexcept {
+    void release() noexcept
+    {
         if (entry) {
             entry->dec_ref();
             entry = nullptr;
         }
     }
 
-    ~LruHandle() {
+    ~LruHandle()
+    {
         if (entry)
             entry->dec_ref();
     }
 
 private:
-    LruHandle(Entry *entry)
-        : entry(entry)
+    LruHandle(Entry *entry) : entry(entry)
     {
         if (entry)
             entry->inc_ref();
@@ -295,47 +285,47 @@ private:
     friend class LruCache;
 };
 
-
 template<typename K, typename V, typename C = std::less<>>
 class LruCache {
 public:
-    using Key = K;
-    using Value = V;
-    using Compare = C;
-    using Entry = LruEntry<K, V>;
-    using Handle = LruHandle<K, V>;
+    using Key      = K;
+    using Value    = V;
+    using Compare  = C;
+    using Entry    = LruEntry<K, V>;
+    using Handle   = LruHandle<K, V>;
     using SizeType = std::size_t;
 
     struct EntryCompare {
         template<typename U>
             requires (!std::is_same_v<std::remove_cvref_t<U>, Entry>)
-        auto operator()(const Entry &lhs, const U &rhs) const {
+        auto operator()(const Entry &lhs, const U &rhs) const
+        {
             return cmp(lhs.key, rhs);
         }
 
         template<typename U>
             requires (!std::is_same_v<std::remove_cvref_t<U>, Entry>)
-        auto operator()(const U &lhs, const Entry &rhs) const {
+        auto operator()(const U &lhs, const Entry &rhs) const
+        {
             return cmp(lhs, rhs.key);
         }
 
-        auto operator()(const Entry &lhs, const Entry &rhs) const {
+        auto operator()(const Entry &lhs, const Entry &rhs) const
+        {
             return cmp(lhs.key, rhs.key);
         }
 
         [[no_unique_address]] Compare cmp;
     };
 
-    using List = coke::detail::List<Entry, &Entry::lst>;
-    using Set = coke::detail::RBTree<Entry, &Entry::rb, EntryCompare>;
+    using ListType = List<Entry, &Entry::lst>;
+    using SetType  = RBTree<Entry, &Entry::rb, EntryCompare>;
 
 public:
     /**
      * @brief Create lru cache with max_size, 0 means no limit.
      */
-    explicit LruCache(SizeType max_size)
-        : LruCache(max_size, Compare{})
-    { }
+    explicit LruCache(SizeType max_size) : LruCache(max_size, Compare{}) {}
 
     /**
      * @brief Create lru cache with max size and compare object.
@@ -343,7 +333,8 @@ public:
     LruCache(SizeType max_size, const Compare &cmp)
         : entry_set(EntryCompare{cmp}),
           cap(max_size == 0 ? SizeType(-1) : max_size)
-    { }
+    {
+    }
 
     /**
      * @brief Lru cache is not copyable.
@@ -355,14 +346,13 @@ public:
      * @pre All the handle returned by get_or_create are no longer in the
      *      waiting state.
      */
-    ~LruCache() {
-        clear();
-    }
+    ~LruCache() { clear(); }
 
     /**
      * @brief Get the size of the cache.
      */
-    SizeType size() const {
+    SizeType size() const
+    {
         std::lock_guard lg(mtx);
         return entry_set.size();
     }
@@ -370,9 +360,7 @@ public:
     /**
      * @brief Get the capacity of the cache.
      */
-    SizeType capacity() const {
-        return cap;
-    }
+    SizeType capacity() const { return cap; }
 
     /**
      * @brief Get lru handle by key. If the key is not found, return an empty
@@ -380,7 +368,8 @@ public:
      */
     template<typename U>
         requires LruComparable<Compare, Key, U>
-    Handle get(const U &key) {
+    Handle get(const U &key)
+    {
         std::lock_guard lg(mtx);
 
         auto it = entry_set.find(key);
@@ -406,7 +395,8 @@ public:
     template<typename U>
         requires (LruComparable<Compare, Key, U> &&
                   std::constructible_from<Key, const U &>)
-    std::pair<Handle, bool> get_or_create(const U &key) {
+    std::pair<Handle, bool> get_or_create(const U &key)
+    {
         std::lock_guard lg(mtx);
 
         auto it = entry_set.find(key);
@@ -431,7 +421,8 @@ public:
         requires (LruComparable<Compare, Key, const U &> &&
                   std::constructible_from<Key, const U &> &&
                   std::constructible_from<Value, Args && ...>)
-    Handle put(const U &key, Args &&... args) {
+    Handle put(const U &key, Args &&...args)
+    {
         std::unique_ptr<Entry> entry_ptr(new Entry(LRU_SUCCESS, nullptr, key));
         entry_ptr->value.emplace(std::forward<Args>(args)...);
 
@@ -454,7 +445,8 @@ public:
      */
     template<typename U>
         requires LruComparable<Compare, Key, const U &>
-    void remove(const U &key) {
+    void remove(const U &key)
+    {
         std::lock_guard lg(mtx);
 
         auto it = entry_set.find(key);
@@ -465,7 +457,8 @@ public:
     /**
      * @brief Remove a key from the cache by handle.
      */
-    void remove(const Handle &handle) {
+    void remove(const Handle &handle)
+    {
         std::lock_guard lg(mtx);
         remove_entry(handle.entry);
     }
@@ -473,12 +466,13 @@ public:
     /**
      * @brief Clear the cache.
      */
-    void clear() {
+    void clear()
+    {
         std::lock_guard lg(mtx);
         Entry *entry;
 
         while (!entry_list.empty()) {
-            entry = entry_list.pop_front();
+            entry          = entry_list.pop_front();
             entry->removed = true;
             entry->dec_ref();
         }
@@ -487,7 +481,8 @@ public:
     }
 
 private:
-    void remove_entry(Entry *entry) {
+    void remove_entry(Entry *entry)
+    {
         if (!entry->removed) {
             entry->removed = true;
             entry_list.erase(entry);
@@ -498,15 +493,16 @@ private:
 
     constexpr static SizeType MUTEX_TBL_SIZE = 4;
 
-    std::mutex *next_mtx() {
+    std::mutex *next_mtx()
+    {
         auto id = mid.fetch_add(1, std::memory_order_relaxed);
         return &mtx_tbl[id % MUTEX_TBL_SIZE];
     }
 
 private:
     mutable std::mutex mtx;
-    Set entry_set;
-    List entry_list;
+    SetType entry_set;
+    ListType entry_list;
     SizeType cap;
 
     // mutex table for entry
