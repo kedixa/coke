@@ -8,5 +8,7 @@ build:gcc_config --per_file_copt=workflow//*@-Wno-maybe-uninitialized,-Wno-unuse
 
 build:memcheck --run_under='valgrind --leak-check=full --error-exitcode=1 '
 
+test --test_output=errors
+
 # uncomment next line to use gnu readline in some examples
 # build --define use_gnu_readline=true
