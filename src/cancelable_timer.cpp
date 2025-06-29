@@ -55,7 +55,11 @@ public:
     CancelableTimerMap() = default;
 
     // It is bad behavior if there are still unfinished timers.
-    ~CancelableTimerMap() = default;
+    ~CancelableTimerMap() {
+        // Sync with cancel, make sure the last cancel is finished
+        mtx.lock();
+        mtx.unlock();
+    }
 
     void add_task(uint64_t uid, CancelInterface *task, bool insert_head);
     std::size_t cancel(uint64_t uid, std::size_t max);
