@@ -32,6 +32,7 @@ cc_library(
         "src/rbtree.cpp",
         "src/sleep.cpp",
         "src/stop_token.cpp",
+        "src/str_packer.cpp",
         "src/sync_guard.cpp",
     ],
     hdrs = [
@@ -64,6 +65,7 @@ cc_library(
         "include/coke/utils/list.h",
         "include/coke/utils/rbtree.h",
         "include/coke/utils/str_holder.h",
+        "include/coke/utils/str_packer.h",
     ],
     includes = ["include"],
     deps = [
