@@ -21,22 +21,22 @@ jobs:
         compiler:
         - cc: gcc-12
           cxx: g++-12
-          opts: ""
+          opts: "--config=gcc_config"
         - cc: gcc-13
           cxx: g++-13
-          opts: ""
+          opts: "--config=gcc_config"
         - cc: gcc-14
           cxx: g++-14
-          opts: ""
+          opts: "--config=gcc_config"
         - cc: clang-16
           cxx: clang-16
-          opts: ""
+          opts: "--config=clang_config"
         - cc: clang-17
           cxx: clang-17
-          opts: ""
+          opts: "--config=clang_config"
         - cc: clang-18
           cxx: clang-18
-          opts: ""
+          opts: "--config=clang_config"
 
     steps:
     - name: Prepare
@@ -63,13 +63,13 @@ jobs:
         compiler:
         - cc: gcc-11
           cxx: g++-11
-          opts: ""
+          opts: "--config=gcc_config"
         - cc: gcc-12
           cxx: g++-12
-          opts: ""
+          opts: "--config=gcc_config"
         - cc: clang-15
           cxx: clang-15
-          opts: ""
+          opts: "--config=clang_config"
 
     steps:
     - name: Prepare

@@ -76,6 +76,7 @@ TEST(STR_PACKER, merge)
         total_len += len;
     }
 
+    result.reserve(total_len);
     for (std::size_t i = 0; i < N; i++) {
         result.append(vstr[i]);
     }
