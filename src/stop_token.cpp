@@ -14,13 +14,14 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include "coke/stop_token.h"
 
 namespace coke {
 
-Task<bool> StopToken::wait_finish_impl(detail::TimedWaitHelper helper) {
+Task<bool> StopToken::wait_finish_impl(detail::TimedWaitHelper helper)
+{
     std::unique_lock<std::mutex> lk(mtx);
     while (n != 0 && !helper.timeout()) {
         SleepAwaiter s = sleep(get_finish_addr(), helper);
@@ -36,7 +37,8 @@ Task<bool> StopToken::wait_finish_impl(detail::TimedWaitHelper helper) {
     co_return n == 0;
 }
 
-Task<bool> StopToken::wait_stop_impl(detail::TimedWaitHelper helper) {
+Task<bool> StopToken::wait_stop_impl(detail::TimedWaitHelper helper)
+{
     std::unique_lock<std::mutex> lk(mtx);
     while (!stop_requested() && !helper.timeout()) {
         SleepAwaiter s = sleep(get_stop_addr(), helper);

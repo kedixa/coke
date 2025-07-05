@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_STOP_TOKEN_H
 #define COKE_STOP_TOKEN_H
@@ -22,8 +22,8 @@
 #include <atomic>
 
 #include "coke/detail/mutex_table.h"
-#include "coke/task.h"
 #include "coke/sleep.h"
+#include "coke/task.h"
 
 namespace coke {
 
@@ -34,21 +34,28 @@ public:
      *
      * @param cnt When set_finished() is called exactly `cnt` times, the state
      *        of stop token become finished.
-    */
+     */
     explicit StopToken(std::size_t cnt = 1) noexcept
         : mtx(detail::get_mutex(this)), n(cnt), should_stop(false)
-    { }
+    {
+    }
 
     StopToken(const StopToken &) = delete;
-    StopToken &operator= (const StopToken &) = delete;
+    StopToken &operator=(const StopToken &) = delete;
 
-    ~StopToken() = default;
+    ~StopToken()
+    {
+        // Sync with set_finished, avoid call mtx.unlock() after free.
+        mtx.lock();
+        mtx.unlock();
+    }
 
     /**
      * @brief Reset the inner state, prepare for next use.
      * @pre The previous process has ended normally.
-    */
-    void reset(std::size_t cnt) noexcept {
+     */
+    void reset(std::size_t cnt) noexcept
+    {
         n = cnt;
         should_stop.store(false, std::memory_order_relaxed);
     }
@@ -56,8 +63,9 @@ public:
     /**
      * @brief Request the coroutine working with this stop token to stop.
      * @post stop_requested() will returns true.
-    */
-    void request_stop() {
+     */
+    void request_stop()
+    {
         std::lock_guard<std::mutex> lg(mtx);
         should_stop.store(true, std::memory_order_release);
         cancel_sleep_by_addr(get_stop_addr());
@@ -65,16 +73,18 @@ public:
 
     /**
      * @brief Return whether stop is requested.
-    */
-    bool stop_requested() const noexcept {
+     */
+    bool stop_requested() const noexcept
+    {
         return should_stop.load(std::memory_order_acquire);
     }
 
     /**
      * @brief Decrease `n` by one, when it reches to zero, wake up coroutine
      *        that is waiting for finish.
-    */
-    void set_finished() {
+     */
+    void set_finished()
+    {
         std::lock_guard<std::mutex> lg(mtx);
         if (n > 0 && --n == 0)
             cancel_sleep_by_addr(get_finish_addr());
@@ -82,47 +92,50 @@ public:
 
     /**
      * @brief Return whether set_finished() has been called `n` times.
-    */
-    bool finished() const {
+     */
+    bool finished() const
+    {
         std::lock_guard<std::mutex> lg(mtx);
         return n == 0;
     }
 
     /**
      * @brief Wait until finish.
-    */
-    Task<bool> wait_finish() {
+     */
+    Task<bool> wait_finish()
+    {
         return wait_finish_impl(detail::TimedWaitHelper{});
     }
 
     /**
      * @brief Wait until finish or timeout.
      * @return Whether it is finished.
-    */
-    Task<bool> wait_finish_for(NanoSec nsec) {
+     */
+    Task<bool> wait_finish_for(NanoSec nsec)
+    {
         return wait_finish_impl(detail::TimedWaitHelper{nsec});
     }
 
     /**
      * @brief Wait until stop requested or timeout.
      * @return Whether stop is requested.
-    */
-    Task<bool> wait_stop_for(NanoSec nsec) {
+     */
+    Task<bool> wait_stop_for(NanoSec nsec)
+    {
         return wait_stop_impl(detail::TimedWaitHelper{nsec});
     }
 
     struct FinishGuard {
-        explicit FinishGuard(StopToken *sptr = nullptr) noexcept
-            : ptr(sptr)
-        { }
+        explicit FinishGuard(StopToken *sptr = nullptr) noexcept : ptr(sptr) {}
 
         FinishGuard(const FinishGuard &) = delete;
-        FinishGuard &operator= (const FinishGuard &) = delete;
+        FinishGuard &operator=(const FinishGuard &) = delete;
 
         void reset(StopToken *sptr) noexcept { ptr = sptr; }
         void release() noexcept { ptr = nullptr; }
 
-        ~FinishGuard() {
+        ~FinishGuard()
+        {
             if (ptr)
                 ptr->set_finished();
         }
@@ -136,11 +149,13 @@ private:
 
     Task<bool> wait_stop_impl(detail::TimedWaitHelper helper);
 
-    const void *get_stop_addr() const noexcept {
+    const void *get_stop_addr() const noexcept
+    {
         return (const char *)this + 1;
     }
 
-    const void *get_finish_addr() const noexcept {
+    const void *get_finish_addr() const noexcept
+    {
         return (const char *)this + 2;
     }
 
