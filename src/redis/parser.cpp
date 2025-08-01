@@ -263,8 +263,11 @@ int RedisParser::parse_type(const char *&cur, const char *end)
         return parse_map(REDIS_TYPE_ATTRIBUTE, val);
 
     default:
-        if (std::isspace(buf[0]) || std::isalnum(buf[0]))
+        if (std::isspace(buf[0]) || std::isalnum(buf[0])) {
+            // inline command starts from first byte.
+            first = buf.data();
             return parse_inline_command(val);
+        }
         else {
             errno = EBADMSG;
             return -1;
