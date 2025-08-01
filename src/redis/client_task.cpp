@@ -256,7 +256,7 @@ int RedisClientTask::keep_alive_timeout()
 
 bool RedisClientTask::init_success()
 {
-    if (!cli_info) {
+    if (!cli_info || !cli_info->conn_info.valid()) {
         this->state = WFT_STATE_TASK_ERROR;
         this->error = REDIS_ERR_NO_INFO;
         return false;
