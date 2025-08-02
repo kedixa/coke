@@ -70,11 +70,121 @@ using RedisVariant = std::variant<RedisNull, bool, int64_t, double, std::string,
 
 class RedisValue {
 public:
-    RedisValue() = default;
+    static RedisValue make_null() { return RedisValue(); }
+
+    static RedisValue make_simple_string(std::string str)
+    {
+        RedisValue v;
+        v.set_simple_string(std::move(str));
+        return v;
+    }
+
+    static RedisValue make_bulk_string(std::string str)
+    {
+        RedisValue v;
+        v.set_bulk_string(std::move(str));
+        return v;
+    }
+
+    static RedisValue make_verbatim_string(std::string str)
+    {
+        RedisValue v;
+        v.set_verbatim_string(std::move(str));
+        return v;
+    }
+
+    static RedisValue make_simple_error(std::string str)
+    {
+        RedisValue v;
+        v.set_simple_error(std::move(str));
+        return v;
+    }
+
+    static RedisValue make_bulk_error(std::string str)
+    {
+        RedisValue v;
+        v.set_bulk_error(std::move(str));
+        return v;
+    }
+
+    static RedisValue make_big_number(std::string str)
+    {
+        RedisValue v;
+        v.set_big_number(std::move(str));
+        return v;
+    }
+
+    static RedisValue make_integer(int64_t n)
+    {
+        RedisValue v;
+        v.set_integer(n);
+        return v;
+    }
+
+    static RedisValue make_double(double d)
+    {
+        RedisValue v;
+        v.set_double(d);
+        return v;
+    }
+
+    static RedisValue make_boolean(bool b)
+    {
+        RedisValue v;
+        v.set_boolean(b);
+        return v;
+    }
+
+    static RedisValue make_array(RedisArray arr)
+    {
+        RedisValue v;
+        v.set_array(std::move(arr));
+        return v;
+    }
+
+    static RedisValue make_set(RedisArray set)
+    {
+        RedisValue v;
+        v.set_set(std::move(set));
+        return v;
+    }
+
+    static RedisValue make_push(RedisArray push)
+    {
+        RedisValue v;
+        v.set_push(std::move(push));
+        return v;
+    }
+
+    static RedisValue make_map(RedisMap map)
+    {
+        RedisValue v;
+        v.set_map(std::move(map));
+        return v;
+    }
+
+public:
+    RedisValue() noexcept = default;
+
     ~RedisValue() = default;
 
-    RedisValue(RedisValue &&) = default;
-    RedisValue &operator=(RedisValue &&) = default;
+    RedisValue(RedisValue &&o) noexcept
+        : type(o.type), var(std::move(o.var)), attr(std::move(o.attr))
+    {
+        o.type = REDIS_TYPE_NULL;
+        o.var = RedisNull{};
+    }
+
+    RedisValue &operator=(RedisValue &&o) noexcept
+    {
+        if (this != &o) {
+            std::swap(this->type, o.type);
+            std::swap(this->var, o.var);
+            std::swap(this->attr, o.attr);
+        }
+
+        return *this;
+    }
 
     RedisValue(const RedisValue &o) : type(o.get_type()), var(o.var)
     {
@@ -97,7 +207,17 @@ public:
         return *this;
     }
 
+    void swap(RedisValue &o) noexcept
+    {
+        if (this != &o) {
+            std::swap(this->type, o.type);
+            std::swap(this->var, o.var);
+            std::swap(this->attr, o.attr);
+        }
+    }
+
     bool is_null() const { return type == REDIS_TYPE_NULL; }
+
     bool is_simple_string() const { return type == REDIS_TYPE_SIMPLE_STRING; }
     bool is_bulk_string() const { return type == REDIS_TYPE_BULK_STRING; }
     bool is_verbatim_string() const
@@ -107,8 +227,8 @@ public:
 
     bool is_simple_error() const { return type == REDIS_TYPE_SIMPLE_ERROR; }
     bool is_bulk_error() const { return type == REDIS_TYPE_BULK_ERROR; }
-    bool is_big_number() const { return type == REDIS_TYPE_BIG_NUMBER; }
 
+    bool is_big_number() const { return type == REDIS_TYPE_BIG_NUMBER; }
     bool is_integer() const { return type == REDIS_TYPE_INTEGER; }
     bool is_double() const { return type == REDIS_TYPE_DOUBLE; }
     bool is_boolean() const { return type == REDIS_TYPE_BOOLEAN; }
@@ -135,7 +255,7 @@ public:
 
     std::string &get_string() & { return std::get<std::string>(var); }
 
-    bool get_bool() const { return std::get<bool>(var); }
+    bool get_boolean() const { return std::get<bool>(var); }
     int64_t get_integer() const { return std::get<int64_t>(var); }
     double get_double() const { return std::get<double>(var); }
 
@@ -156,32 +276,38 @@ public:
 
     void set_simple_string(std::string str)
     {
-        create_string(REDIS_TYPE_SIMPLE_STRING, std::move(str));
+        type = REDIS_TYPE_SIMPLE_STRING;
+        var.emplace<std::string>(std::move(str));
     }
 
     void set_bulk_string(std::string str)
     {
-        create_string(REDIS_TYPE_BULK_STRING, std::move(str));
+        type = REDIS_TYPE_BULK_STRING;
+        var.emplace<std::string>(std::move(str));
     }
 
     void set_verbatim_string(std::string str)
     {
-        create_string(REDIS_TYPE_VERBATIM_STRING, std::move(str));
+        type = REDIS_TYPE_VERBATIM_STRING;
+        var.emplace<std::string>(std::move(str));
     }
 
     void set_simple_error(std::string str)
     {
-        create_string(REDIS_TYPE_SIMPLE_ERROR, std::move(str));
+        type = REDIS_TYPE_SIMPLE_ERROR;
+        var.emplace<std::string>(std::move(str));
     }
 
-    void set_blob_error(std::string str)
+    void set_bulk_error(std::string str)
     {
-        create_string(REDIS_TYPE_BULK_ERROR, std::move(str));
+        type = REDIS_TYPE_BULK_ERROR;
+        var.emplace<std::string>(std::move(str));
     }
 
     void set_big_number(std::string str)
     {
-        create_string(REDIS_TYPE_BIG_NUMBER, std::move(str));
+        type = REDIS_TYPE_BIG_NUMBER;
+        var.emplace<std::string>(std::move(str));
     }
 
     void set_boolean(bool b)
@@ -260,13 +386,6 @@ public:
     std::string debug_string() const;
 
 private:
-    void create_string(int32_t type, std::string &&str)
-    {
-        this->type = type;
-        var.emplace<std::string>(std::move(str));
-    }
-
-private:
     int32_t type{REDIS_TYPE_NULL};
     RedisVariant var{RedisNull{}};
     std::unique_ptr<RedisMap> attr;
@@ -276,13 +395,15 @@ private:
 
 class RedisResult {
 public:
-    RedisResult() = default;
+    RedisResult() noexcept = default;
+    RedisResult(RedisValue &&value) noexcept : value(value) {}
+    RedisResult(const RedisValue &value) : value(value) {}
 
-    RedisResult(RedisValue &&value) : value(value) {}
+    RedisResult(RedisResult &&) noexcept = default;
+    RedisResult(const RedisResult &) = default;
 
-    RedisResult(RedisResult &&) = default;
-
-    RedisResult &operator=(RedisResult &&) = default;
+    RedisResult &operator=(RedisResult &&) noexcept = default;
+    RedisResult &operator=(const RedisResult &) = default;
 
     void set_state(int state) { this->state = state; }
     void set_error(int error) { this->error = error; }

@@ -96,7 +96,7 @@ static void debug_string_impl(const RedisValue &val, std::size_t indent,
         break;
 
     case REDIS_TYPE_BOOLEAN:
-        output.append(val.get_bool() ? "true" : "false");
+        output.append(val.get_boolean() ? "true" : "false");
         break;
 
     case REDIS_TYPE_ARRAY:
