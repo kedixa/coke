@@ -53,7 +53,6 @@ enum : uint16_t {
 enum : int16_t {
     REDIS_AUTO_SLOT   = 16384,
     REDIS_ANY_PRIMARY = 16385,
-    REDIS_ALL_PRIMARY = 16386,
 };
 
 enum : int {
@@ -76,6 +75,26 @@ enum : int {
 };
 // clang-format on
 
+/**
+ * @brief RedisExecuteOption is used to specify options for executing a Redis
+ *        command. Used in client's execute_command function.
+ *
+ * Common Redis commands are already provided by RedisClient, such as
+ * `co_await cli.get(key)`. These commands do not require passing a
+ * RedisExecuteOption. For commands not yet supported, user need to execute
+ * them via `co_await cli.execute_command(cmd, opt)`.
+ *
+ * The member `slot` is used for RedisClusterClient. If the value is within
+ * range [0, 16383], it indicates that the command should be sent to the server
+ * responsible for that slot. If the value is negative, the slot is calculated
+ * using the string at cmd[-slot] as the key.
+ *
+ * The member `flags` is used to specify additional flags for the command.
+ *
+ * The member `block_ms` is used to specify the blocking time in milliseconds
+ * for the blocking command, such as BLPOP, BRPOP, etc. If the value is 0,
+ * it means use `default_watch_timeout` in the client parameters.
+ */
 struct RedisExecuteOption {
     int16_t slot = REDIS_AUTO_SLOT;
     uint16_t flags = 0;

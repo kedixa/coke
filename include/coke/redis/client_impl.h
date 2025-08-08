@@ -124,10 +124,21 @@ public:
     /**
      * @brief Execute a Redis command.
      * @param command The command to execute.
+     * @param opt The options for executing the command. See RedisExecuteOption.
+     *
+     * @attention Using `execute_command` to execute commands that may alter the
+     * connection state is incorrect behavior.
+     *
+     * For example, using the SELECT command to switch databases can cause other
+     * client to execute command on the wrong database. Except
+     * RedisConnectionClient, its connection is exclusively owned by the current
+     * client.
+     *
+     * Example:
      *
      * ```cpp
      * coke::StrHolderVec command = {"SET", "key", "value"};
-     * auto result = co_await client.execute_command(std::move(command));
+     * auto result = co_await cli.execute_command(std::move(command));
      * ```
      */
     Task<RedisResult> execute_command(StrHolderVec command,
