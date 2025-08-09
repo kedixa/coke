@@ -19,10 +19,129 @@
 #include "coke/redis/message.h"
 
 #include <cerrno>
+#include <charconv>
 #include <string>
 #include <string_view>
 
 namespace coke {
+
+static std::string encode_double(double d)
+{
+    char buf[64];
+    auto r = std::to_chars(buf, buf + 64, d);
+
+    // Fall back to std::to_string on failure, but this should not occur.
+    if (r.ec == std::errc())
+        return std::string(buf, r.ptr);
+    else
+        return std::to_string(d);
+}
+
+static bool encode_value(StrPacker &pack, const RedisValue &val)
+{
+    if (val.has_attribute()) {
+        const RedisMap &attr = val.get_attribute();
+        pack.append("|").append(std::to_string(attr.size())).append("\r\n");
+
+        for (const RedisPair &pair : attr) {
+            if (!encode_value(pack, pair.key))
+                return false;
+            if (!encode_value(pack, pair.value))
+                return false;
+        }
+    }
+
+    auto type = val.get_type();
+
+    switch (type) {
+    case REDIS_TYPE_NULL:
+        pack.append("$-1\r\n");
+        return true;
+
+    case REDIS_TYPE_SIMPLE_STRING:
+        pack.append("+").append_nocopy(val.get_string()).append("\r\n");
+        return true;
+
+    case REDIS_TYPE_BULK_STRING:
+        pack.append("$")
+            .append(std::to_string(val.string_length()))
+            .append("\r\n")
+            .append_nocopy(val.get_string())
+            .append("\r\n");
+        return true;
+
+    case REDIS_TYPE_VERBATIM_STRING:
+        pack.append("=")
+            .append(std::to_string(val.string_length()))
+            .append("\r\n")
+            .append_nocopy(val.get_string())
+            .append("\r\n");
+        return true;
+
+    case REDIS_TYPE_SIMPLE_ERROR:
+        pack.append("-").append_nocopy(val.get_string()).append("\r\n");
+        return true;
+
+    case REDIS_TYPE_BULK_ERROR:
+        pack.append("!")
+            .append(std::to_string(val.string_length()))
+            .append("\r\n")
+            .append_nocopy(val.get_string())
+            .append("\r\n");
+        return true;
+
+    case REDIS_TYPE_BIG_NUMBER:
+        pack.append("(").append_nocopy(val.get_string()).append("\r\n");
+        return true;
+
+    case REDIS_TYPE_INTEGER:
+        pack.append(":")
+            .append(std::to_string(val.get_integer()))
+            .append("\r\n");
+        return true;
+
+    case REDIS_TYPE_DOUBLE:
+        pack.append(",").append(encode_double(val.get_double())).append("\r\n");
+        return true;
+
+    case REDIS_TYPE_BOOLEAN:
+        pack.append("#").append(val.get_boolean() ? "t" : "f").append("\r\n");
+        return true;
+
+    case REDIS_TYPE_ARRAY:
+    case REDIS_TYPE_SET:
+    case REDIS_TYPE_PUSH:
+        if (type == REDIS_TYPE_ARRAY)
+            pack.append("*");
+        else if (type == REDIS_TYPE_SET)
+            pack.append("~");
+        else
+            pack.append(">");
+
+        pack.append(std::to_string(val.array_size())).append("\r\n");
+
+        for (const RedisValue &v : val.get_array()) {
+            if (!encode_value(pack, v))
+                return false;
+        }
+        return true;
+
+    case REDIS_TYPE_MAP:
+        pack.append("%").append(std::to_string(val.map_size())).append("\r\n");
+
+        for (const RedisPair &pair : val.get_map()) {
+            if (!encode_value(pack, pair.key))
+                return false;
+            if (!encode_value(pack, pair.value))
+                return false;
+        }
+        return true;
+
+    default:
+        // Unknown type.
+        return false;
+    }
+}
 
 int RedisMessage::append(const void *buf, std::size_t *size)
 {
@@ -53,6 +172,7 @@ int RedisRequest::encode(struct iovec vectors[], int max)
         packer = std::make_unique<StrPacker>();
 
     auto &pack = *packer;
+    pack.clear();
 
     for (const CommandHolder &cmd : commands) {
         const StrHolderVec *cmd_ptr;
@@ -116,13 +236,38 @@ bool RedisRequest::extract_command_from_value(RedisValue &value)
     command.reserve(array.size());
     for (RedisValue &val : array) {
         if (val.is_bulk_string())
-            command.emplace_back(val.get_string());
+            command.push_back(std::move(val.get_string()));
         else
             return false;
     }
 
-    commands.emplace_back(std::move(command));
+    // Pipeline not supported for server now.
+    set_command(std::move(command));
     return true;
+}
+
+int RedisResponse::encode(struct iovec vectors[], int max)
+{
+    if (!packer)
+        packer = std::make_unique<StrPacker>();
+
+    packer->clear();
+
+    if (!encode_value(*packer, value)) {
+        errno = EBADMSG;
+        return -1;
+    }
+
+    packer->merge(max);
+
+    const StrHolderVec &shv = packer->get_strs();
+    for (std::size_t i = 0; i < shv.size(); i++) {
+        std::string_view sv = shv[i].as_view();
+        vectors[i].iov_base = (void *)sv.data();
+        vectors[i].iov_len = sv.size();
+    }
+
+    return (int)shv.size();
 }
 
 int RedisResponse::append(const void *buf, std::size_t *size)

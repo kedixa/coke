@@ -62,7 +62,7 @@ public:
 
     bool use_pipeline() const { return pipeline; }
 
-    // Single command
+    // Single command.
 
     void set_command(StrHolderVec command)
     {
@@ -91,7 +91,7 @@ public:
         }
     }
 
-    // Multiple commands
+    // Multiple commands.
 
     void reserve_commands(std::size_t size) { commands.reserve(size); }
 
@@ -165,6 +165,8 @@ public:
     int prepare_pipeline(std::size_t cnt);
 
 protected:
+    int encode(struct iovec vectors[], int max) override;
+
     int append(const void *buf, std::size_t *size) override;
 
 private:
