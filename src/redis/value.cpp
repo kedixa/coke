@@ -169,4 +169,53 @@ std::string RedisValue::debug_string() const
     return str;
 }
 
+bool is_recursive_value(RedisValue &val)
+{
+    return val.has_attribute() || val.is_array_like() || val.is_map();
+}
+
+static void move_value(std::vector<RedisValue> &vec, RedisMap &map)
+{
+    for (RedisPair &pair : map) {
+        if (is_recursive_value(pair.key))
+            vec.push_back(std::move(pair.key));
+
+        if (is_recursive_value(pair.value))
+            vec.push_back(std::move(pair.value));
+    }
+
+    map.clear();
+}
+
+static void move_value(std::vector<RedisValue> &vec, RedisArray &array)
+{
+    for (RedisValue &val : array) {
+        if (is_recursive_value(val))
+            vec.push_back(std::move(val));
+    }
+
+    array.clear();
+}
+
+void RedisValue::destroy_redis_value(RedisValue &root)
+{
+    std::vector<RedisValue> vec;
+    vec.push_back(std::move(root));
+
+    while (!vec.empty()) {
+        RedisValue val = std::move(vec.back());
+        vec.pop_back();
+
+        if (val.has_attribute())
+            move_value(vec, val.get_attribute());
+
+        if (val.is_array_like())
+            move_value(vec, val.get_array());
+        else if (val.is_map())
+            move_value(vec, val.get_map());
+
+        val.clear();
+    }
+}
+
 } // namespace coke

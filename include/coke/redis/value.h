@@ -69,104 +69,19 @@ using RedisVariant = std::variant<RedisNull, bool, int64_t, double, std::string,
                                   RedisArray, RedisMap>;
 
 class RedisValue {
-public:
-    static RedisValue make_null() { return RedisValue(); }
-
-    static RedisValue make_simple_string(std::string str)
-    {
-        RedisValue v;
-        v.set_simple_string(std::move(str));
-        return v;
-    }
-
-    static RedisValue make_bulk_string(std::string str)
-    {
-        RedisValue v;
-        v.set_bulk_string(std::move(str));
-        return v;
-    }
-
-    static RedisValue make_verbatim_string(std::string str)
-    {
-        RedisValue v;
-        v.set_verbatim_string(std::move(str));
-        return v;
-    }
-
-    static RedisValue make_simple_error(std::string str)
-    {
-        RedisValue v;
-        v.set_simple_error(std::move(str));
-        return v;
-    }
-
-    static RedisValue make_bulk_error(std::string str)
-    {
-        RedisValue v;
-        v.set_bulk_error(std::move(str));
-        return v;
-    }
-
-    static RedisValue make_big_number(std::string str)
-    {
-        RedisValue v;
-        v.set_big_number(std::move(str));
-        return v;
-    }
-
-    static RedisValue make_integer(int64_t n)
-    {
-        RedisValue v;
-        v.set_integer(n);
-        return v;
-    }
-
-    static RedisValue make_double(double d)
-    {
-        RedisValue v;
-        v.set_double(d);
-        return v;
-    }
-
-    static RedisValue make_boolean(bool b)
-    {
-        RedisValue v;
-        v.set_boolean(b);
-        return v;
-    }
-
-    static RedisValue make_array(RedisArray arr)
-    {
-        RedisValue v;
-        v.set_array(std::move(arr));
-        return v;
-    }
-
-    static RedisValue make_set(RedisArray set)
-    {
-        RedisValue v;
-        v.set_set(std::move(set));
-        return v;
-    }
-
-    static RedisValue make_push(RedisArray push)
-    {
-        RedisValue v;
-        v.set_push(std::move(push));
-        return v;
-    }
-
-    static RedisValue make_map(RedisMap map)
-    {
-        RedisValue v;
-        v.set_map(std::move(map));
-        return v;
-    }
+    static void destroy_redis_value(RedisValue &val);
 
 public:
     RedisValue() noexcept = default;
 
-    ~RedisValue() = default;
+    ~RedisValue()
+    {
+        if ((is_array_like() && array_size() > 0) ||
+            (is_map() && map_size() > 0))
+        {
+            destroy_redis_value(*this);
+        }
+    }
 
     RedisValue(RedisValue &&o) noexcept
         : type(o.type), var(std::move(o.var)), attr(std::move(o.attr))
@@ -423,6 +338,102 @@ private:
     int error{0};
     RedisValue value;
 };
+
+inline RedisValue make_redis_null()
+{
+    return RedisValue();
+}
+
+inline RedisValue make_redis_simple_string(std::string str)
+{
+    RedisValue v;
+    v.set_simple_string(std::move(str));
+    return v;
+}
+
+inline RedisValue make_redis_bulk_string(std::string str)
+{
+    RedisValue v;
+    v.set_bulk_string(std::move(str));
+    return v;
+}
+
+inline RedisValue make_redis_verbatim_string(std::string str)
+{
+    RedisValue v;
+    v.set_verbatim_string(std::move(str));
+    return v;
+}
+
+inline RedisValue make_redis_simple_error(std::string str)
+{
+    RedisValue v;
+    v.set_simple_error(std::move(str));
+    return v;
+}
+
+inline RedisValue make_redis_bulk_error(std::string str)
+{
+    RedisValue v;
+    v.set_bulk_error(std::move(str));
+    return v;
+}
+
+inline RedisValue make_redis_big_number(std::string str)
+{
+    RedisValue v;
+    v.set_big_number(std::move(str));
+    return v;
+}
+
+inline RedisValue make_redis_integer(int64_t n)
+{
+    RedisValue v;
+    v.set_integer(n);
+    return v;
+}
+
+inline RedisValue make_redis_double(double d)
+{
+    RedisValue v;
+    v.set_double(d);
+    return v;
+}
+
+inline RedisValue make_redis_boolean(bool b)
+{
+    RedisValue v;
+    v.set_boolean(b);
+    return v;
+}
+
+inline RedisValue make_redis_array(RedisArray arr)
+{
+    RedisValue v;
+    v.set_array(std::move(arr));
+    return v;
+}
+
+inline RedisValue make_redis_set(RedisArray set)
+{
+    RedisValue v;
+    v.set_set(std::move(set));
+    return v;
+}
+
+inline RedisValue make_redis_push(RedisArray push)
+{
+    RedisValue v;
+    v.set_push(std::move(push));
+    return v;
+}
+
+inline RedisValue make_redis_map(RedisMap map)
+{
+    RedisValue v;
+    v.set_map(std::move(map));
+    return v;
+}
 
 } // namespace coke
 
