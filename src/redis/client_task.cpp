@@ -200,6 +200,8 @@ CommMessageOut *RedisClientTask::message_out()
             is_user_req = false;
             return handshake_req;
         }
+
+        [[fallthrough]];
     }
 
     case REDIS_USER_FIRST_REQ:
@@ -317,6 +319,8 @@ RedisRequest *RedisClientTask::handshake_without_pipe(void *conn)
             break;
         }
 
+        [[fallthrough]];
+
     case REDIS_CONN_SETNAME:
         if (cli_info->protover != 3 && !cli_info->client_name.empty()) {
             command = make_shv("CLIENT"_sv, "SETNAME"_sv,
@@ -327,6 +331,8 @@ RedisRequest *RedisClientTask::handshake_without_pipe(void *conn)
             break;
         }
 
+        [[fallthrough]];
+
     case REDIS_CONN_SELECT:
         if (cli_info->database != 0) {
             command = make_shv("SELECT"_sv, std::to_string(cli_info->database));
@@ -335,6 +341,8 @@ RedisRequest *RedisClientTask::handshake_without_pipe(void *conn)
             redis_conn->next_stage = REDIS_CONN_READONLY;
             break;
         }
+
+        [[fallthrough]];
 
     case REDIS_CONN_READONLY:
         if (cli_info->read_replica) {
@@ -345,6 +353,8 @@ RedisRequest *RedisClientTask::handshake_without_pipe(void *conn)
             break;
         }
 
+        [[fallthrough]];
+
     case REDIS_CONN_TRACKING:
         if (cli_info->enable_tracking) {
             command = get_tracking_command(cli_info);
@@ -353,6 +363,8 @@ RedisRequest *RedisClientTask::handshake_without_pipe(void *conn)
             redis_conn->next_stage = REDIS_CONN_LIBNAME;
             break;
         }
+
+        [[fallthrough]];
 
     case REDIS_CONN_LIBNAME:
         if (!cli_info->lib_name.empty()) {
@@ -364,6 +376,8 @@ RedisRequest *RedisClientTask::handshake_without_pipe(void *conn)
             break;
         }
 
+        [[fallthrough]];
+
     case REDIS_CONN_LIBVER:
         if (!cli_info->lib_ver.empty()) {
             command = make_shv("CLIENT"_sv, "SETINFO"_sv, "LIB-VER"_sv,
@@ -374,6 +388,8 @@ RedisRequest *RedisClientTask::handshake_without_pipe(void *conn)
             break;
         }
 
+        [[fallthrough]];
+
     case REDIS_CONN_NOEVICT:
         if (cli_info->no_evict) {
             command = make_shv("CLIENT"_sv, "NO-EVICT"_sv, "ON"_sv);
@@ -382,6 +398,8 @@ RedisRequest *RedisClientTask::handshake_without_pipe(void *conn)
             redis_conn->next_stage = REDIS_CONN_NOTOUCH;
             break;
         }
+
+        [[fallthrough]];
 
     case REDIS_CONN_NOTOUCH:
         if (cli_info->no_touch) {
