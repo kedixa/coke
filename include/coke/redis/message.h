@@ -80,15 +80,13 @@ public:
 
     const StrHolderVec &get_command() const
     {
-        if (commands.empty()) {
-            return {};
-        }
-        else {
-            if (std::holds_alternative<StrHolderVec>(commands[0]))
-                return std::get<StrHolderVec>(commands[0]);
-            else
-                return *std::get<const StrHolderVec *>(commands[0]);
-        }
+        // Throws if commands is empty.
+        const CommandHolder &command = commands.at(0);
+
+        if (std::holds_alternative<StrHolderVec>(command))
+            return std::get<StrHolderVec>(command);
+        else
+            return *std::get<const StrHolderVec *>(command);
     }
 
     // Multiple commands.
