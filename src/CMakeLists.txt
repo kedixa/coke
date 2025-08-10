@@ -14,9 +14,9 @@ set(SRCS
     qps_pool.cpp
     random.cpp
     rbtree.cpp
-    redis_impl.cpp
     sleep.cpp
     stop_token.cpp
+    str_packer.cpp
     sync_guard.cpp
 
     net/client_conn_info.cpp
@@ -27,6 +27,12 @@ set(SRCS
     nspolicy/weighted_random_policy.cpp
     nspolicy/weighted_least_conn_policy.cpp
     nspolicy/weighted_round_robin_policy.cpp
+
+    redis/client_task.cpp
+    redis/client.cpp
+    redis/message.cpp
+    redis/parser.cpp
+    redis/value.cpp
 )
 
 if (COKE_BUILD_STATIC)

@@ -1,79 +1,75 @@
-#include <iostream>
-#include <sstream>
-#include <iterator>
-#include <string>
-#include <vector>
 #include <cstring>
-#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <string>
 
-#include "coke/wait.h"
+#include "coke/redis/client.h"
 #include "coke/tools/option_parser.h"
-#include "coke/redis/redis_client.h"
-#include "coke/redis/redis_utils.h"
+#include "coke/wait.h"
 #include "readline_helper.h"
 
 std::string prompt_str;
 
 /**
- * This example implements a simple redis-cli, read commands from standard input,
- * send them to the redis server, and write the results to standard output.
-*/
+ * This example implements a simple redis-cli, read commands from standard
+ * input, send them to the redis server, and write the results to standard
+ * output.
+ */
 
-bool get_command(std::string &cmd, std::vector<std::string> &args) {
+bool get_command(coke::StrHolderVec &command)
+{
     using str_iter = std::istream_iterator<std::string>;
     std::string line;
+    command.clear();
 
     while (nextline(prompt_str.c_str(), line)) {
-        // Only handle space delimiters, just for example
         std::istringstream iss(line);
-        iss >> cmd;
+        std::copy(str_iter(iss), str_iter{}, std::back_inserter(command));
+        if (command.empty())
+            continue;
 
-        if (!cmd.empty()) {
-            args.clear();
-            std::copy(str_iter(iss), str_iter{}, std::back_inserter(args));
-            add_history(line);
-            return true;
-        }
+        const std::string &name = command[0].get_string();
+        if (strcasecmp(name.c_str(), "quit") == 0)
+            return false;
+
+        add_history(line);
+        return true;
     }
 
     return false;
 }
 
-void show_result(const coke::RedisResult &res) {
-    if (res.state != coke::STATE_SUCCESS) {
-        const char *errstr = coke::get_error_string(res.state, res.error);
+void show_result(const coke::RedisResult &res)
+{
+    int state = res.get_state();
+    if (state != coke::STATE_SUCCESS) {
+        const char *errstr = coke::get_error_string(state, res.get_error());
         std::cout << "Error: " << errstr << std::endl;
     }
     else {
-        coke::RedisValue v;
-        res.resp.get_result(v);
-
-        // Show result like redis-cli
-        std::cout << coke::redis_value_to_string(v);
-        std::cout.flush();
+        std::cout << res.get_value().debug_string() << std::endl;
     }
 }
 
-coke::Task<> redis_cli(coke::RedisClient &cli, int repeat, double interval) {
+coke::Task<> redis_cli(coke::RedisClient &cli, int repeat, double interval)
+{
     coke::RedisResult res;
-    std::string cmd;
-    std::vector<std::string> args;
+    coke::StrHolderVec command;
 
     // We'd better not use blocking operations in coroutines,
     // the blocking 'get_command' is just a simple example here.
-    while (get_command(cmd, args)) {
-        if (strcasecmp(cmd.c_str(), "quit") == 0)
-            break;
-
+    while (get_command(command)) {
         for (int i = 0; i < repeat; i++) {
-            res = co_await cli.request(cmd, args);
+            res = co_await cli.execute_command(std::move(command));
             show_result(res);
             co_await coke::sleep(interval);
         }
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::RedisClientParams params;
     int repeat = 0;
     double interval = 0.0;
@@ -82,12 +78,14 @@ int main(int argc, char *argv[]) {
 
     args.add_string(params.host, 'h', "host", true)
         .set_description("Redis server hostname.");
-    args.add_integer(params.port, 'p', "port")
-        .set_default(6379)
+    args.add_string(params.port, 'p', "port")
+        .set_default("6379")
         .set_description("Redis server port.");
+    args.add_string(params.username, coke::NULL_SHORT_NAME, "user")
+        .set_description("Redis ACL user name");
     args.add_string(params.password, 'a', "password")
         .set_description("Password to use when connection to redis server.");
-    args.add_integer(params.db, 'n', "database")
+    args.add_integer(params.database, 'n', "database")
         .set_default(0)
         .set_description("Database number.");
     args.add_integer(repeat, 'r', "repeat")
@@ -122,8 +120,8 @@ int main(int argc, char *argv[]) {
     else
         prompt_str.append(params.host);
 
-    if (params.port)
-        prompt_str.append(":").append(std::to_string(params.port));
+    if (!params.port.empty())
+        prompt_str.append(":").append(params.port);
 
     prompt_str.append("> ");
 
