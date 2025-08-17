@@ -133,6 +133,7 @@ cc_library(
     srcs = [
         "src/redis/client_task.cpp",
         "src/redis/client.cpp",
+        "src/redis/cluster_client.cpp",
         "src/redis/message.cpp",
         "src/redis/parser.cpp",
         "src/redis/value.cpp",
@@ -142,6 +143,8 @@ cc_library(
         "include/coke/redis/client_impl.h",
         "include/coke/redis/client_task.h",
         "include/coke/redis/client.h",
+        "include/coke/redis/cluster_client_impl.h",
+        "include/coke/redis/cluster_client.h",
         "include/coke/redis/message.h",
         "include/coke/redis/parser.h",
         "include/coke/redis/server.h",

@@ -30,6 +30,7 @@ set(SRCS
 
     redis/client_task.cpp
     redis/client.cpp
+    redis/cluster_client.cpp
     redis/message.cpp
     redis/parser.cpp
     redis/value.cpp

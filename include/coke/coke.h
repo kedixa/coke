@@ -14,33 +14,33 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_COKE_H
 #define COKE_COKE_H
 
 /**
- * coke.h includes most of the headers, except for network-related parts.
-*/
+ * coke.h includes most of frequently used headers.
+ */
 
-#include "coke/global.h"
 #include "coke/basic_awaiter.h"
+#include "coke/condition.h"
 #include "coke/fileio.h"
+#include "coke/future.h"
+#include "coke/global.h"
 #include "coke/go.h"
 #include "coke/latch.h"
-#include "coke/sleep.h"
-#include "coke/qps_pool.h"
-#include "coke/wait.h"
-#include "coke/series.h"
-#include "coke/semaphore.h"
-#include "coke/task.h"
-#include "coke/mutex.h"
-#include "coke/shared_mutex.h"
-#include "coke/future.h"
 #include "coke/make_task.h"
-#include "coke/condition.h"
+#include "coke/mutex.h"
+#include "coke/qps_pool.h"
+#include "coke/semaphore.h"
+#include "coke/series.h"
+#include "coke/shared_mutex.h"
+#include "coke/sleep.h"
 #include "coke/stop_token.h"
 #include "coke/sync_guard.h"
+#include "coke/task.h"
+#include "coke/wait.h"
 #include "coke/wait_group.h"
 
 #endif // COKE_COKE_H
