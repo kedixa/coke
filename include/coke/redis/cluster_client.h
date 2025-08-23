@@ -21,6 +21,8 @@
 
 #include "coke/redis/cluster_client_impl.h"
 
+#include "coke/redis/commands/generic.h"
+
 namespace coke {
 
 /**
@@ -46,7 +48,8 @@ namespace coke {
  * // and then use the result
  * ```
  */
-class RedisClusterClient : public RedisClusterClientImpl {
+class RedisClusterClient : public RedisGenericCommands<RedisClusterClient>,
+                           public RedisClusterClientImpl {
 public:
     /**
      * @brief Default constructor. If the default constructor is used, the
