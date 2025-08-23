@@ -146,9 +146,12 @@ cc_library(
         "include/coke/redis/cluster_client_impl.h",
         "include/coke/redis/cluster_client.h",
         "include/coke/redis/message.h",
+        "include/coke/redis/options.h",
         "include/coke/redis/parser.h",
         "include/coke/redis/server.h",
         "include/coke/redis/value.h",
+
+        "include/coke/redis/commands/generic.h",
     ],
     includes = ["include"],
     deps = [

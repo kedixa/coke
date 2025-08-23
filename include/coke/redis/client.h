@@ -21,6 +21,8 @@
 
 #include "coke/redis/client_impl.h"
 
+#include "coke/redis/commands/generic.h"
+
 namespace coke {
 
 /**
@@ -46,7 +48,8 @@ namespace coke {
  * // and then use the result
  * ```
  */
-class RedisClient : public RedisClientImpl {
+class RedisClient : public RedisGenericCommands<RedisClient>,
+                    public RedisClientImpl {
 public:
     /**
      * @brief Default constructor. If the default constructor is used, the
@@ -89,7 +92,9 @@ public:
  * Otherwise, the connection will remain open until keep_alive_timeout expires,
  * or until the server close the connection.
  */
-class RedisConnectionClient : public RedisClientImpl {
+class RedisConnectionClient
+    : public RedisGenericCommands<RedisConnectionClient>,
+      public RedisClientImpl {
 public:
     /**
      * @brief Default constructor. If the default constructor is used, the
@@ -115,7 +120,7 @@ public:
     Task<RedisResult> disconnect()
     {
         close_connection = true;
-        return execute_command({"ping"});
+        return execute_command({"PING"});
     }
 };
 
