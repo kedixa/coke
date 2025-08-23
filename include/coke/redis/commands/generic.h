@@ -519,7 +519,7 @@ struct RedisGenericCommands {
      * Since Redis 2.8.0.
      * Since Redis 6.0.0, added TYPE option.
      */
-    auto scan(StrHolder cursor, std::string pattern, int32_t count,
+    auto scan(StrHolder cursor, std::string pattern, uint64_t count,
               std::string type)
         requires (!requires { typename Client::RedisClusterClientTag; })
     {
