@@ -21,7 +21,11 @@
 
 #include "coke/redis/client_impl.h"
 
+#include "coke/redis/commands/bitmap.h"
 #include "coke/redis/commands/generic.h"
+#include "coke/redis/commands/hash.h"
+#include "coke/redis/commands/list.h"
+#include "coke/redis/commands/string.h"
 
 namespace coke {
 
@@ -48,7 +52,11 @@ namespace coke {
  * // and then use the result
  * ```
  */
-class RedisClient : public RedisGenericCommands<RedisClient>,
+class RedisClient : public RedisBitmapCommands<RedisClient>,
+                    public RedisGenericCommands<RedisClient>,
+                    public RedisHashCommands<RedisClient>,
+                    public RedisListCommands<RedisClient>,
+                    public RedisStringCommands<RedisClient>,
                     public RedisClientImpl {
 public:
     /**
@@ -93,7 +101,11 @@ public:
  * or until the server close the connection.
  */
 class RedisConnectionClient
-    : public RedisGenericCommands<RedisConnectionClient>,
+    : public RedisBitmapCommands<RedisConnectionClient>,
+      public RedisGenericCommands<RedisConnectionClient>,
+      public RedisHashCommands<RedisConnectionClient>,
+      public RedisListCommands<RedisConnectionClient>,
+      public RedisStringCommands<RedisConnectionClient>,
       public RedisClientImpl {
 public:
     /**

@@ -21,7 +21,11 @@
 
 #include "coke/redis/cluster_client_impl.h"
 
+#include "coke/redis/commands/bitmap.h"
 #include "coke/redis/commands/generic.h"
+#include "coke/redis/commands/hash.h"
+#include "coke/redis/commands/list.h"
+#include "coke/redis/commands/string.h"
 
 namespace coke {
 
@@ -48,7 +52,11 @@ namespace coke {
  * // and then use the result
  * ```
  */
-class RedisClusterClient : public RedisGenericCommands<RedisClusterClient>,
+class RedisClusterClient : public RedisBitmapCommands<RedisConnectionClient>,
+                           public RedisGenericCommands<RedisConnectionClient>,
+                           public RedisHashCommands<RedisConnectionClient>,
+                           public RedisListCommands<RedisConnectionClient>,
+                           public RedisStringCommands<RedisConnectionClient>,
                            public RedisClusterClientImpl {
 public:
     /**

@@ -151,7 +151,11 @@ cc_library(
         "include/coke/redis/server.h",
         "include/coke/redis/value.h",
 
+        "include/coke/redis/commands/bitmap.h",
         "include/coke/redis/commands/generic.h",
+        "include/coke/redis/commands/hash.h",
+        "include/coke/redis/commands/list.h",
+        "include/coke/redis/commands/string.h",
     ],
     includes = ["include"],
     deps = [
