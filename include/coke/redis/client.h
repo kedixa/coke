@@ -26,6 +26,7 @@
 #include "coke/redis/commands/hash.h"
 #include "coke/redis/commands/list.h"
 #include "coke/redis/commands/string.h"
+#include "coke/redis/commands/transaction.h"
 
 namespace coke {
 
@@ -106,6 +107,7 @@ class RedisConnectionClient
       public RedisHashCommands<RedisConnectionClient>,
       public RedisListCommands<RedisConnectionClient>,
       public RedisStringCommands<RedisConnectionClient>,
+      public RedisTransactionCommand<RedisClient>,
       public RedisClientImpl {
 public:
     /**
