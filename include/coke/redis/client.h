@@ -24,6 +24,7 @@
 #include "coke/redis/commands/bitmap.h"
 #include "coke/redis/commands/generic.h"
 #include "coke/redis/commands/hash.h"
+#include "coke/redis/commands/hyperloglog.h"
 #include "coke/redis/commands/list.h"
 #include "coke/redis/commands/string.h"
 #include "coke/redis/commands/transaction.h"
@@ -56,6 +57,7 @@ namespace coke {
 class RedisClient : public RedisBitmapCommands<RedisClient>,
                     public RedisGenericCommands<RedisClient>,
                     public RedisHashCommands<RedisClient>,
+                    public RedisHyperloglogCommands<RedisClient>,
                     public RedisListCommands<RedisClient>,
                     public RedisStringCommands<RedisClient>,
                     public RedisClientImpl {
@@ -105,6 +107,7 @@ class RedisConnectionClient
     : public RedisBitmapCommands<RedisConnectionClient>,
       public RedisGenericCommands<RedisConnectionClient>,
       public RedisHashCommands<RedisConnectionClient>,
+      public RedisHyperloglogCommands<RedisClient>,
       public RedisListCommands<RedisConnectionClient>,
       public RedisStringCommands<RedisConnectionClient>,
       public RedisTransactionCommand<RedisClient>,
