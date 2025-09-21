@@ -26,6 +26,7 @@
 #include "coke/redis/commands/hash.h"
 #include "coke/redis/commands/hyperloglog.h"
 #include "coke/redis/commands/list.h"
+#include "coke/redis/commands/publish.h"
 #include "coke/redis/commands/string.h"
 
 namespace coke {
@@ -58,6 +59,7 @@ class RedisClusterClient : public RedisBitmapCommands<RedisConnectionClient>,
                            public RedisHashCommands<RedisConnectionClient>,
                            public RedisHyperloglogCommands<RedisClient>,
                            public RedisListCommands<RedisConnectionClient>,
+                           public RedisPublishCommands<RedisClient>,
                            public RedisStringCommands<RedisConnectionClient>,
                            public RedisClusterClientImpl {
 public:
