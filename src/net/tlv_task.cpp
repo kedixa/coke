@@ -42,7 +42,7 @@ static void tlv_conn_info_deleter(void *ptr)
 TlvClientTask::TlvClientTask(int retry_max, tlv_callback_t &&cb)
     : WFComplexClientTask(retry_max, std::move(cb))
 {
-    is_user_req = false;
+    is_user_req = true;
     auth_failed = false;
     close_connection = false;
     cli_info = nullptr;
@@ -73,15 +73,13 @@ CommMessageOut *TlvClientTask::message_out()
         conn->set_context(tlv_conn, tlv_conn_info_deleter);
     }
 
-    TlvRequest *req = nullptr;
-
-    is_user_req = true;
-
     if (close_connection) {
         this->disable_retry();
         errno = ENOTCONN;
         return nullptr;
     }
+
+    TlvRequest *req = nullptr;
 
     switch (tlv_conn->next_stage) {
     case TLV_CONN_AUTH:
