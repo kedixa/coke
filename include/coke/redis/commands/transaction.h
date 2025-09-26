@@ -27,7 +27,7 @@ namespace coke {
  * @attention Transaction commands is for RedisConnectionClient only.
  */
 template<typename Client>
-struct RedisTransactionCommand {
+struct RedisTransactionCommands {
     /**
      * @brief Flushes all previously queued commands in a transaction and
      *        restores the connection state to normal.

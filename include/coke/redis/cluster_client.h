@@ -54,13 +54,13 @@ namespace coke {
  * // and then use the result
  * ```
  */
-class RedisClusterClient : public RedisBitmapCommands<RedisConnectionClient>,
-                           public RedisGenericCommands<RedisConnectionClient>,
-                           public RedisHashCommands<RedisConnectionClient>,
-                           public RedisHyperloglogCommands<RedisClient>,
-                           public RedisListCommands<RedisConnectionClient>,
-                           public RedisPublishCommands<RedisClient>,
-                           public RedisStringCommands<RedisConnectionClient>,
+class RedisClusterClient : public RedisBitmapCommands<RedisClusterClient>,
+                           public RedisGenericCommands<RedisClusterClient>,
+                           public RedisHashCommands<RedisClusterClient>,
+                           public RedisHyperloglogCommands<RedisClusterClient>,
+                           public RedisListCommands<RedisClusterClient>,
+                           public RedisPublishCommands<RedisClusterClient>,
+                           public RedisStringCommands<RedisClusterClient>,
                            public RedisClusterClientImpl {
 public:
     /**

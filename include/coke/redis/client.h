@@ -109,11 +109,11 @@ class RedisConnectionClient
     : public RedisBitmapCommands<RedisConnectionClient>,
       public RedisGenericCommands<RedisConnectionClient>,
       public RedisHashCommands<RedisConnectionClient>,
-      public RedisHyperloglogCommands<RedisClient>,
+      public RedisHyperloglogCommands<RedisConnectionClient>,
       public RedisListCommands<RedisConnectionClient>,
-      public RedisPublishCommands<RedisClient>,
+      public RedisPublishCommands<RedisConnectionClient>,
       public RedisStringCommands<RedisConnectionClient>,
-      public RedisTransactionCommand<RedisClient>,
+      public RedisTransactionCommands<RedisConnectionClient>,
       public RedisClientImpl {
 public:
     /**
