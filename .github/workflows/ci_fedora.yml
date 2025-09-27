@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  wf_tag: v0.11.6
+  wf_tag: v0.11.11
 
 jobs:
   build-fedora:
