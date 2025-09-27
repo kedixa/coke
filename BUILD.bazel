@@ -131,13 +131,38 @@ cc_library(
 cc_library(
     name = "redis",
     srcs = [
-        "src/redis_impl.cpp"
+        "src/redis/client_task.cpp",
+        "src/redis/client.cpp",
+        "src/redis/cluster_client.cpp",
+        "src/redis/message.cpp",
+        "src/redis/parser.cpp",
+        "src/redis/value.cpp",
     ],
-    hdrs = glob(["include/coke/redis/*.h"]),
+    hdrs = [
+        "include/coke/redis/basic_types.h",
+        "include/coke/redis/client_impl.h",
+        "include/coke/redis/client_task.h",
+        "include/coke/redis/client.h",
+        "include/coke/redis/cluster_client_impl.h",
+        "include/coke/redis/cluster_client.h",
+        "include/coke/redis/message.h",
+        "include/coke/redis/options.h",
+        "include/coke/redis/parser.h",
+        "include/coke/redis/server.h",
+        "include/coke/redis/value.h",
+
+        "include/coke/redis/commands/bitmap.h",
+        "include/coke/redis/commands/generic.h",
+        "include/coke/redis/commands/hash.h",
+        "include/coke/redis/commands/hyperloglog.h",
+        "include/coke/redis/commands/list.h",
+        "include/coke/redis/commands/publish.h",
+        "include/coke/redis/commands/string.h",
+        "include/coke/redis/commands/transaction.h",
+    ],
     includes = ["include"],
     deps = [
         "//:net",
-        "@workflow//:redis",
     ],
 )
 

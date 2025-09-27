@@ -26,6 +26,7 @@ set(ALL_TESTS
     test_series
     test_shared_mutex
     test_sleep
+    test_str_packer
     test_wait_group
     test_wait
 )
@@ -52,6 +53,6 @@ foreach(exec_name ${ALL_TESTS})
         ${COKE_TRY_STATIC_WORKFLOW}
         Threads::Threads
         OpenSSL::SSL OpenSSL::Crypto
-        GTest::GTest GTest::Main
+        GTest::GTest
     )
 endforeach()

@@ -20,7 +20,6 @@
 #include "coke/tlv/client.h"
 #include "coke/tlv/task.h"
 #include "workflow/StringUtil.h"
-#include "workflow/WFTaskFactory.h"
 
 namespace coke {
 
@@ -98,8 +97,10 @@ Task<TlvResult> TlvClient::request(int32_t type, StrHolder value)
 
         if (uri.host && uri.port)
             uri.state = URI_STATE_SUCCESS;
-        else
+        else {
             uri.state = URI_STATE_ERROR;
+            uri.error = errno;
+        }
 
         task->set_transport_type(params.transport_type);
         task->init(std::move(uri));
@@ -127,6 +128,7 @@ Task<TlvResult> TlvClient::request(int32_t type, StrHolder value)
 
     task->get_resp()->set_size_limit(params.response_size_limit);
 
+    // Attention: task is deleted before the next co_await.
     co_await TlvAwaiter(task);
 
     int state = task->get_state();

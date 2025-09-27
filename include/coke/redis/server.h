@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ * Copyright 2025 Coke Project (https://github.com/kedixa/coke)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,40 +14,48 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_REDIS_SERVER_H
 #define COKE_REDIS_SERVER_H
 
 #include "coke/net/basic_server.h"
-
-#include "workflow/WFRedisServer.h"
-#include "workflow/RedisMessage.h"
+#include "coke/redis/message.h"
 
 namespace coke {
 
-using RedisRequest = protocol::RedisRequest;
-using RedisResponse = protocol::RedisResponse;
-using RedisValue = protocol::RedisValue;
-using RedisServerContext = ServerContext<RedisRequest, RedisResponse>;
-using RedisReplyResult = NetworkReplyResult;
+struct RedisServerParams {
+    TransportType transport_type{TT_TCP};
+    std::size_t max_connections{2000};
+    int peer_response_timeout{10 * 1000};
+    int receive_timeout{-1};
+    int keep_alive_timeout{300 * 1000};
+    std::size_t request_size_limit{SIZE_MAX};
+    int ssl_accept_timeout{5 * 1000};
 
-struct RedisServerParams : public ServerParams {
-    RedisServerParams() : ServerParams(REDIS_SERVER_PARAMS_DEFAULT) { }
-    ~RedisServerParams() = default;
+    operator ServerParams() const noexcept
+    {
+        return detail::to_server_params(*this);
+    }
 };
 
 class RedisServer : public BasicServer<RedisRequest, RedisResponse> {
+    using Base = BasicServer<RedisRequest, RedisResponse>;
+
 public:
     RedisServer(const RedisServerParams &params, ProcessorType co_proc)
-        : BasicServer<RedisRequest, RedisResponse>(params, std::move(co_proc))
-    { }
+        : Base(params, std::move(co_proc))
+    {
+    }
 
     RedisServer(ProcessorType co_proc)
-        : BasicServer<RedisRequest, RedisResponse>(RedisServerParams(),
-                                                   std::move(co_proc))
-    { }
+        : Base(RedisServerParams{}, std::move(co_proc))
+    {
+    }
 };
+
+using RedisServerContext = RedisServer::ServerContextType;
+using RedisProcessorType = RedisServer::ProcessorType;
 
 } // namespace coke
 
