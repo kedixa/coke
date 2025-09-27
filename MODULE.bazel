@@ -1,6 +1,6 @@
 module(
     name = "coke",
-    version = "0.5.0"
+    version = "0.6.0"
 )
 
 bazel_dep(name = "rules_cc", version = "0.1.1")

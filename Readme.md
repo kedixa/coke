@@ -1,10 +1,22 @@
-# Coke
-本项目由[C++ Workflow](https://github.com/sogou/workflow)强力驱动。
+# Coke: Concurrent Operations, Keep Elegant
 
-`Coke`是`C++ Workflow`的协程版本，在不失其高效性的前提下，`Coke`致力于实现一套简洁的协程接口，让我们多一种体验`Workflow`的方式。
+`Coke`是基于[C++ Workflow](https://github.com/sogou/workflow)和`C++ 20`实现的协程框架，专为高性能异步任务设计。受益于`C++ 20`提供的协程特性，`Coke`提供了简洁直观的异步编程接口，开发者可以使用同步的编码风格创造出异步的高性能应用。
 
-## 快速入门
-- 向标准输出打印`Hello World`，间隔500毫秒
+
+## 核心特征
+
+- ⚡️ ​​性能出众​​：继承`C++ Workflow`的高效架构，支持海量并发和高吞吐场景
+- 🚀 ​​高效抽象​​：基于`C++20`协程，在极低开销下提供友好的开发体验
+- 🔗 ​​无缝集成​​：完全兼容`C++ Workflow`生态，可在协程和任务流之间自由切换
+- 📝 ​组件丰富​​：实现了异步锁、异步条件变量、Qps限制器等诸多基础组件
+- 🌐 ​​易于扩展​​：已经为HTTP、Redis、MySQL协议提供支持，用户为`Workflow`扩展的协议也可方便地转为协程
+
+
+## 示例
+
+### 示例一：定时器
+
+每隔一秒向标准输出打印一次`Hello World`。
 
 ```cpp
 #include <iostream>
@@ -13,101 +25,180 @@
 #include "coke/wait.h"
 #include "coke/sleep.h"
 
-coke::Task<> helloworld(size_t n, std::chrono::milliseconds ms) {
-    for (size_t i = 0; i < n; i++) {
+coke::Task<> say_hello(std::size_t n) {
+    std::chrono::seconds one_sec(1);
+
+    for (std::size_t i = 0; i < n; i++) {
         if (i != 0)
-            co_await coke::sleep(ms);
+            co_await coke::sleep(one_sec);
 
         std::cout << "Hello World" << std::endl;
     }
 }
 
 int main() {
-    coke::sync_wait(helloworld(3, std::chrono::milliseconds(500)));
+    coke::sync_wait(say_hello(3));
 
     return 0;
 }
 ```
 
-- 使用`coke::HttpClient`发起一个`GET`请求
+### 示例二：使用Redis客户端
+
+使用`coke::RedisClient`发起读写请求，并输出结果。
 
 ```cpp
 #include <iostream>
-#include <string>
 
-#include "coke/wait.h"
-#include "coke/http/http_client.h"
+#include "coke/coke.h"
+#include "coke/redis/client.h"
 
-coke::Task<> http_get(const std::string &url) {
-    coke::HttpClient cli;
-    coke::HttpResult res = co_await cli.request(url);
-    coke::HttpResponse &resp = res.resp;
-
-    if (res.state == 0) {
-        std::cout << resp.get_http_version() << ' '
-                  << resp.get_status_code() << ' '
-                  << resp.get_reason_phrase() << std::endl;
-    }
-    else {
-        std::cout << "ERROR: state: " << res.state
-                  << " error: " << res.error << std::endl;
-    }
+void show_result(const coke::RedisResult &res)
+{
+    if (res.get_state() == coke::STATE_SUCCESS)
+        std::cout << res.get_value().debug_string() << std::endl;
+    else
+        std::cout << "RedisFailed state:" << res.get_state()
+                  << " error:" << res.get_error() << std::endl;
 }
 
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " URL" << std::endl;
-        return 1;
-    }
+coke::Task<> redis_cli()
+{
+    coke::RedisClientParams params;
+    params.host = "127.0.0.1";
+    params.port = "6379";
+    params.password = "your_password";
 
-    coke::sync_wait(http_get(std::string(argv[1])));
+    coke::RedisClient cli(params);
+    coke::RedisResult res;
+
+    // setex key 100 value
+    res = co_await cli.setex("key", 100, "value");
+    show_result(res);
+
+    // mget key nokey
+    res = co_await cli.mget("key", "nokey");
+    show_result(res);
+
+    // del key
+    res = co_await cli.del("key");
+    show_result(res);
+}
+
+int main()
+{
+    coke::sync_wait(redis_cli());
     return 0;
 }
 ```
 
-- 更多示例请到[example](./example/)查看
+### 示例三：并发执行多个异步任务
+
+同时发起三个休眠任务，并等待执行完成。
+
+```cpp
+#include <iostream>
+#include <vector>
+
+#include "coke/coke.h"
+
+coke::Task<> sleep()
+{
+    co_await coke::sleep(1.0);
+    std::cout << "Sleep 1 second finished.\n";
+}
+
+int main()
+{
+    std::vector<coke::Task<>> tasks;
+
+    for (int i = 0; i < 3; i++)
+        tasks.emplace_back(sleep());
+
+    coke::sync_wait(std::move(tasks));
+
+    return 0;
+}
+```
+
+### 更多示例
+
+请前往[example](./example/)目录继续阅读。
 
 
-## 构建
+## 如何构建
+
 需要完整支持C++ 20 coroutine功能的编译器
 
-- GCC >= 11
-- Clang >= 15
+- 若使用GCC编译器，建议`GCC >= 13`，至少`GCC >= 11`
+- 若使用Clang编译器，建议`Clang >= 18`，至少`Clang >= 15`
 
-### Ubuntu 24.04/22.04
-若不需构建示例，可将`-D COKE_ENABLE_EXAMPLE=1`选项去掉。
+
+### 一：安装依赖项
+
+构建时依赖编译器和openssl，单元测试部分依赖gtest，根据实际情况按需安装依赖项。
+
+- Ubuntu 24.04/22.04
+
+    ```bash
+    apt install gcc g++ libgtest-dev libssl-dev git cmake
+    ```
+
+- Fedora
+    ```bash
+    dnf install gcc gcc-c++ gtest-devel openssl-devel git cmake
+    ```
+
+- CentOS Stream 10/9
+
+    ```bash
+    dnf install gcc gcc-c++ openssl-devel git cmake
+    ```
+
+    可通过下述方式安装gtest
+
+    ```bash
+    dnf install epel-release
+    dnf install gtest-devel
+    ```
+
+### 二：下载源代码
+
+此处以`coke v0.6.0`和`workflow v0.11.11`为例，从github下载源代码
 
 ```bash
-apt install -y gcc g++ libgtest-dev libssl-dev git cmake
-git clone https://github.com/kedixa/coke.git
+git clone --branch v0.6.0 https://github.com/kedixa/coke.git
 cd coke
-git clone https://github.com/sogou/workflow.git
+git clone --branch v0.11.11 https://github.com/sogou/workflow.git
+```
+
+或从gitee下载源代码
+
+```bash
+git clone --branch v0.6.0 https://gitee.com/kedixa/coke.git
+cd coke
+git clone --branch v0.11.11 https://gitee.com/sogou/workflow.git
+```
+
+### 三：编译并体验示例
+
+- cmake参数`-j 8`表示编译时开启8个并发，如果有更多的cpu核心，可以指定一个更大的数。
+- 选项`-D COKE_ENABLE_EXAMPLE=1`表示构建示例，选项`-D COKE_ENABLE_TEST=1`表示构建单元测试。
+
+```bash
 cmake -S workflow -B build.workflow -D CMAKE_CXX_STANDARD=20
 cmake --build build.workflow -j 8
-cmake -S . -B build.coke -D Workflow_DIR=workflow -D CMAKE_CXX_STANDARD=20 -D COKE_ENABLE_EXAMPLE=1
+
+cmake -S . -B build.coke -D Workflow_DIR=workflow -D CMAKE_CXX_STANDARD=20 -D COKE_ENABLE_EXAMPLE=1 -D COKE_ENABLE_TEST=1
 cmake --build build.coke -j 8
+
+# 执行测试
+ctest --test-dir build.coke/test/
+
+# 体验示例
+./build.coke/example/helloworld
 ```
 
-### Ubuntu 20.04
-```bash
-# 添加源以使用gcc 11
-add-apt-repository ppa:ubuntu-toolchain-r/test
-apt install -y gcc-11 g++-11 libgtest-dev libssl-dev git cmake
-git clone https://github.com/kedixa/coke.git
-cd coke
-git clone https://github.com/sogou/workflow.git
-cmake -S workflow -B build.workflow -D CMAKE_CXX_STANDARD=20 -D CMAKE_C_COMPILER=gcc-11 -D CMAKE_CXX_COMPILER=g++-11
-cmake --build build.workflow -j 8
-cmake -S . -B build.coke -D Workflow_DIR=workflow -D CMAKE_CXX_STANDARD=20 -D CMAKE_C_COMPILER=gcc-11 -D CMAKE_CXX_COMPILER=g++-11 -D COKE_ENABLE_EXAMPLE=1
-cmake --build build.coke -j 8
-```
-
-### CentOS Stream 9
-```bash
-dnf install -y gcc gcc-c++ openssl-devel git cmake
-# 除安装软件包外，后续命令与Ubuntu 24.04一致
-# ...
-```
 
 ## 注意事项
 ### 关于具名任务
