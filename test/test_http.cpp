@@ -14,33 +14,27 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <cerrno>
+#include <string>
+
 #include <gtest/gtest.h>
+#include <netinet/in.h>
 
 #include "coke/coke.h"
 #include "coke/http/http_client.h"
 #include "coke/http/http_server.h"
-
 #include "workflow/WFTaskFactory.h"
 
-int http_port = -1;
+std::string url;
 
-std::string get_url() {
-    std::string url;
+coke::Task<> test_http_client()
+{
+    coke::HttpClientParams params;
+    params.retry_max = 1;
 
-    url.assign("http://localhost:")
-        .append(std::to_string(http_port))
-        .append("/hello");
-
-    return url;
-}
-
-coke::Task<> test_http_client() {
-    coke::HttpClient client;
-    std::string url = get_url();
-
+    coke::HttpClient client(params);
     coke::HttpResult res = co_await client.request(url);
 
     EXPECT_EQ(res.state, coke::STATE_SUCCESS);
@@ -48,8 +42,11 @@ coke::Task<> test_http_client() {
     EXPECT_STREQ(res.resp.get_status_code(), "200");
 }
 
-coke::Task<> test_http_task() {
-    WFHttpTask *task = WFTaskFactory::create_http_task(get_url(), 0, 0, nullptr);
+coke::Task<> test_http_task()
+{
+    WFHttpTask *task;
+
+    task = WFTaskFactory::create_http_task(url, 0, 1, nullptr);
     co_await coke::HttpAwaiter(task, false);
 
     EXPECT_EQ(task->get_state(), WFT_STATE_SUCCESS);
@@ -57,15 +54,18 @@ coke::Task<> test_http_task() {
     EXPECT_STREQ(task->get_resp()->get_status_code(), "200");
 }
 
-TEST(HTTP, http_client) {
-    coke::sync_wait(test_http_client());
-}
-
-TEST(HTTP, http_task) {
+TEST(HTTP, http_task)
+{
     coke::sync_wait(test_http_task());
 }
 
-coke::Task<> http_processor(coke::HttpServerContext ctx) {
+TEST(HTTP, http_client)
+{
+    coke::sync_wait(test_http_client());
+}
+
+coke::Task<> http_processor(coke::HttpServerContext ctx)
+{
     coke::HttpResponse &resp = ctx.get_resp();
 
     resp.set_status_code("200");
@@ -77,7 +77,8 @@ coke::Task<> http_processor(coke::HttpServerContext ctx) {
     co_await ctx.reply();
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 2;
     s.handler_threads = 4;
@@ -87,21 +88,31 @@ int main(int argc, char *argv[]) {
     testing::InitGoogleTest(&argc, argv);
 
     coke::HttpServer server(http_processor);
-
-    for (int i = 8000; i < 8010; i++) {
-        if (server.start(i) == 0) {
-            http_port = i;
-            break;
-        }
-    }
-
-    if (http_port == -1) {
-        EXPECT_NE(http_port, -1) << "Server start failed " << errno;
+    if (server.start(0) != 0) {
+        EXPECT_EQ(0, 1) << "Server start failed " << errno;
         return -1;
     }
 
-    int ret = RUN_ALL_TESTS();
-    server.stop();
+    int port = -1, ret;
+    sockaddr_storage addr;
+    socklen_t addrlen = sizeof(addr);
 
+    server.get_listen_addr((sockaddr *)&addr, &addrlen);
+
+    if (addr.ss_family == AF_INET)
+        port = ntohs(((sockaddr_in *)&addr)->sin_port);
+    else if (addr.ss_family == AF_INET6)
+        port = ntohs(((sockaddr_in6 *)&addr)->sin6_port);
+
+    if (port == -1) {
+        EXPECT_EQ(0, 1) << "Unknown address family " << addr.ss_family;
+        ret = -1;
+    }
+    else {
+        url.append("http://localhost:").append(std::to_string(port));
+        ret = RUN_ALL_TESTS();
+    }
+
+    server.stop();
     return ret;
 }
