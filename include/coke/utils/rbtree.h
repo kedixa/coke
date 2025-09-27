@@ -16,8 +16,8 @@
  * Authors: kedixa (https://github.com/kedixa)
  */
 
-#ifndef COKE_RBTREE_H
-#define COKE_RBTREE_H
+#ifndef COKE_UTILS_RBTREE_H
+#define COKE_UTILS_RBTREE_H
 
 #include <concepts>
 #include <cstdint>
@@ -46,7 +46,7 @@ template<typename T, RBTreeNode T::*Member>
 struct RBTreeTraits {
     static auto get_offset() noexcept
     {
-        const T *p          = nullptr;
+        const T *p = nullptr;
         const RBTreeNode *m = &(p->*Member);
         return reinterpret_cast<uintptr_t>(m) - reinterpret_cast<uintptr_t>(p);
     }
@@ -77,16 +77,16 @@ struct RBTreeTraits {
 template<typename T, RBTreeNode T::*Member>
 struct RBTreeIterator {
     using iterator_category = std::bidirectional_iterator_tag;
-    using difference_type   = std::ptrdiff_t;
-    using value_type        = T;
-    using pointer           = T *;
-    using reference         = T &;
-    using const_pointer     = const T *;
-    using const_reference   = const T &;
+    using difference_type = std::ptrdiff_t;
+    using value_type = T;
+    using pointer = T *;
+    using reference = T &;
+    using const_pointer = const T *;
+    using const_reference = const T &;
 
-    using Node   = RBTreeNode;
+    using Node = RBTreeNode;
     using Traits = RBTreeTraits<T, Member>;
-    using Self   = RBTreeIterator;
+    using Self = RBTreeIterator;
 
     RBTreeIterator() noexcept = default;
 
@@ -146,16 +146,16 @@ struct RBTreeIterator {
 template<typename T, RBTreeNode T::*Member>
 struct RBTreeConstIterator {
     using iterator_category = std::bidirectional_iterator_tag;
-    using difference_type   = std::ptrdiff_t;
-    using value_type        = T;
-    using pointer           = const T *;
-    using reference         = const T &;
-    using const_pointer     = const T *;
-    using const_reference   = const T &;
+    using difference_type = std::ptrdiff_t;
+    using value_type = T;
+    using pointer = const T *;
+    using reference = const T &;
+    using const_pointer = const T *;
+    using const_reference = const T &;
 
-    using Node     = RBTreeNode;
-    using Traits   = RBTreeTraits<T, Member>;
-    using Self     = RBTreeConstIterator;
+    using Node = RBTreeNode;
+    using Traits = RBTreeTraits<T, Member>;
+    using Self = RBTreeConstIterator;
     using Iterator = RBTreeIterator<T, Member>;
 
     RBTreeConstIterator() noexcept = default;
@@ -227,15 +227,15 @@ template<typename T, RBTreeNode T::*Member, typename Cmp>
     requires std::predicate<Cmp, T, T>
 class RBTree {
 public:
-    using iterator       = RBTreeIterator<T, Member>;
+    using iterator = RBTreeIterator<T, Member>;
     using const_iterator = RBTreeConstIterator<T, Member>;
-    using value_type     = T;
-    using key_compare    = Cmp;
-    using size_type      = std::size_t;
-    using pointer        = T *;
-    using const_pointer  = const T *;
+    using value_type = T;
+    using key_compare = Cmp;
+    using size_type = std::size_t;
+    using pointer = T *;
+    using const_pointer = const T *;
 
-    using Node   = RBTreeNode;
+    using Node = RBTreeNode;
     using Traits = RBTreeTraits<T, Member>;
 
     RBTree() noexcept { reinit(); }
@@ -249,7 +249,7 @@ public:
         other.reinit();
     }
 
-    RBTree(const RBTree &other)            = delete;
+    RBTree(const RBTree &other) = delete;
     RBTree &operator=(const RBTree &other) = delete;
 
     ~RBTree() noexcept { clear(); }
@@ -297,11 +297,11 @@ public:
         if (cur == &head) {
             if (cur->rb_parent) {
                 parent = head.rb_right;
-                link   = &parent->rb_right;
+                link = &parent->rb_right;
             }
             else {
                 parent = nullptr;
-                link   = &root.rb_node;
+                link = &root.rb_node;
             }
         }
         else if (cur->rb_left) {
@@ -310,11 +310,11 @@ public:
                 cur = cur->rb_right;
 
             parent = cur;
-            link   = &cur->rb_right;
+            link = &cur->rb_right;
         }
         else {
             parent = cur;
-            link   = &cur->rb_left;
+            link = &cur->rb_left;
         }
 
         Node *node_ptr = Traits::to_node_ptr(ptr);
@@ -326,7 +326,7 @@ public:
 
     iterator insert(T *ptr) noexcept
     {
-        Node **link  = &root.rb_node;
+        Node **link = &root.rb_node;
         Node *parent = nullptr;
 
         while (*link) {
@@ -362,7 +362,7 @@ public:
                 head.rb_right = rbtree_prev(cur);
         }
         else {
-            head.rb_left  = &head;
+            head.rb_left = &head;
             head.rb_right = &head;
         }
 
@@ -388,7 +388,7 @@ public:
         requires RBComparable<key_compare, T, K>
     const_iterator find(const K &key) const noexcept
     {
-        auto it     = lower_bound(key);
+        auto it = lower_bound(key);
         auto end_it = end();
 
         if (it != end_it && cmp(key, Traits::to_reference(it.node_ptr)))
@@ -465,12 +465,12 @@ public:
 private:
     void reinit() noexcept
     {
-        head.rb_left   = &head;
-        head.rb_right  = &head;
+        head.rb_left = &head;
+        head.rb_right = &head;
         head.rb_parent = nullptr;
-        head.rb_color  = RB_RED;
-        root.rb_node   = nullptr;
-        tree_size      = 0;
+        head.rb_color = RB_RED;
+        root.rb_node = nullptr;
+        tree_size = 0;
     }
 
 private:
@@ -482,4 +482,4 @@ private:
 
 } // namespace coke
 
-#endif // COKE_RBTREE_H
+#endif // COKE_UTILS_RBTREE_H

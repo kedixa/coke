@@ -16,8 +16,8 @@
  * Authors: kedixa (https://github.com/kedixa)
  */
 
-#ifndef COKE_LIST_H
-#define COKE_LIST_H
+#ifndef COKE_UTILS_LIST_H
+#define COKE_UTILS_LIST_H
 
 #include <cstdint>
 #include <iterator>
@@ -33,7 +33,7 @@ template<typename T, ListNode T::*Member>
 struct ListTraits {
     static auto get_offset() noexcept
     {
-        const T *p        = nullptr;
+        const T *p = nullptr;
         const ListNode *m = &(p->*Member);
         return reinterpret_cast<uintptr_t>(m) - reinterpret_cast<uintptr_t>(p);
     }
@@ -59,13 +59,13 @@ struct ListTraits {
 template<typename T, ListNode T::*Member>
 struct ListIterator {
     using iterator_category = std::bidirectional_iterator_tag;
-    using value_type        = T;
-    using difference_type   = std::ptrdiff_t;
-    using pointer           = T *;
-    using reference         = T &;
+    using value_type = T;
+    using difference_type = std::ptrdiff_t;
+    using pointer = T *;
+    using reference = T &;
 
-    using Node   = ListNode;
-    using Self   = ListIterator;
+    using Node = ListNode;
+    using Self = ListIterator;
     using Traits = ListTraits<T, Member>;
 
     ListIterator() noexcept = default;
@@ -118,14 +118,14 @@ struct ListIterator {
 template<typename T, ListNode T::*Member>
 struct ListConstIterator {
     using iterator_category = std::bidirectional_iterator_tag;
-    using value_type        = T;
-    using difference_type   = std::ptrdiff_t;
-    using pointer           = const T *;
-    using reference         = const T &;
+    using value_type = T;
+    using difference_type = std::ptrdiff_t;
+    using pointer = const T *;
+    using reference = const T &;
 
-    using Node     = ListNode;
-    using Self     = ListConstIterator;
-    using Traits   = ListTraits<T, Member>;
+    using Node = ListNode;
+    using Self = ListConstIterator;
+    using Traits = ListTraits<T, Member>;
     using Iterator = ListIterator<T, Member>;
 
     ListConstIterator() = default;
@@ -191,18 +191,18 @@ struct ListConstIterator {
 template<typename T, ListNode T::*Member>
 class List {
 public:
-    using iterator       = ListIterator<T, Member>;
+    using iterator = ListIterator<T, Member>;
     using const_iterator = ListConstIterator<T, Member>;
-    using pointer        = T *;
-    using const_pointer  = const T *;
-    using size_type      = std::size_t;
+    using pointer = T *;
+    using const_pointer = const T *;
+    using size_type = std::size_t;
 
-    using Node   = ListNode;
+    using Node = ListNode;
     using Traits = ListTraits<T, Member>;
 
     List() noexcept { reinit(); }
 
-    List(const List &other)            = delete;
+    List(const List &other) = delete;
     List &operator=(const List &other) = delete;
 
     List(List &&other) noexcept : head(other.head), list_size(other.list_size)
@@ -243,9 +243,9 @@ public:
 
         while (p != &head) {
             Node *next = p->next;
-            p->prev    = nullptr;
-            p->next    = nullptr;
-            p          = next;
+            p->prev = nullptr;
+            p->next = nullptr;
+            p = next;
         }
 
         reinit();
@@ -318,4 +318,4 @@ private:
 
 } // namespace coke
 
-#endif // COKE_LIST_H
+#endif // COKE_UTILS_LIST_H
