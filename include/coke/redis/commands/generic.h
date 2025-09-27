@@ -159,6 +159,26 @@ struct RedisGenericCommands {
     }
 
     /**
+     * @brief Delete `keys`.
+     * @return Integer, the number of keys that were removed.
+     *
+     * Command: DEL key [key ...]
+     */
+    template<typename... Strs>
+        requires (std::constructible_from<StrHolder, Strs &&> && ...)
+    auto del(StrHolder key, Strs &&...keys)
+    {
+        StrHolderVec v;
+
+        v.reserve(sizeof...(Strs) + 2);
+        v.push_back("DEL"_sv);
+        v.push_back(std::move(key));
+        (v.push_back(std::forward<Strs>(keys)), ...);
+
+        return run(std::move(v));
+    }
+
+    /**
      * @brief Serialize the value stored at `key` in a Redis-specific format.
      * @return Bulk string, the serialized result, or Null if `key` not exists.
      *
@@ -188,6 +208,29 @@ struct RedisGenericCommands {
 
         for (auto &key : keys)
             v.push_back(std::move(key));
+
+        return run(std::move(v), {.flags = REDIS_FLAG_READONLY});
+    }
+
+    /**
+     * @brief Check if `keys` exists.
+     * @return Integer, the number of keys that exists.
+     *
+     * Command: EXISTS key [key ...]
+     *
+     * Since Redis 1.0.0.
+     * Since Redis 3.0.3, accepts multiple key arguments.
+     */
+    template<typename... Strs>
+        requires (std::constructible_from<StrHolder, Strs &&> && ...)
+    auto exists(StrHolder key, Strs &&...keys)
+    {
+        StrHolderVec v;
+
+        v.reserve(sizeof...(Strs) + 2);
+        v.push_back("EXISTS"_sv);
+        v.push_back(std::move(key));
+        (v.push_back(std::forward<Strs>(keys)), ...);
 
         return run(std::move(v), {.flags = REDIS_FLAG_READONLY});
     }
@@ -555,6 +598,29 @@ struct RedisGenericCommands {
     }
 
     /**
+     * @brief Alters the last access time of `keys`.
+     * @return Integer, the number of keys that were touched.
+     *
+     * Command: TOUCH key [key ...]
+     *
+     * Since Redis 3.2.1.
+     */
+    template<typename... Strs>
+        requires (std::constructible_from<StrHolder, Strs &&> && ...)
+    auto touch(StrHolder key, Strs &&...keys)
+    {
+        StrHolderVec v;
+
+        v.reserve(sizeof...(Strs) + 2);
+        v.push_back("TOUCH"_sv);
+        v.push_back(std::move(key));
+        (v.push_back(std::forward<Strs>(keys)), ...);
+
+        // Not use REDIS_FLAG_READONLY to ensure always send to master node.
+        return run(std::move(v));
+    }
+
+    /**
      * @brief Get the time to live of `key`.
      * @return Integer, the time to live in seconds,
      *         -1 if no timeout, -2 if `key` not exists.
@@ -599,6 +665,28 @@ struct RedisGenericCommands {
 
         for (auto &key : keys)
             v.push_back(std::move(key));
+
+        return run(std::move(v));
+    }
+
+    /**
+     * @brief Unlink `keys` from the database.
+     * @return Integer, the number of keys that were unlinked.
+     *
+     * Command: UNLINK key [key ...]
+     *
+     * Since Redis 4.0.0.
+     */
+    template<typename... Strs>
+        requires (std::constructible_from<StrHolder, Strs &&> && ...)
+    auto unlink(StrHolder key, Strs &&...keys)
+    {
+        StrHolderVec v;
+
+        v.reserve(sizeof...(Strs) + 2);
+        v.push_back("UNLINK"_sv);
+        v.push_back(std::move(key));
+        (v.push_back(std::forward<Strs>(keys)), ...);
 
         return run(std::move(v));
     }
