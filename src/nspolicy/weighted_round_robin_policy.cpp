@@ -29,7 +29,7 @@ using AddrInfo = WeightedRoundRobinAddressInfo;
 
 void WeightedRoundRobinPolicy::add_to_policy(AddrInfo *addr)
 {
-    uint64_t rnd    = rand_u64();
+    uint64_t rnd = rand_u64();
     uint64_t offset = rnd % (SEATINGS / addr->get_weight());
 
     addr->reset_offset(cur_offset + offset);

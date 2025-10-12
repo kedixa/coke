@@ -32,16 +32,16 @@ class WeightedRandomAddressInfo;
 
 template<>
 struct NSPolicyTrait<WeightedRandomPolicy> {
-    using Policy   = WeightedRandomPolicy;
+    using Policy = WeightedRandomPolicy;
     using AddrInfo = WeightedRandomAddressInfo;
 
-    using PolicyMutex      = std::shared_mutex;
+    using PolicyMutex = std::shared_mutex;
     using PolicyModifyLock = std::unique_lock<PolicyMutex>;
     using PolicySelectLock = std::shared_lock<PolicyMutex>;
 
     using EfficientSelectTag = void;
-    using FastSuccessTag     = void;
-    using NoNeedFinishTag    = void;
+    using FastSuccessTag = void;
+    using NoNeedFinishTag = void;
 };
 
 class WeightedRandomAddressInfo : public AddressInfo {

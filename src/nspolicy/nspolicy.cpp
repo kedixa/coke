@@ -32,7 +32,7 @@ public:
 
     void add_addr(AddressInfo *addr)
     {
-        prev_success  = false;
+        prev_success = false;
         prev_notified = false;
         history.push_back(addr);
     }
@@ -88,8 +88,8 @@ protected:
         if (!policy)
             return WFResolverTask::dispatch();
 
-        ParsedURI &ns_uri         = ns_params_.uri;
-        WFNSTracing *tracing      = ns_params_.tracing;
+        ParsedURI &ns_uri = ns_params_.uri;
+        WFNSTracing *tracing = ns_params_.tracing;
         TracingData *tracing_data = (TracingData *)(tracing->data);
         AddressInfo *addr;
 
@@ -108,8 +108,8 @@ protected:
         }
 
         if (!tracing_data) {
-            tracing_data     = new TracingData(policy);
-            tracing->data    = tracing_data;
+            tracing_data = new TracingData(policy);
+            tracing->data = tracing_data;
             tracing->deleter = tracing_deleter;
         }
 
@@ -130,9 +130,9 @@ protected:
 
         const AddressParams &addr_params = addr->get_addr_params();
 
-        ep_params_       = addr_params.endpoint_params;
+        ep_params_ = addr_params.endpoint_params;
         dns_ttl_default_ = addr_params.dns_ttl_default;
-        dns_ttl_min_     = addr_params.dns_ttl_min;
+        dns_ttl_min_ = addr_params.dns_ttl_min;
 
         policy = nullptr;
 
@@ -155,7 +155,7 @@ NSPolicy::~NSPolicy()
         addr->dec_ref();
     }
 
-    recover_list.clear_unsafe();
+    recover_list.clear();
 }
 
 WFRouterTask *NSPolicy::create_router_task(const WFNSParams *params,
@@ -287,7 +287,7 @@ void NSPolicy::try_recover(bool all_break)
         recover_list.pop_front();
 
         addr->set_state(ADDR_STATE_GOOD);
-        addr->fail_marks      = 0;
+        addr->fail_marks = 0;
         addr->first_fail_time = 0;
         addr->recover_at_time = 0;
 

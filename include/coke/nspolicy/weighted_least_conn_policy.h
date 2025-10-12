@@ -28,10 +28,10 @@ class WeightedLeastConnAddressInfo;
 
 template<>
 struct NSPolicyTrait<WeightedLeastConnPolicy> {
-    using Policy   = WeightedLeastConnPolicy;
+    using Policy = WeightedLeastConnPolicy;
     using AddrInfo = WeightedLeastConnAddressInfo;
 
-    using PolicyMutex      = std::mutex;
+    using PolicyMutex = std::mutex;
     using PolicyModifyLock = std::unique_lock<PolicyMutex>;
     using PolicySelectLock = std::unique_lock<PolicyMutex>;
 };
@@ -134,7 +134,7 @@ public:
     {
     }
 
-    virtual ~WeightedLeastConnPolicy() { policy_set.clear_unsafe(); }
+    virtual ~WeightedLeastConnPolicy() { policy_set.clear(); }
 
 protected:
     void add_to_policy(AddrInfo *addr);

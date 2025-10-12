@@ -96,13 +96,13 @@ protected:
     using AddrSet =
         RBTree<AddressInfo, &AddressInfo::addr_node, AddressInfoCmp>;
     using AddrSetMutex = std::mutex;
-    using AddrSetLock  = std::unique_lock<AddrSetMutex>;
+    using AddrSetLock = std::unique_lock<AddrSetMutex>;
 
     static inline int64_t steady_milliseconds()
     {
         using std::chrono::milliseconds;
         auto now = std::chrono::steady_clock::now().time_since_epoch();
-        auto ms  = std::chrono::duration_cast<milliseconds>(now);
+        auto ms = std::chrono::duration_cast<milliseconds>(now);
         return static_cast<int64_t>(ms.count());
     }
 

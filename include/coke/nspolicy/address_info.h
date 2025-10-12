@@ -31,12 +31,16 @@
 
 namespace coke {
 
+// clang-format off
+
 enum {
     ADDR_STATE_GOOD     = 0,
     ADDR_STATE_FAILING  = 1,
     ADDR_STATE_DISABLED = 2,
     ADDR_STATE_REMOVED  = 3,
 };
+
+// clang-format on
 
 constexpr static uint16_t ADDRESS_WEIGHT_MAX = 1000;
 

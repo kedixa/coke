@@ -28,14 +28,14 @@ class WeightedRoundRobinAddressInfo;
 
 template<>
 struct NSPolicyTrait<WeightedRoundRobinPolicy> {
-    using Policy   = WeightedRoundRobinPolicy;
+    using Policy = WeightedRoundRobinPolicy;
     using AddrInfo = WeightedRoundRobinAddressInfo;
 
-    using PolicyMutex      = std::mutex;
+    using PolicyMutex = std::mutex;
     using PolicyModifyLock = std::unique_lock<PolicyMutex>;
     using PolicySelectLock = std::unique_lock<PolicyMutex>;
 
-    using FastSuccessTag  = void;
+    using FastSuccessTag = void;
     using NoNeedFinishTag = void;
 };
 
@@ -60,7 +60,7 @@ protected:
         }
     };
 
-    static constexpr uint64_t SEATINGS         = (1ULL << 20);
+    static constexpr uint64_t SEATINGS = (1ULL << 20);
     static constexpr uint64_t VIRTUAL_SEATINGS = (SEATINGS << 10);
 
     // The key of address info wraps at VIRTUAL_SEATINGS, it should be much
@@ -83,7 +83,7 @@ protected:
     void reset_offset(uint64_t key_offset)
     {
         offset = key_offset;
-        step   = 0;
+        step = 0;
         update_key();
     }
 
@@ -98,9 +98,9 @@ protected:
         key = SEATINGS * step / get_weight() + offset;
 
         if (key >= VIRTUAL_SEATINGS) [[unlikely]] {
-            key    = key % VIRTUAL_SEATINGS;
+            key = key % VIRTUAL_SEATINGS;
             offset = key;
-            step   = 0;
+            step = 0;
         }
     }
 
@@ -131,7 +131,7 @@ public:
     {
     }
 
-    virtual ~WeightedRoundRobinPolicy() { policy_set.clear_unsafe(); }
+    virtual ~WeightedRoundRobinPolicy() { policy_set.clear(); }
 
 protected:
     void add_to_policy(AddrInfo *addr);
