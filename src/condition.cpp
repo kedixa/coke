@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ * Copyright 2024-2025 Coke Project (https://github.com/kedixa/coke)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,30 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
-#include "coke/condition.h"
+#include "coke/detail/condition_impl.h"
 
-namespace coke {
+namespace coke::detail {
 
-Task<int> Condition::wait_impl(std::unique_lock<std::mutex> &lock,
-                               detail::TimedWaitHelper helper) {
-    int ret;
+Task<int> cv_wait(std::unique_lock<std::mutex> &lock, const void *addr,
+                  TimedWaitHelper helper, int *wait_cnt)
+{
     if (helper.timeout())
         co_return TOP_TIMEOUT;
 
-    auto s = sleep(get_addr(), helper);
-    ++wait_cnt;
+    int ret;
+    auto s = sleep(addr, helper);
+
+    if (wait_cnt)
+        ++*wait_cnt;
 
     lock.unlock();
     ret = co_await std::move(s);
     lock.lock();
-    --wait_cnt;
+
+    if (wait_cnt)
+        --*wait_cnt;
 
     if (ret == SLEEP_SUCCESS)
         ret = TOP_TIMEOUT;
@@ -42,24 +47,29 @@ Task<int> Condition::wait_impl(std::unique_lock<std::mutex> &lock,
     co_return ret;
 }
 
-Task<int> Condition::wait_impl(std::unique_lock<std::mutex> &lock,
-                               detail::TimedWaitHelper helper,
-                               std::function<bool()> pred) {
-    bool insert_head = false;
+Task<int> cv_wait(std::unique_lock<std::mutex> &lock, const void *addr,
+                  TimedWaitHelper helper, std::function<bool()> pred,
+                  int *wait_cnt)
+{
     int ret;
+    bool insert_head = false;
 
     while (!pred()) {
         if (helper.timeout())
             co_return TOP_TIMEOUT;
 
-        auto s = sleep(get_addr(), helper, insert_head);
-        ++wait_cnt;
+        auto s = sleep(addr, helper, insert_head);
         insert_head = true;
+
+        if (wait_cnt)
+            ++*wait_cnt;
 
         lock.unlock();
         ret = co_await std::move(s);
         lock.lock();
-        --wait_cnt;
+
+        if (wait_cnt)
+            --*wait_cnt;
 
         // if there is an error, return it
         if (ret == SLEEP_ABORTED || ret < 0)
@@ -69,4 +79,4 @@ Task<int> Condition::wait_impl(std::unique_lock<std::mutex> &lock,
     co_return TOP_SUCCESS;
 }
 
-} // namespace coke
+} // namespace coke::detail
