@@ -49,8 +49,8 @@ public:
      */
     Task<int> wait(std::unique_lock<std::mutex> &lock)
     {
-        return detail::cv_wait(lock, get_addr(), detail::TimedWaitHelper{},
-                               &wait_cnt);
+        return detail::cv_wait_impl(lock, get_addr(), detail::TimedWaitHelper{},
+                                    &wait_cnt);
     }
 
     /**
@@ -63,8 +63,8 @@ public:
     Task<int> wait(std::unique_lock<std::mutex> &lock,
                    std::function<bool()> pred)
     {
-        return detail::cv_wait(lock, get_addr(), detail::TimedWaitHelper{},
-                               std::move(pred), &wait_cnt);
+        return detail::cv_wait_impl(lock, get_addr(), detail::TimedWaitHelper{},
+                                    std::move(pred), &wait_cnt);
     }
 
     /**
@@ -80,8 +80,8 @@ public:
      */
     Task<int> wait_for(std::unique_lock<std::mutex> &lock, NanoSec nsec)
     {
-        return detail::cv_wait(lock, get_addr(), detail::TimedWaitHelper{nsec},
-                               &wait_cnt);
+        return detail::cv_wait_impl(lock, get_addr(),
+                                    detail::TimedWaitHelper{nsec}, &wait_cnt);
     }
 
     /**
@@ -95,8 +95,9 @@ public:
     Task<int> wait_for(std::unique_lock<std::mutex> &lock, NanoSec nsec,
                        std::function<bool()> pred)
     {
-        return detail::cv_wait(lock, get_addr(), detail::TimedWaitHelper{nsec},
-                               std::move(pred), &wait_cnt);
+        return detail::cv_wait_impl(lock, get_addr(),
+                                    detail::TimedWaitHelper{nsec},
+                                    std::move(pred), &wait_cnt);
     }
 
     /**

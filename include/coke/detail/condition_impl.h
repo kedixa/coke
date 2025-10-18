@@ -27,23 +27,35 @@
 
 namespace coke::detail {
 
-Task<int> cv_wait(std::unique_lock<std::mutex> &lock, const void *addr,
-                  TimedWaitHelper helper, int *wait_cnt);
+Task<int> cv_wait_impl(std::unique_lock<std::mutex> &lock, const void *addr,
+                       TimedWaitHelper helper, int *wait_cnt);
 
-Task<int> cv_wait(std::unique_lock<std::mutex> &lock, const void *addr,
-                  TimedWaitHelper helper, std::function<bool()> pred,
-                  int *wait_cnt);
+Task<int> cv_wait_impl(std::unique_lock<std::mutex> &lock, const void *addr,
+                       TimedWaitHelper helper, std::function<bool()> pred,
+                       int *wait_cnt);
 
-inline Task<int> cv_wait(std::unique_lock<std::mutex> &lock, const void *addr,
-                         TimedWaitHelper helper)
+inline Task<int> cv_wait(std::unique_lock<std::mutex> &lock, const void *addr)
 {
-    return cv_wait(lock, addr, helper, nullptr);
+    return cv_wait_impl(lock, addr, TimedWaitHelper{}, nullptr);
+}
+
+inline Task<int> cv_wait_for(std::unique_lock<std::mutex> &lock,
+                             const void *addr, NanoSec nsec)
+{
+    return cv_wait_impl(lock, addr, TimedWaitHelper{nsec}, nullptr);
 }
 
 inline Task<int> cv_wait(std::unique_lock<std::mutex> &lock, const void *addr,
-                         TimedWaitHelper helper, std::function<bool()> pred)
+                         std::function<bool()> pred)
 {
-    return cv_wait(lock, addr, helper, pred, nullptr);
+    return cv_wait_impl(lock, addr, TimedWaitHelper{}, pred, nullptr);
+}
+
+inline Task<int> cv_wait_for(std::unique_lock<std::mutex> &lock,
+                             const void *addr, NanoSec nsec,
+                             std::function<bool()> pred)
+{
+    return cv_wait_impl(lock, addr, TimedWaitHelper{nsec}, pred, nullptr);
 }
 
 inline std::size_t cv_notify(const void *addr, std::size_t n = std::size_t(-1))

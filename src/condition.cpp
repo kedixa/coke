@@ -20,8 +20,8 @@
 
 namespace coke::detail {
 
-Task<int> cv_wait(std::unique_lock<std::mutex> &lock, const void *addr,
-                  TimedWaitHelper helper, int *wait_cnt)
+Task<int> cv_wait_impl(std::unique_lock<std::mutex> &lock, const void *addr,
+                       TimedWaitHelper helper, int *wait_cnt)
 {
     if (helper.timeout())
         co_return TOP_TIMEOUT;
@@ -47,9 +47,9 @@ Task<int> cv_wait(std::unique_lock<std::mutex> &lock, const void *addr,
     co_return ret;
 }
 
-Task<int> cv_wait(std::unique_lock<std::mutex> &lock, const void *addr,
-                  TimedWaitHelper helper, std::function<bool()> pred,
-                  int *wait_cnt)
+Task<int> cv_wait_impl(std::unique_lock<std::mutex> &lock, const void *addr,
+                       TimedWaitHelper helper, std::function<bool()> pred,
+                       int *wait_cnt)
 {
     int ret;
     bool insert_head = false;
