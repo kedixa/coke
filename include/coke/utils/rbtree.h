@@ -22,6 +22,7 @@
 #include <concepts>
 #include <cstdint>
 #include <iterator>
+#include <utility>
 
 #include "workflow/rbtree.h"
 
@@ -31,6 +32,8 @@ using RBTreeNode = struct rb_node;
 
 template<typename R, typename T, typename U>
 concept RBComparable = std::predicate<R, T, U> && std::predicate<R, U, T>;
+
+namespace detail {
 
 RBTreeNode *rbtree_next(RBTreeNode *node) noexcept;
 RBTreeNode *rbtree_prev(RBTreeNode *node) noexcept;
@@ -223,12 +226,14 @@ struct RBTreeConstIterator {
     const Node *node_ptr;
 };
 
+} // namespace detail
+
 template<typename T, RBTreeNode T::*Member, typename Cmp>
     requires std::predicate<Cmp, T, T>
 class RBTree {
 public:
-    using iterator = RBTreeIterator<T, Member>;
-    using const_iterator = RBTreeConstIterator<T, Member>;
+    using iterator = detail::RBTreeIterator<T, Member>;
+    using const_iterator = detail::RBTreeConstIterator<T, Member>;
     using value_type = T;
     using key_compare = Cmp;
     using size_type = std::size_t;
@@ -236,23 +241,52 @@ public:
     using const_pointer = const T *;
 
     using Node = RBTreeNode;
-    using Traits = RBTreeTraits<T, Member>;
+    using Traits = detail::RBTreeTraits<T, Member>;
 
+    /**
+     * @brief Create an empty RBTree.
+     */
     RBTree() noexcept { reinit(); }
 
+    /**
+     * @brief Create an empty RBTree with a custom comparator.
+     * @param cmp Comparator to compare two elements.
+     */
     explicit RBTree(const key_compare &cmp) noexcept : cmp(cmp) { reinit(); }
 
+    /**
+     * @brief Move constructor.
+     */
     RBTree(RBTree &&other) noexcept
         : head(other.head), root(other.root), tree_size(other.tree_size),
-          cmp(other.cmp)
+          cmp(std::move(other.cmp))
     {
         other.reinit();
     }
 
+    /**
+     * @brief Move assignment.
+     */
+    RBTree &operator=(RBTree &&other) noexcept
+    {
+        if (this != &other) {
+            head = other.head;
+            root = other.root;
+            tree_size = other.tree_size;
+            cmp = std::move(other.cmp);
+            other.reinit();
+        }
+
+        return *this;
+    }
+
+    /**
+     * @brief RBTree is not copyable.
+     */
     RBTree(const RBTree &other) = delete;
     RBTree &operator=(const RBTree &other) = delete;
 
-    ~RBTree() noexcept { clear(); }
+    ~RBTree() = default;
 
     iterator begin() noexcept { return iterator(head.rb_left); }
     const_iterator begin() const noexcept { return cbegin(); }
@@ -280,14 +314,18 @@ public:
     bool empty() const noexcept { return size() == 0; }
     size_type size() const noexcept { return tree_size; }
 
-    void clear_unsafe() noexcept { reinit(); }
+    /**
+     * @brief Clear the tree.
+     * @attention This will not delete the elements in the tree.
+     */
+    void clear() noexcept { reinit(); }
 
-    void clear() noexcept
-    {
-        rbtree_clear(head.rb_parent);
-        reinit();
-    }
-
+    /**
+     * @brief Insert element before pos.
+     * @param pos Iterator pointing to the position to insert before.
+     * @param ptr Pointer to the element to be inserted.
+     * @return Iterator pointing to the inserted element.
+     */
     iterator insert(const_iterator pos, T *ptr) noexcept
     {
         Node *cur = pos.remove_const().node_ptr;
@@ -318,12 +356,17 @@ public:
         }
 
         Node *node_ptr = Traits::to_node_ptr(ptr);
-        rbtree_insert(&head, &root, parent, link, node_ptr);
+        detail::rbtree_insert(&head, &root, parent, link, node_ptr);
 
         ++tree_size;
         return iterator(node_ptr);
     }
 
+    /**
+     * @brief Insert element into the tree.
+     * @param ptr Pointer to the element to be inserted.
+     * @return Iterator pointing to the inserted element.
+     */
     iterator insert(T *ptr) noexcept
     {
         Node **link = &root.rb_node;
@@ -339,27 +382,35 @@ public:
         }
 
         Node *node_ptr = Traits::to_node_ptr(ptr);
-        rbtree_insert(&head, &root, parent, link, node_ptr);
+        detail::rbtree_insert(&head, &root, parent, link, node_ptr);
 
         ++tree_size;
         return iterator(node_ptr);
     }
 
+    /**
+     * @brief Erase the element at pos.
+     * @param pos Iterator pointing to the element to be erased.
+     */
     void erase(const_iterator pos) noexcept
     {
         erase(pos.remove_const().get_pointer());
     }
 
+    /**
+     * @brief Erase the element pointed by ptr.
+     * @param ptr Pointer to the element to be erased.
+     */
     void erase(T *ptr) noexcept
     {
         Node *cur = Traits::to_node_ptr(ptr);
 
         if (size() > 1) {
             if (head.rb_left == cur)
-                head.rb_left = rbtree_next(cur);
+                head.rb_left = detail::rbtree_next(cur);
 
             if (head.rb_right == cur)
-                head.rb_right = rbtree_prev(cur);
+                head.rb_right = detail::rbtree_prev(cur);
         }
         else {
             head.rb_left = &head;
@@ -376,6 +427,11 @@ public:
         --tree_size;
     }
 
+    /**
+     * @brief Find element by key.
+     * @param key Key to find.
+     * @return Iterator pointing to the found element, or end() if not found.
+     */
     template<typename K>
         requires RBComparable<key_compare, T, K>
     iterator find(const K &key) noexcept
@@ -384,6 +440,11 @@ public:
         return const_this->find(key).remove_const();
     }
 
+    /**
+     * @brief Find element by key.
+     * @param key Key to find.
+     * @return Iterator pointing to the found element, or cend() if not found.
+     */
     template<typename K>
         requires RBComparable<key_compare, T, K>
     const_iterator find(const K &key) const noexcept
@@ -397,6 +458,10 @@ public:
         return it;
     }
 
+    /**
+     * @brief Check if the tree contains an element with the given key.
+     * @param key Key to check.
+     */
     template<typename K>
         requires RBComparable<key_compare, T, K>
     bool contains(const K &key) const noexcept
@@ -404,6 +469,11 @@ public:
         return find(key) != cend();
     }
 
+    /**
+     * @brief Get the lower bound of the given key.
+     * @param key Key to get the lower bound.
+     * @return Iterator pointing to the first element not less than the key.
+     */
     template<typename K>
         requires RBComparable<key_compare, T, K>
     iterator lower_bound(const K &key) noexcept
@@ -412,6 +482,11 @@ public:
         return const_this->lower_bound(key).remove_const();
     }
 
+    /**
+     * @brief Get the lower bound of the given key.
+     * @param key Key to get the lower bound.
+     * @return Iterator pointing to the first element not less than the key.
+     */
     template<typename K>
         requires RBComparable<key_compare, T, K>
     const_iterator lower_bound(const K &key) const noexcept
@@ -432,6 +507,11 @@ public:
         return const_iterator(pos);
     }
 
+    /**
+     * @brief Get the upper bound of the given key.
+     * @param key Key to get the upper bound.
+     * @return Iterator pointing to the first element greater than the key.
+     */
     template<typename K>
         requires RBComparable<key_compare, T, K>
     iterator upper_bound(const K &key) noexcept
@@ -440,6 +520,11 @@ public:
         return const_this->upper_bound(key).remove_const();
     }
 
+    /**
+     * @brief Get the upper bound of the given key.
+     * @param key Key to get the upper bound.
+     * @return Iterator pointing to the first element greater than the key.
+     */
     template<typename K>
         requires RBComparable<key_compare, T, K>
     const_iterator upper_bound(const K &key) const noexcept
@@ -460,7 +545,25 @@ public:
         return const_iterator(pos);
     }
 
+    /**
+     * @brief Get the comparator used by the tree.
+     * @return Comparator used by the tree.
+     */
     key_compare key_comp() const noexcept { return cmp; }
+
+    /**
+     * @brief Swap with another tree.
+     * @param other Another tree to swap with.
+     */
+    void swap(RBTree &other) noexcept
+    {
+        if (this != &other) {
+            std::swap(head, other.head);
+            std::swap(root, other.root);
+            std::swap(tree_size, other.tree_size);
+            std::swap(cmp, other.cmp);
+        }
+    }
 
 private:
     void reinit() noexcept
