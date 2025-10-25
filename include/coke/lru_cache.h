@@ -25,18 +25,12 @@
 #include <optional>
 #include <type_traits>
 
-#include "coke/condition.h"
+#include "coke/detail/condition_impl.h"
 #include "coke/detail/ref_counted.h"
 #include "coke/utils/list.h"
 #include "coke/utils/rbtree.h"
 
 namespace coke {
-
-enum : uint16_t {
-    LRU_WAITING = 0,
-    LRU_SUCCESS = 1,
-    LRU_FAILED  = 2,
-};
 
 template<typename R, typename T, typename U>
 concept LruComparable = std::predicate<R, T, U> && std::predicate<R, U, T>;
@@ -44,34 +38,41 @@ concept LruComparable = std::predicate<R, T, U> && std::predicate<R, U, T>;
 template<typename, typename, typename>
 class LruCache;
 
+namespace detail {
+
+enum : uint16_t {
+    LRU_WAITING = 0,
+    LRU_SUCCESS = 1,
+    LRU_FAILED = 2,
+};
+
 template<typename K, typename V>
-struct LruEntry : public detail::RefCounted<LruEntry<K, V>> {
-    using Key   = K;
+struct LruEntry : public RefCounted<LruEntry<K, V>> {
+    using Key = K;
     using Value = V;
 
     template<typename U>
     LruEntry(uint16_t state, std::mutex *mtx, const U &key)
-        : key(key), removed(false), state(state), mtx(mtx)
+        : state(state), removed(false), mtx(mtx), key(key)
     {
     }
 
-    Key key;
-    std::optional<Value> value;
+    std::atomic<uint16_t> state;
+    bool removed;
+    std::mutex *mtx;
 
     ListNode lst;
     RBTreeNode rb;
 
-    bool removed;
-    std::atomic<uint16_t> state;
-    Condition cv;
-    std::mutex *mtx;
+    Key key;
+    std::optional<Value> value;
 };
 
 template<typename K, typename V>
 class LruHandle {
 public:
     using Entry = LruEntry<K, V>;
-    using Key   = typename Entry::Key;
+    using Key = typename Entry::Key;
     using Value = typename Entry::Value;
 
     /**
@@ -122,7 +123,7 @@ public:
             if (entry)
                 entry->dec_ref();
 
-            entry       = other.entry;
+            entry = other.entry;
             other.entry = nullptr;
         }
 
@@ -201,37 +202,35 @@ public:
     /**
      * @brief Wake up one coroutine that waiting for the handle.
      */
-    void notify_one() { entry->cv.notify_one(); }
+    void notify_one() { cv_notify(entry, 1); }
 
     /**
      * @brief Wake up all coroutines waiting for the handle.
      */
-    void notify_all() { entry->cv.notify_all(); }
+    void notify_all() { cv_notify(entry); }
 
     /**
      * @brief Wait for the handle's value to be emplaced or created, or
      *        set_failed to be called.
-     * @return See coke::Condition::wait.
+     * @return Same as Condition::wait.
      */
     Task<int> wait()
     {
         std::unique_lock lk(*entry->mtx);
-        int ret = co_await entry->cv.wait(lk, [this] { return !waiting(); });
-
+        int ret = co_await cv_wait(lk, entry, [this] { return !waiting(); });
         co_return ret;
     }
 
     /**
      * @brief Wait for the handle's value to be emplaced or created, or
      *        set_failed to be called.
-     * @return See coke::Condition::wait_for.
+     * @return Same as Condition::wait_for.
      */
     Task<int> wait_for(NanoSec nsec)
     {
         std::unique_lock lk(*entry->mtx);
-        int ret = co_await entry->cv.wait_for(lk, nsec,
-                                              [this] { return !waiting(); });
-
+        int ret = co_await cv_wait_for(lk, entry, nsec,
+                                       [this] { return !waiting(); });
         co_return ret;
     }
 
@@ -282,17 +281,19 @@ private:
     Entry *entry;
 
     template<typename, typename, typename>
-    friend class LruCache;
+    friend class coke::LruCache;
 };
+
+} // namespace detail
 
 template<typename K, typename V, typename C = std::less<>>
 class LruCache {
 public:
-    using Key      = K;
-    using Value    = V;
-    using Compare  = C;
-    using Entry    = LruEntry<K, V>;
-    using Handle   = LruHandle<K, V>;
+    using Key = K;
+    using Value = V;
+    using Compare = C;
+    using Entry = detail::LruEntry<K, V>;
+    using Handle = detail::LruHandle<K, V>;
     using SizeType = std::size_t;
 
     struct EntryCompare {
@@ -319,7 +320,7 @@ public:
     };
 
     using ListType = List<Entry, &Entry::lst>;
-    using SetType  = RBTree<Entry, &Entry::rb, EntryCompare>;
+    using SetType = RBTree<Entry, &Entry::rb, EntryCompare>;
 
 public:
     /**
@@ -340,6 +341,13 @@ public:
      * @brief Lru cache is not copyable.
      */
     LruCache(const LruCache &) = delete;
+    LruCache &operator=(const LruCache &) = delete;
+
+    /**
+     * @brief Lru cache is not movable.
+     */
+    LruCache(LruCache &&) = delete;
+    LruCache &operator=(LruCache &&) = delete;
 
     /**
      * @brief Destroy the cache.
@@ -360,7 +368,7 @@ public:
     /**
      * @brief Get the capacity of the cache.
      */
-    SizeType capacity() const { return cap; }
+    SizeType capacity() const noexcept { return cap; }
 
     /**
      * @brief Get lru handle by key. If the key is not found, return an empty
@@ -406,7 +414,7 @@ public:
         if (entry_set.size() >= cap)
             remove_entry(entry_list.front());
 
-        Entry *entry = new Entry(LRU_WAITING, next_mtx(), key);
+        Entry *entry = new Entry(detail::LRU_WAITING, next_mtx(), key);
         entry_list.push_back(entry);
         entry_set.insert(entry);
 
@@ -423,7 +431,8 @@ public:
                   std::constructible_from<Value, Args && ...>)
     Handle put(const U &key, Args &&...args)
     {
-        std::unique_ptr<Entry> entry_ptr(new Entry(LRU_SUCCESS, nullptr, key));
+        using EntryPtr = std::unique_ptr<Entry>;
+        EntryPtr entry_ptr(new Entry(detail::LRU_SUCCESS, nullptr, key));
         entry_ptr->value.emplace(std::forward<Args>(args)...);
 
         std::lock_guard lg(mtx);
@@ -441,7 +450,7 @@ public:
     }
 
     /**
-     * @brief Remove a key from the cache.
+     * @brief Remove the key from the cache.
      */
     template<typename U>
         requires LruComparable<Compare, Key, const U &>
@@ -455,7 +464,7 @@ public:
     }
 
     /**
-     * @brief Remove a key from the cache by handle.
+     * @brief Remove the handle from the cache.
      */
     void remove(const Handle &handle)
     {
@@ -468,16 +477,17 @@ public:
      */
     void clear()
     {
-        std::lock_guard lg(mtx);
         Entry *entry;
+        std::lock_guard lg(mtx);
+
+        // Clear the set before dec_ref.
+        entry_set.clear();
 
         while (!entry_list.empty()) {
-            entry          = entry_list.pop_front();
+            entry = entry_list.pop_front();
             entry->removed = true;
             entry->dec_ref();
         }
-
-        entry_set.clear_unsafe();
     }
 
 private:

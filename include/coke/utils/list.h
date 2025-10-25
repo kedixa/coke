@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <iterator>
+#include <utility>
 
 namespace coke {
 
@@ -28,6 +29,8 @@ struct ListNode {
     ListNode *next;
     ListNode *prev;
 };
+
+namespace detail {
 
 template<typename T, ListNode T::*Member>
 struct ListTraits {
@@ -188,29 +191,60 @@ struct ListConstIterator {
     const Node *node_ptr;
 };
 
+} // namespace detail
+
+/**
+ * @brief Instrusive doubly linked list.
+ *
+ * This class only manages the linkage between nodes, the lifetime of nodes
+ * is managed by the user.
+ */
 template<typename T, ListNode T::*Member>
 class List {
 public:
-    using iterator = ListIterator<T, Member>;
-    using const_iterator = ListConstIterator<T, Member>;
+    using iterator = detail::ListIterator<T, Member>;
+    using const_iterator = detail::ListConstIterator<T, Member>;
     using pointer = T *;
     using const_pointer = const T *;
     using size_type = std::size_t;
 
     using Node = ListNode;
-    using Traits = ListTraits<T, Member>;
+    using Traits = detail::ListTraits<T, Member>;
 
+    /**
+     * @brief Create an empty list.
+     */
     List() noexcept { reinit(); }
 
-    List(const List &other) = delete;
-    List &operator=(const List &other) = delete;
-
+    /**
+     * @brief Move constructor.
+     */
     List(List &&other) noexcept : head(other.head), list_size(other.list_size)
     {
         other.reinit();
     }
 
-    ~List() { clear(); }
+    /**
+     * @brief Move assignment.
+     */
+    List &operator=(List &&other) noexcept
+    {
+        if (this != &other) {
+            head = other.head;
+            list_size = other.list_size;
+            other.reinit();
+        }
+
+        return *this;
+    }
+
+    /**
+     * @brief List is not copyable.
+     */
+    List(const List &other) = delete;
+    List &operator=(const List &other) = delete;
+
+    ~List() = default;
 
     pointer front() noexcept { return Traits::to_pointer(head.next); }
     const_pointer front() const noexcept
@@ -235,21 +269,11 @@ public:
     bool empty() const noexcept { return size() == 0; }
     size_type size() const noexcept { return list_size; }
 
-    void clear_unsafe() noexcept { reinit(); }
-
-    void clear() noexcept
-    {
-        Node *p = head.next;
-
-        while (p != &head) {
-            Node *next = p->next;
-            p->prev = nullptr;
-            p->next = nullptr;
-            p = next;
-        }
-
-        reinit();
-    }
+    /**
+     * @brief Clear the list.
+     * @attention This will not delete the elements in the list.
+     */
+    void clear() noexcept { reinit(); }
 
     void push_back(pointer ptr) noexcept { insert(end(), ptr); }
 
@@ -269,9 +293,14 @@ public:
         return ptr;
     }
 
-    iterator erase(const_iterator it) noexcept
+    /**
+     * @brief Erase the element at pos.
+     * @param pos Iterator pointing to the element to be erased.
+     * @return Iterator pointing to the next element (or end()).
+     */
+    iterator erase(const_iterator pos) noexcept
     {
-        Node *node = it.remove_const().node_ptr;
+        Node *node = pos.remove_const().node_ptr;
         Node *prev = node->prev;
         Node *next = node->next;
 
@@ -282,12 +311,23 @@ public:
         return iterator(next);
     }
 
+    /**
+     * @brief Erase the element pointed by ptr.
+     * @param ptr Pointer to the element to be erased.
+     * @return Iterator pointing to the next element (or end()).
+     */
     iterator erase(pointer ptr) noexcept
     {
         Node *node = Traits::to_node_ptr(ptr);
         return erase(const_iterator(node));
     }
 
+    /**
+     * @brief Insert element before pos.
+     * @param pos Iterator pointing to the position to insert before.
+     * @param ptr Pointer to the element to be inserted.
+     * @return Iterator pointing to the inserted element.
+     */
     iterator insert(const_iterator pos, pointer ptr) noexcept
     {
         Node *node = Traits::to_node_ptr(ptr);
@@ -303,6 +343,18 @@ public:
         return iterator(node);
     }
 
+    /**
+     * @brief Swap with another list.
+     * @param other Another list to swap with.
+     */
+    void swap(List &other) noexcept
+    {
+        if (this != &other) {
+            std::swap(head, other.head);
+            std::swap(list_size, other.list_size);
+        }
+    }
+
 private:
     void reinit() noexcept
     {
@@ -312,7 +364,7 @@ private:
     }
 
 private:
-    ListNode head;
+    Node head;
     size_type list_size;
 };
 

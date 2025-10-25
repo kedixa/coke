@@ -29,7 +29,7 @@ using AddrInfo = WeightedRandomAddressInfo;
 
 void WeightedRandomPolicy::add_to_policy(AddrInfo *addr)
 {
-    auto pos       = tree.add_element(addr->get_weight());
+    auto pos = tree.add_element(addr->get_weight());
     addr->addr_pos = pos;
 
     policy_addrs.push_back(addr);
@@ -39,7 +39,7 @@ void WeightedRandomPolicy::add_to_policy(AddrInfo *addr)
 void WeightedRandomPolicy::remove_from_policy(AddrInfo *addr)
 {
     if (addr->addr_pos != tree.size()) {
-        AddrInfo *last       = policy_addrs.back();
+        AddrInfo *last = policy_addrs.back();
         uint16_t addr_weight = addr->get_weight();
         uint16_t last_weight = last->get_weight();
 
@@ -51,7 +51,7 @@ void WeightedRandomPolicy::remove_from_policy(AddrInfo *addr)
             tree.increase(addr->addr_pos, last_weight - addr_weight);
 
         policy_addrs[addr->addr_pos] = last;
-        last->addr_pos               = addr->addr_pos;
+        last->addr_pos = addr->addr_pos;
     }
 
     tree.remove_last_element();
@@ -87,7 +87,7 @@ AddrInfo *WeightedRandomPolicy::select_addr(const ParsedURI &uri,
     if (params.try_another_addr && prev && in_policy(prev)) {
         // whether prev is the only addr
         prev_weight = prev->get_weight();
-        flag        = prev_weight < available_weight;
+        flag = prev_weight < available_weight;
     }
 
     uint64_t rnd = rand_u64();
@@ -97,7 +97,7 @@ AddrInfo *WeightedRandomPolicy::select_addr(const ParsedURI &uri,
     }
     else {
         uint64_t tmp_available = available_weight - prev_weight;
-        uint64_t prev_sum      = tree.prefix_sum(prev->addr_pos - 1);
+        uint64_t prev_sum = tree.prefix_sum(prev->addr_pos - 1);
 
         rnd = rnd % tmp_available;
         if (rnd >= prev_sum)
@@ -105,7 +105,7 @@ AddrInfo *WeightedRandomPolicy::select_addr(const ParsedURI &uri,
     }
 
     std::size_t pos = tree.find_pos(rnd);
-    AddrInfo *addr  = policy_addrs[pos];
+    AddrInfo *addr = policy_addrs[pos];
     addr->inc_ref();
 
     return addr;

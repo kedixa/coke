@@ -31,14 +31,14 @@ struct NSPolicyTrait;
 template<typename PolicyImpl>
 class WeightedPolicyBase : public NSPolicy {
 protected:
-    using Policy      = PolicyImpl;
+    using Policy = PolicyImpl;
     using PolicyTrait = NSPolicyTrait<Policy>;
 
-    using AddrInfo         = typename PolicyTrait::AddrInfo;
-    using PolicyMutex      = typename PolicyTrait::PolicyMutex;
+    using AddrInfo = typename PolicyTrait::AddrInfo;
+    using PolicyMutex = typename PolicyTrait::PolicyMutex;
     using PolicyModifyLock = typename PolicyTrait::PolicyModifyLock;
     using PolicySelectLock = typename PolicyTrait::PolicySelectLock;
-    using AddrUniquePtr    = std::unique_ptr<AddrInfo, AddressInfoDeleter>;
+    using AddrUniquePtr = std::unique_ptr<AddrInfo, AddressInfoDeleter>;
 
     static constexpr bool efficient_select = requires {
         typename PolicyTrait::EfficientSelectTag;

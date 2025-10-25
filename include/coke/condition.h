@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ * Copyright 2024-2025 Coke Project (https://github.com/kedixa/coke)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,12 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_CONDITION_H
 #define COKE_CONDITION_H
 
-#include <functional>
-#include <mutex>
-
-#include "coke/task.h"
-#include "coke/sleep.h"
+#include "coke/detail/condition_impl.h"
 
 namespace coke {
 
@@ -31,14 +27,17 @@ class Condition {
 public:
     /**
      * @brief Create a Condition.
-    */
-    Condition() noexcept : wait_cnt(0) { }
+     */
+    Condition() noexcept : wait_cnt(0) {}
 
     /**
      * @brief Condition is neither copyable nor movable.
-    */
+     */
     Condition(const Condition &) = delete;
+    Condition(Condition &&) = delete;
+
     Condition &operator=(const Condition &) = delete;
+    Condition &operator=(Condition &&) = delete;
 
     ~Condition() = default;
 
@@ -47,9 +46,11 @@ public:
      *
      * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
      *         See wait_for but ignore coke::TOP_TIMEOUT.
-    */
-    Task<int> wait(std::unique_lock<std::mutex> &lock) { 
-        return wait_impl(lock, detail::TimedWaitHelper{});
+     */
+    Task<int> wait(std::unique_lock<std::mutex> &lock)
+    {
+        return detail::cv_wait_impl(lock, get_addr(), detail::TimedWaitHelper{},
+                                    &wait_cnt);
     }
 
     /**
@@ -58,10 +59,12 @@ public:
      *
      * @return Coroutine(coke::Task<int>) that needs to be awaited immediately.
      *         See wait_for but ignore coke::TOP_TIMEOUT.
-    */
+     */
     Task<int> wait(std::unique_lock<std::mutex> &lock,
-                   std::function<bool()> pred) {
-        return wait_impl(lock, detail::TimedWaitHelper{}, std::move(pred));
+                   std::function<bool()> pred)
+    {
+        return detail::cv_wait_impl(lock, get_addr(), detail::TimedWaitHelper{},
+                                    std::move(pred), &wait_cnt);
     }
 
     /**
@@ -74,9 +77,11 @@ public:
      * @retval coke::TOP_ABORTED If process exit.
      * @retval Negative integer to indicate system error, almost never happens.
      * @see coke/global.h
-    */
-    Task<int> wait_for(std::unique_lock<std::mutex> &lock, NanoSec nsec) {
-        return wait_impl(lock, detail::TimedWaitHelper{nsec});
+     */
+    Task<int> wait_for(std::unique_lock<std::mutex> &lock, NanoSec nsec)
+    {
+        return detail::cv_wait_impl(lock, get_addr(),
+                                    detail::TimedWaitHelper{nsec}, &wait_cnt);
     }
 
     /**
@@ -88,14 +93,17 @@ public:
      *         only if `pred()` returns true.
      */
     Task<int> wait_for(std::unique_lock<std::mutex> &lock, NanoSec nsec,
-                       std::function<bool()> pred) {
-        return wait_impl(lock, detail::TimedWaitHelper{nsec}, std::move(pred));
+                       std::function<bool()> pred)
+    {
+        return detail::cv_wait_impl(lock, get_addr(),
+                                    detail::TimedWaitHelper{nsec},
+                                    std::move(pred), &wait_cnt);
     }
 
     /**
      * @brief If any coroutines are waiting on *this, calling notify_one
      *        unblocks one of them.
-    */
+     */
     void notify_one() { notify(1); }
 
     /**
@@ -104,29 +112,20 @@ public:
      *
      * @param n The number of coroutines waiting on *this to wakeup, if less
      *        than n, wakeup all.
-    */
-    void notify(std::size_t n) { cancel_sleep_by_addr(get_addr(), n); }
+     */
+    void notify(std::size_t n) { detail::cv_notify(get_addr(), n); }
 
     /**
      * @brief If any coroutines are waiting on *this, calling notify_all
      *        unblocks all of them.
-    */
-    void notify_all() { cancel_sleep_by_addr(get_addr()); }
+     */
+    void notify_all() { notify(std::size_t(-1)); }
 
 protected:
-    Task<int> wait_impl(std::unique_lock<std::mutex> &lock,
-                        detail::TimedWaitHelper helper);
-
-    Task<int> wait_impl(std::unique_lock<std::mutex> &lock,
-                        detail::TimedWaitHelper helper,
-                        std::function<bool()> pred);
-
-    const void *get_addr() const noexcept {
-        return (const char *)this + 1;
-    }
+    const void *get_addr() const noexcept { return (const char *)this + 1; }
 
 private:
-    // This count is not needed, it is for debugging convenience, and make
+    // This count is not necessary, it is for debugging convenience, and make
     // *this has unique address.
     int wait_cnt;
 };

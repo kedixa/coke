@@ -31,7 +31,7 @@ bool WeightedPolicyBase<PolicyImpl>::add_address(const std::string &host,
 {
     AddrSetLock addr_set_lk(addr_set_mtx);
 
-    auto old_it      = addr_set.find(HostPortRef{host, port});
+    auto old_it = addr_set.find(HostPortRef{host, port});
     bool has_address = (old_it != addr_set.end());
 
     if (has_address && !replace)
@@ -84,7 +84,7 @@ bool WeightedPolicyBase<PolicyImpl>::break_address(const std::string &host,
     auto steady_ms = steady_milliseconds();
 
     addr->set_state(ADDR_STATE_DISABLED);
-    addr->fail_marks      = params.max_fail_marks;
+    addr->fail_marks = params.max_fail_marks;
     addr->first_fail_time = steady_ms;
     addr->recover_at_time = steady_ms + params.break_timeout_ms;
 
@@ -112,7 +112,7 @@ bool WeightedPolicyBase<PolicyImpl>::recover_address(const std::string &host,
     }
 
     addr->set_state(ADDR_STATE_GOOD);
-    addr->fail_marks      = 0;
+    addr->fail_marks = 0;
     addr->first_fail_time = 0;
     addr->recover_at_time = 0;
 
@@ -247,7 +247,7 @@ void WeightedPolicyBase<PolicyImpl>::handle_failed(AddrInfo *addr)
         return;
 
     int64_t steady_ms = steady_milliseconds();
-    bool was_good     = (addr_state == ADDR_STATE_GOOD);
+    bool was_good = (addr_state == ADDR_STATE_GOOD);
     bool disable;
 
     addr->fail_marks += params.fail_inc_marks;
@@ -284,7 +284,7 @@ std::vector<bool> WeightedPolicyBase<PolicyImpl>::add_addresses(
     AddrSetLock addr_set_lk(addr_set_mtx);
 
     for (const auto &pack : addr_packs) {
-        auto it          = addr_set.find(HostPortRef{pack.host, pack.port});
+        auto it = addr_set.find(HostPortRef{pack.host, pack.port});
         bool has_address = (it != addr_set.end());
 
         if (has_address && !replace) {

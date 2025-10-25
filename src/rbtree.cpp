@@ -18,7 +18,7 @@
 
 #include "coke/utils/rbtree.h"
 
-namespace coke {
+namespace coke::detail {
 
 RBTreeNode *rbtree_next(RBTreeNode *node) noexcept
 {
@@ -32,7 +32,7 @@ RBTreeNode *rbtree_next(RBTreeNode *node) noexcept
 
     RBTreeNode *parent = node->rb_parent;
     while (node == parent->rb_right) {
-        node   = parent;
+        node = parent;
         parent = node->rb_parent;
     }
 
@@ -55,7 +55,7 @@ RBTreeNode *rbtree_prev(RBTreeNode *node) noexcept
 
     RBTreeNode *parent = node->rb_parent;
     while (node == parent->rb_left) {
-        node   = parent;
+        node = parent;
         parent = node->rb_parent;
     }
 
@@ -79,10 +79,10 @@ void rbtree_clear(RBTreeNode *node) noexcept
         rbtree_clear(node->rb_left);
 
         node->rb_parent = nullptr;
-        node->rb_left   = nullptr;
-        node->rb_right  = nullptr;
-        node->rb_color  = RB_BLACK;
-        node            = next;
+        node->rb_left = nullptr;
+        node->rb_right = nullptr;
+        node->rb_color = RB_BLACK;
+        node = next;
     }
 }
 
@@ -103,7 +103,7 @@ void rbtree_insert(RBTreeNode *head, struct rb_root *root, RBTreeNode *parent,
             head->rb_right = parent->rb_right;
     }
     else {
-        head->rb_left  = node;
+        head->rb_left = node;
         head->rb_right = node;
     }
 
@@ -111,7 +111,7 @@ void rbtree_insert(RBTreeNode *head, struct rb_root *root, RBTreeNode *parent,
 
     // relink to head
     root->rb_node->rb_parent = head;
-    head->rb_parent          = root->rb_node;
+    head->rb_parent = root->rb_node;
 }
 
-} // namespace coke
+} // namespace coke::detail

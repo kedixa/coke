@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_TOOLS_SCOPE_H
 #define COKE_TOOLS_SCOPE_H
@@ -24,22 +24,19 @@
 namespace coke {
 
 template<typename F>
-    requires (std::is_nothrow_invocable_r_v<void, F>
-              && std::is_nothrow_move_constructible_v<F>)
+    requires (std::is_nothrow_invocable_r_v<void, F> &&
+              std::is_nothrow_move_constructible_v<F>)
 class ScopeExit {
 public:
-    explicit ScopeExit(F f)
-        : func(std::move(f))
-    { }
+    explicit ScopeExit(F f) : func(std::move(f)) {}
 
     ScopeExit(const ScopeExit &) = delete;
     ScopeExit &operator=(const ScopeExit &) = delete;
 
-    void release() noexcept {
-        active = false;
-    }
+    void release() noexcept { active = false; }
 
-    ~ScopeExit() {
+    ~ScopeExit()
+    {
         if (active)
             func();
     }
