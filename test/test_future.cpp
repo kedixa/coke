@@ -14,47 +14,54 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <chrono>
-#include <string>
 #include <gtest/gtest.h>
+#include <string>
 
 #include "coke/coke.h"
 #include "coke/future.h"
 using std::chrono::milliseconds;
 
 template<typename T>
-coke::Task<> process(T data, coke::Promise<T> p) {
+coke::Task<> process(T data, coke::Promise<T> p)
+{
     co_await coke::sleep(milliseconds(300));
     p.set_value(data);
 }
 
-coke::Task<> process(coke::Promise<void> p) {
+coke::Task<> process(coke::Promise<void> p)
+{
     co_await coke::sleep(milliseconds(300));
     p.set_value();
 }
 
-coke::Task<std::string> create_task() {
+coke::Task<std::string> create_task()
+{
     co_await coke::sleep(milliseconds(300));
     co_return std::string(100, 'a');
 }
 
-coke::Task<void> create_void_task() {
+coke::Task<void> create_void_task()
+{
     co_await coke::sleep(milliseconds(300));
     co_return;
 }
 
-coke::Task<> create_exception_task() {
+coke::Task<> create_exception_task()
+{
     co_await coke::yield();
     throw std::runtime_error("this is an exception");
 }
 
-coke::Task<> sleep(std::chrono::nanoseconds ns) {
+coke::Task<> sleep(std::chrono::nanoseconds ns)
+{
     co_await coke::sleep(ns);
 }
 
-coke::Task<> test_async_future() {
+coke::Task<> test_async_future()
+{
     {
         std::string str(100, 'a'), result;
         coke::Future<std::string> fut = coke::create_future(create_task());
@@ -113,7 +120,8 @@ coke::Task<> test_async_future() {
 }
 
 template<typename T>
-void do_test(T data, int ms, int state) {
+void do_test(T data, int ms, int state)
+{
     coke::Promise<T> pro;
     coke::Future<T> fut = pro.get_future();
     int wait_state;
@@ -126,7 +134,8 @@ void do_test(T data, int ms, int state) {
     coke::sync_wait(fut.wait());
 }
 
-void do_test(int ms, int state) {
+void do_test(int ms, int state)
+{
     coke::Promise<void> pro;
     coke::Future<void> fut = pro.get_future();
     int wait_state;
@@ -139,15 +148,14 @@ void do_test(int ms, int state) {
     coke::sync_wait(fut.wait());
 }
 
-coke::Task<> wait_future() {
+coke::Task<> wait_future()
+{
     auto create = []() {
         std::vector<coke::Future<void>> futs;
         futs.reserve(4);
 
         for (int i = 0; i < 4; i++) {
-            futs.emplace_back(
-                coke::create_future(sleep(milliseconds(50 * i)))
-            );
+            futs.emplace_back(coke::create_future(sleep(milliseconds(50 * i))));
         }
 
         return futs;
@@ -206,22 +214,26 @@ coke::Task<> wait_future() {
     }
 }
 
-TEST(FUTURE, string) {
-    do_test(std::string(120, 'a'), 200, coke::FUTURE_STATE_TIMEOUT);
+TEST(FUTURE, string)
+{
+    do_test(std::string(120, 'a'), 20, coke::FUTURE_STATE_TIMEOUT);
     do_test(std::string(120, 'a'), 400, coke::FUTURE_STATE_READY);
 }
 
-TEST(FUTURE, integer) {
-    do_test(1, 200, coke::FUTURE_STATE_TIMEOUT);
+TEST(FUTURE, integer)
+{
+    do_test(1, 20, coke::FUTURE_STATE_TIMEOUT);
     do_test(1, 400, coke::FUTURE_STATE_READY);
 }
 
-TEST(FUTURE, void) {
-    do_test(200, coke::FUTURE_STATE_TIMEOUT);
+TEST(FUTURE, void)
+{
+    do_test(20, coke::FUTURE_STATE_TIMEOUT);
     do_test(400, coke::FUTURE_STATE_READY);
 }
 
-TEST(FUTURE, broken) {
+TEST(FUTURE, broken)
+{
     coke::Future<int> f;
     EXPECT_FALSE(f.valid());
 
@@ -237,15 +249,18 @@ TEST(FUTURE, broken) {
     EXPECT_EQ(ret, coke::FUTURE_STATE_BROKEN);
 }
 
-TEST(FUTURE, from_task) {
+TEST(FUTURE, from_task)
+{
     coke::sync_wait(test_async_future());
 }
 
-TEST(FUTURE, wait_future) {
+TEST(FUTURE, wait_future)
+{
     coke::sync_wait(wait_future());
 }
 
-TEST(FUTURE, cancel) {
+TEST(FUTURE, cancel)
+{
     coke::Promise<int> pro;
     coke::Future<int> fut = pro.get_future();
 
@@ -262,7 +277,8 @@ TEST(FUTURE, cancel) {
     EXPECT_EQ(fut.get(), 0);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 2;
     s.handler_threads = 2;

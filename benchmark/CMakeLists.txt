@@ -5,6 +5,7 @@ set(ALL_BENCHMARK
     bench_go
     bench_graph
     bench_queue
+    bench_redis_cli
     bench_timer
     bench_weighted_policy
 )

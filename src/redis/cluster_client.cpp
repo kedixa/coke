@@ -209,21 +209,9 @@ void RedisClusterClientImpl::init_client()
 Task<RedisResult> RedisClusterClientImpl::_execute(StrHolderVec command,
                                                    RedisExecuteOption opt)
 {
-    auto table_ptr = get_slots_table();
-    if (!table_ptr || table_ptr->state != 0 || table_ptr->outdated) {
-        uint64_t ver = (table_ptr ? table_ptr->version : 0);
-        table_ptr = co_await update_slots_table(ver);
-    }
-
     RedisResult result;
-
-    if (table_ptr->state != 0) {
-        result.set_state(table_ptr->state);
-        result.set_error(table_ptr->error);
-        co_return result;
-    }
-
     int slot = opt.slot;
+
     if (slot == REDIS_AUTO_SLOT) {
         // Auto slot not supported now.
         result.set_state(WFT_STATE_TASK_ERROR);
@@ -241,8 +229,7 @@ Task<RedisResult> RedisClusterClientImpl::_execute(StrHolderVec command,
 
         slot = get_redis_key_slot(command[key_pos].as_view());
     }
-
-    if (slot == REDIS_ANY_PRIMARY) {
+    else if (slot == REDIS_ANY_PRIMARY) {
         // Randomly choose a slot.
         slot = rand_u64() % (uint64_t)REDIS_CLUSTER_SLOTS;
     }
@@ -253,32 +240,41 @@ Task<RedisResult> RedisClusterClientImpl::_execute(StrHolderVec command,
         co_return result;
     }
 
-    // Handle normal slot.
+    bool use_replica = (opt.flags & REDIS_FLAG_READONLY) && params.read_replica;
+    std::size_t node_idx = 0;
 
-    int nodes_index = table_ptr->slot_index[slot];
-    if (nodes_index < 0) {
-        result.set_state(WFT_STATE_TASK_ERROR);
-        result.set_error(REDIS_ERR_INCOMPLETE_SLOT);
-        co_return result;
-    }
+    if (use_replica)
+        node_idx = choice_cnt.fetch_add(1, std::memory_order_relaxed);
 
-    const RedisSlotNodes &nodes = table_ptr->nodes_vec[nodes_index];
-    bool read_only = (opt.flags & REDIS_FLAG_READONLY);
-
-    if (read_only && params.read_replica) {
-        std::size_t replica_cnt = nodes.size();
-        std::size_t try_from = choice_cnt++ % replica_cnt;
-
-        for (int i = 0; i <= params.retry_max; i++) {
-            const RedisSlotNode &node = nodes[(try_from + i) % replica_cnt];
-            result = co_await execute_impl(table_ptr, node, 0, command, opt);
-            if (result.get_state() != WFT_STATE_SYS_ERROR)
-                break;
+    for (int i = 0; i <= params.retry_max; i++) {
+        auto table_ptr = get_slots_table();
+        if (!table_ptr || table_ptr->state != 0 || table_ptr->outdated) {
+            uint64_t ver = (table_ptr ? table_ptr->version : 0);
+            table_ptr = co_await update_slots_table(ver);
         }
-    }
-    else {
-        result = co_await execute_impl(table_ptr, nodes[0], params.retry_max,
-                                       command, opt);
+
+        if (table_ptr->state != 0) {
+            result.set_state(table_ptr->state);
+            result.set_error(table_ptr->error);
+            co_return result;
+        }
+
+        int nodes_index = table_ptr->slot_index[slot];
+        if (nodes_index < 0) {
+            result.set_state(WFT_STATE_TASK_ERROR);
+            result.set_error(REDIS_ERR_INCOMPLETE_SLOT);
+            co_return result;
+        }
+
+        const RedisSlotNodes &nodes = table_ptr->nodes_vec[nodes_index];
+        auto &node = nodes[node_idx % nodes.size()];
+
+        result = co_await execute_impl(table_ptr, node, 0, command, opt);
+        if (result.get_state() != WFT_STATE_SYS_ERROR)
+            break;
+
+        if (use_replica)
+            ++node_idx;
     }
 
     co_return result;
@@ -357,6 +353,11 @@ Task<RedisResult> RedisClusterClientImpl::execute_impl(
         if (state != WFT_STATE_SUCCESS) {
             result.set_state(state);
             result.set_error(error);
+
+            // Maybe node is down, mark the table outdated.
+            if (state == WFT_STATE_SYS_ERROR && table)
+                table->outdated.store(true, std::memory_order_relaxed);
+
             break;
         }
 

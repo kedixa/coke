@@ -32,4 +32,4 @@ jobs:
         cmake --build build.workflow -j 8
         cmake -S . -B build.coke -DWorkflow_DIR=workflow -DCMAKE_CXX_COMPILER=clang++ -DCOKE_ENABLE_EXAMPLE=y -DCOKE_ENABLE_TEST=y
         cmake --build build.coke -j 8
-        ctest -j 2 --test-dir build.coke/test --output-on-failure
+        ctest -j 1 --test-dir build.coke/test --output-on-failure
