@@ -7,6 +7,7 @@ set(SRCS
     dag.cpp
     fileio.cpp
     go.cpp
+    hashtable.cpp
     http_impl.cpp
     latch.cpp
     mutex.cpp
