@@ -27,15 +27,12 @@
 
 #include "coke/detail/condition_impl.h"
 #include "coke/detail/ref_counted.h"
+#include "coke/utils/hashtable.h"
 #include "coke/utils/list.h"
-#include "coke/utils/rbtree.h"
 
 namespace coke {
 
-template<typename R, typename T, typename U>
-concept LruComparable = std::predicate<R, T, U> && std::predicate<R, U, T>;
-
-template<typename, typename, typename>
+template<typename, typename, typename, typename>
 class LruCache;
 
 namespace detail {
@@ -53,16 +50,15 @@ struct LruEntry : public RefCounted<LruEntry<K, V>> {
 
     template<typename U>
     LruEntry(uint16_t state, std::mutex *mtx, const U &key)
-        : state(state), removed(false), mtx(mtx), key(key)
+        : removed(false), state(state), mtx(mtx), key(key)
     {
     }
 
-    std::atomic<uint16_t> state;
     bool removed;
-    std::mutex *mtx;
-
+    std::atomic<uint16_t> state;
+    HashtableNode ht;
     ListNode lst;
-    RBTreeNode rb;
+    std::mutex *mtx;
 
     Key key;
     std::optional<Value> value;
@@ -280,59 +276,69 @@ private:
 private:
     Entry *entry;
 
-    template<typename, typename, typename>
+    template<typename, typename, typename, typename>
     friend class coke::LruCache;
 };
 
 } // namespace detail
 
-template<typename K, typename V, typename C = std::less<>>
+template<typename K, typename V, typename H = std::hash<K>,
+         typename E = std::equal_to<>>
 class LruCache {
 public:
     using Key = K;
     using Value = V;
-    using Compare = C;
+    using Hash = H;
+    using Equal = E;
     using Entry = detail::LruEntry<K, V>;
     using Handle = detail::LruHandle<K, V>;
     using SizeType = std::size_t;
 
-    struct EntryCompare {
+    struct EntryHash {
         template<typename U>
-            requires (!std::is_same_v<std::remove_cvref_t<U>, Entry>)
-        auto operator()(const Entry &lhs, const U &rhs) const
+        auto operator()(const U &key) const
         {
-            return cmp(lhs.key, rhs);
+            if constexpr (std::is_same_v<std::remove_cvref_t<U>, Entry>)
+                return hash(key.key);
+            else
+                return hash(key);
         }
 
-        template<typename U>
-            requires (!std::is_same_v<std::remove_cvref_t<U>, Entry>)
-        auto operator()(const U &lhs, const Entry &rhs) const
-        {
-            return cmp(lhs, rhs.key);
-        }
-
-        auto operator()(const Entry &lhs, const Entry &rhs) const
-        {
-            return cmp(lhs.key, rhs.key);
-        }
-
-        [[no_unique_address]] Compare cmp;
+        [[no_unique_address]] Hash hash;
     };
 
+    struct EntryEqual {
+        template<typename U>
+        auto operator()(const Entry &lhs, const U &rhs) const
+        {
+            if constexpr (std::is_same_v<std::remove_cvref_t<U>, Entry>)
+                return equal(lhs.key, rhs.key);
+            else
+                return equal(lhs.key, rhs);
+        }
+
+        [[no_unique_address]] Equal equal;
+    };
+
+    using HtableType = Hashtable<Entry, &Entry::ht, EntryHash, EntryEqual>;
     using ListType = List<Entry, &Entry::lst>;
-    using SetType = RBTree<Entry, &Entry::rb, EntryCompare>;
+    using EntryGuard = std::unique_ptr<Entry>;
+
+    static_assert(
+        HashEqualComparable<Hash, Equal, Key, Key>,
+        "LruCache requires HashEqualComparable<Hash, Equal, Key, Key>");
 
 public:
     /**
-     * @brief Create lru cache with max_size, 0 means no limit.
+     * @brief Create lru cache.
+     * @param max_size The max size of cache, 0 means no limit. If cache is
+     *        full and new element is added, another element will be dropped.
+     * @param hash Hash function for key.
+     * @param equal Equal function for key.
      */
-    explicit LruCache(SizeType max_size) : LruCache(max_size, Compare{}) {}
-
-    /**
-     * @brief Create lru cache with max size and compare object.
-     */
-    LruCache(SizeType max_size, const Compare &cmp)
-        : entry_set(EntryCompare{cmp}),
+    explicit LruCache(SizeType max_size = 0, const Hash &hash = Hash(),
+                      const Equal &equal = Equal())
+        : entry_table(EntryHash{hash}, EntryEqual{equal}),
           cap(max_size == 0 ? SizeType(-1) : max_size)
     {
     }
@@ -362,7 +368,7 @@ public:
     SizeType size() const
     {
         std::lock_guard lg(mtx);
-        return entry_set.size();
+        return entry_table.size();
     }
 
     /**
@@ -371,17 +377,16 @@ public:
     SizeType capacity() const noexcept { return cap; }
 
     /**
-     * @brief Get lru handle by key. If the key is not found, return an empty
-     *        handle.
+     * @brief Get lru handle by key. If not found, return an empty handle.
      */
     template<typename U>
-        requires LruComparable<Compare, Key, U>
+        requires HashEqualComparable<Hash, Equal, Key, U>
     Handle get(const U &key)
     {
         std::lock_guard lg(mtx);
 
-        auto it = entry_set.find(key);
-        if (it != entry_set.end()) {
+        auto it = entry_table.find(key);
+        if (it != entry_table.end()) {
             Entry *entry = it.get_pointer();
             entry_list.erase(entry);
             entry_list.push_back(entry);
@@ -401,24 +406,25 @@ public:
      *            create the value, and wake up the coroutine waiting for it.
      */
     template<typename U>
-        requires (LruComparable<Compare, Key, U> &&
+        requires (HashEqualComparable<Hash, Equal, Key, U> &&
                   std::constructible_from<Key, const U &>)
+    [[nodiscard]]
     std::pair<Handle, bool> get_or_create(const U &key)
     {
         std::lock_guard lg(mtx);
 
-        auto it = entry_set.find(key);
-        if (it != entry_set.end())
+        auto it = entry_table.find(key);
+        if (it != entry_table.end())
             return std::make_pair(Handle(it.get_pointer()), false);
 
-        if (entry_set.size() >= cap)
+        if (entry_table.size() >= cap)
             remove_entry(entry_list.front());
 
-        Entry *entry = new Entry(detail::LRU_WAITING, next_mtx(), key);
-        entry_list.push_back(entry);
-        entry_set.insert(entry);
+        EntryGuard entry(new Entry(detail::LRU_WAITING, next_mtx(), key));
+        entry_table.insert(entry.get());
+        entry_list.push_back(entry.get());
 
-        return std::make_pair(Handle(entry), true);
+        return std::make_pair(Handle(entry.release()), true);
     }
 
     /**
@@ -426,40 +432,39 @@ public:
      * @return The handle of the new object.
      */
     template<typename U, typename... Args>
-        requires (LruComparable<Compare, Key, const U &> &&
+        requires (HashEqualComparable<Hash, Equal, Key, const U &> &&
                   std::constructible_from<Key, const U &> &&
                   std::constructible_from<Value, Args && ...>)
     Handle put(const U &key, Args &&...args)
     {
-        using EntryPtr = std::unique_ptr<Entry>;
-        EntryPtr entry_ptr(new Entry(detail::LRU_SUCCESS, nullptr, key));
-        entry_ptr->value.emplace(std::forward<Args>(args)...);
+        EntryGuard entry(new Entry(detail::LRU_SUCCESS, nullptr, key));
+        entry->value.emplace(std::forward<Args>(args)...);
 
         std::lock_guard lg(mtx);
 
-        auto it = entry_set.find(key);
-        if (it != entry_set.end())
+        auto it = entry_table.find(key);
+        if (it != entry_table.end())
             remove_entry(it.get_pointer());
-        else if (entry_set.size() >= cap)
+        else if (entry_table.size() >= cap)
             remove_entry(entry_list.front());
 
-        entry_list.push_back(entry_ptr.get());
-        entry_set.insert(entry_ptr.get());
+        entry_table.insert(entry.get());
+        entry_list.push_back(entry.get());
 
-        return Handle(entry_ptr.release());
+        return Handle(entry.release());
     }
 
     /**
      * @brief Remove the key from the cache.
      */
     template<typename U>
-        requires LruComparable<Compare, Key, const U &>
+        requires HashEqualComparable<Hash, Equal, Key, const U &>
     void remove(const U &key)
     {
         std::lock_guard lg(mtx);
 
-        auto it = entry_set.find(key);
-        if (it != entry_set.end())
+        auto it = entry_table.find(key);
+        if (it != entry_table.end())
             remove_entry(it.get_pointer());
     }
 
@@ -480,8 +485,8 @@ public:
         Entry *entry;
         std::lock_guard lg(mtx);
 
-        // Clear the set before dec_ref.
-        entry_set.clear();
+        // Clear the table before dec_ref.
+        entry_table.clear();
 
         while (!entry_list.empty()) {
             entry = entry_list.pop_front();
@@ -495,8 +500,8 @@ private:
     {
         if (!entry->removed) {
             entry->removed = true;
+            entry_table.erase(entry);
             entry_list.erase(entry);
-            entry_set.erase(entry);
             entry->dec_ref();
         }
     }
@@ -511,7 +516,7 @@ private:
 
 private:
     mutable std::mutex mtx;
-    SetType entry_set;
+    HtableType entry_table;
     ListType entry_list;
     SizeType cap;
 
