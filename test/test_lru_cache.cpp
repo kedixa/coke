@@ -14,24 +14,44 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <chrono>
+#include <gtest/gtest.h>
 #include <string>
 #include <string_view>
-#include <gtest/gtest.h>
 
 #include "coke/lru_cache.h"
 #include "coke/sleep.h"
 #include "coke/wait.h"
 
+struct StrHash {
+    std::size_t operator()(const std::string &str) const noexcept
+    {
+        std::string_view view(str.data(), str.size());
+        return std::hash<std::string_view>{}(view);
+    }
+
+    std::size_t operator()(const std::string_view &view) const noexcept
+    {
+        return std::hash<std::string_view>{}(view);
+    }
+
+    std::size_t operator()(const char *str) const noexcept
+    {
+        std::string_view view(str);
+        return std::hash<std::string_view>{}(view);
+    }
+};
+
 using IntCache = coke::LruCache<int, int>;
 using IntHandle = IntCache::Handle;
 
-using StrCache = coke::LruCache<std::string, std::string>;
+using StrCache = coke::LruCache<std::string, std::string, StrHash>;
 using StrHandle = StrCache::Handle;
 
-coke::Task<void> test_wait(IntCache &cache, int key, int value) {
+coke::Task<void> test_wait(IntCache &cache, int key, int value)
+{
     co_await coke::yield();
 
     auto [h, is_created] = cache.get_or_create(key);
@@ -53,7 +73,8 @@ coke::Task<void> test_wait(IntCache &cache, int key, int value) {
     EXPECT_EQ(h.value(), value);
 }
 
-TEST(LRU_CACHE, basic) {
+TEST(LRU_CACHE, basic)
+{
     StrCache cache(10);
 
     StrHandle h = cache.get("hello");
@@ -89,7 +110,8 @@ TEST(LRU_CACHE, basic) {
     EXPECT_TRUE(h.success());
 }
 
-TEST(LRU_CACHE, create_value) {
+TEST(LRU_CACHE, create_value)
+{
     StrCache cache(10);
     auto [h, is_created] = cache.get_or_create("key");
 
@@ -97,16 +119,16 @@ TEST(LRU_CACHE, create_value) {
     EXPECT_TRUE(h);
     EXPECT_TRUE(h.waiting());
 
-    h.create_value([](std::optional<std::string> &value) {
-        value.emplace(10, 'a');
-    });
+    h.create_value(
+        [](std::optional<std::string> &value) { value.emplace(10, 'a'); });
     h.notify_all();
-    
+
     EXPECT_TRUE(h.success());
     EXPECT_EQ(h.value(), std::string(10, 'a'));
 }
 
-TEST(LRU_CACHE, failed) {
+TEST(LRU_CACHE, failed)
+{
     StrCache cache(10);
     auto [h, is_created] = cache.get_or_create("key");
 
@@ -115,12 +137,13 @@ TEST(LRU_CACHE, failed) {
     EXPECT_TRUE(h.waiting());
 
     h.set_failed();
-    
+
     EXPECT_TRUE(h.failed());
     EXPECT_FALSE(h.waiting());
 }
 
-TEST(LRU_CACHE, max_size) {
+TEST(LRU_CACHE, max_size)
+{
     IntCache cache(10);
 
     for (int i = 0; i < 11; i++)
@@ -134,17 +157,16 @@ TEST(LRU_CACHE, max_size) {
     EXPECT_EQ(cache.size(), 10);
 }
 
-TEST(LRU_CACHE, wait) {
+TEST(LRU_CACHE, wait)
+{
     IntCache cache(10);
 
-    coke::sync_wait(
-        test_wait(cache, 1, 2),
-        test_wait(cache, 1, 2),
-        test_wait(cache, 1, 2)
-    );
+    coke::sync_wait(test_wait(cache, 1, 2), test_wait(cache, 1, 2),
+                    test_wait(cache, 1, 2));
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 4;
     s.handler_threads = 8;
