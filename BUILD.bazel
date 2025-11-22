@@ -53,6 +53,7 @@ cc_library(
         "include/coke/qps_pool.h",
         "include/coke/queue_common.h",
         "include/coke/queue.h",
+        "include/coke/rlru_cache.h",
         "include/coke/semaphore.h",
         "include/coke/series.h",
         "include/coke/shared_mutex.h",
