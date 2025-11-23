@@ -1,31 +1,53 @@
 使用下述功能需要包含头文件`coke/lru_cache.h`。
 
 ## coke::LruCache
-`coke::LruCache`是一个基于LRU淘汰策略的并发安全的缓存容器，支持异步等待缓存就绪。适用于需要缓存热点数据且需要协调多个协程访问同一资源的场景。
+
+`LruCache`是一个基于LRU淘汰策略的并发安全的缓存容器，支持异步等待缓存就绪。适用于需要缓存热点数据且需要协调多个协程访问同一资源的场景。
 
 ```cpp
-template<typename Key, typename Value, typename Compare = std::less<>>
+template<typename K, typename V, typename H = std::hash<K>,
+         typename E = std::equal_to<>>
 class LruCache;
 ```
 
-`LruCache::Handle`为`LruHandle<Key, Value>`的别名。
+`LruCache`使用哈希表管理数据，默认使用`std::hash<K>`计算key的哈希值，使用`std::equal_to<void>`比较两个key是否等价。
+
+### 成员类型
+
+```cpp
+using Key = K;
+using Value = V;
+using Hash = H;
+using Equal = E;
+using Entry = detail::LruEntry<K, V>;
+using Handle = detail::LruHandle<K, V>;
+using SizeType = std::size_t;
+```
 
 ### 成员函数
 
 - 构造函数
 
-    创建指定容量和比较器的`coke::LruCache`。默认使用`std::less<>`比较键。当`max_size`为0时，表示容量无限制。
-
-    `coke::LruCache`不可移动、不可复制。
+    创建指定容量的`LruCache`。若`max_size`为0则转换为`SizeType(-1)`。
 
     ```cpp
-    explicit LruCache(SizeType max_size);
-    LruCache(SizeType max_size, const Compare &cmp);
+    explicit LruCache(SizeType max_size = 0, const Hash &hash = Hash(),
+                      const Equal &equal = Equal());
+    ```
+
+    `LruCache`不可移动、不可复制。
+
+    ```cpp
+    LruCache(LruCache &&) = delete;
+    LruCache &operator=(LruCache &&) = delete;
+
+    LruCache(const LruCache &) = delete;
+    LruCache &operator=(const LruCache &) = delete;
     ```
 
 - 析构函数
 
-    销毁`LruCache`，应保证所有通过`get_or_create`返回的句柄都不再处于等待状态。
+    销毁`LruCache`，应保证所有通过`get_or_create`返回的`handle`都不再处于等待状态。
 
     ```cpp
     ~LruCache();
@@ -34,16 +56,20 @@ class LruCache;
 - 容量查询
 
     ```cpp
-    SizeType size() const;    // 当前缓存条目数
-    SizeType capacity() const; // 最大容量
+    // 获取当前缓存的条目数
+    SizeType size() const;
+
+    // 获取构造时传入的缓存容量
+    SizeType capacity() const;
     ```
 
 - 获取条目
 
-    通过键查找条目，返回空句柄表示未命中。命中时会自动将key升热。
+    通过键查找条目，返回空`handle`表示未命中。命中时会自动将key升热。
 
     ```cpp
     template<typename U>
+        requires HashEqualComparable<Hash, Equal, Key, U>
     Handle get(const U &key);
     ```
 
@@ -53,24 +79,31 @@ class LruCache;
 
     ```cpp
     template<typename U>
+        requires (HashEqualComparable<Hash, Equal, Key, U> &&
+                  std::constructible_from<Key, const U &>)
+    [[nodiscard]]
     std::pair<Handle, bool> get_or_create(const U &key);
     ```
 
 - 插入条目
 
-    直接插入条目，使用`args...`构造`value`，并返回对应句柄。
+    直接插入条目，使用`args...`构造`value`，并返回对应`handle`。若key存在则会被覆盖，此前已经获取的与旧值关联的`handle`仍能访问旧的值。
 
     ```cpp
     template<typename U, typename... Args>
-    Handle put(const U &key, Args &&... args);
+        requires (HashEqualComparable<Hash, Equal, Key, const U &> &&
+                  std::constructible_from<Key, const U &> &&
+                  std::constructible_from<Value, Args && ...>)
+    Handle put(const U &key, Args &&...args);
     ```
 
 - 删除条目
 
-    支持通过键或句柄删除。条目会立即被移除，但已有句柄仍可访问已存在的值。
+    支持通过键或`handle`删除。条目会立即被移除，但此前已经获取的`handle`仍可使用。
 
     ```cpp
     template<typename U>
+        requires HashEqualComparable<Hash, Equal, Key, const U &>
     void remove(const U &key);
 
     void remove(const Handle &handle);
@@ -83,26 +116,26 @@ class LruCache;
     ```
 
 
-## coke::LruHandle
+## coke::detail::LruHandle
 
-- 构造/赋值/析构函数
+- 构造、赋值、析构函数
 
 
     ```cpp
-    // 创建一个空句柄，不关联任何条目。
-    LruHandle();
+    // 创建一个空LruHandle，不关联任何条目。
+    LruHandle() noexcept;
 
-    // 复制构造，创建一个新的句柄，关联同一个条目。
-    LruHandle(const LruHandle &);
+    // 复制构造，创建一个新的LruHandle，关联同一个条目。
+    LruHandle(const LruHandle &) noexcept;
 
     // 移动构造
-    LruHandle(LruHandle &&);
+    LruHandle(LruHandle &&) noexcept;
 
     // 复制赋值，关联同一个条目。
-    LruHandle &operator=(const LruHandle &);
+    LruHandle &operator=(const LruHandle &) noexcept;
 
     // 移动赋值
-    LruHandle &operator=(LruHandle &&);
+    LruHandle &operator=(LruHandle &&) noexcept;
 
     // 析构函数，自动释放关联的条目。
     ~LruHandle();
@@ -112,16 +145,16 @@ class LruCache;
 
     ```cpp
     // 是否关联条目
-    operator bool() const;
+    operator bool() const noexcept;
 
     // 是否正在等待值
-    bool waiting() const;
+    bool waiting() const noexcept;
 
     // 是否成功设置值
-    bool success() const;
+    bool success() const noexcept;
 
     // 是否标记为失败
-    bool failed() const;
+    bool failed() const noexcept;
     ```
 
 - 值操作
@@ -130,10 +163,12 @@ class LruCache;
 
     ```cpp
     // 原地构造值
-    void emplace_value(Args&&... args);
+    template<typename... Args>
+    void emplace_value(Args &&...args)
 
     // 通过回调函数设置值
-    void create_value(ValueCreater &&cb);
+    template<typename ValueCreater>
+    void create_value(ValueCreater &&creater)
 
     // 标记为失败状态
     void set_failed();
@@ -151,10 +186,10 @@ class LruCache;
 
     ```cpp
     // 等待至状态变化
-    coke::Task<int> wait();
+    Task<int> wait();
 
     // 带超时的等待
-    coke::Task<int> wait_for(coke::NanoSec nsec);
+    Task<int> wait_for(coke::NanoSec nsec);
     ```
 
 - 唤醒机制
@@ -171,13 +206,13 @@ class LruCache;
 
     ```cpp
     // 获取key
-    const Key &key() const;
+    const Key &key() const noexcept;
 
     // 获取value，要求此时处于成功状态
-    const Value &value() const;
+    const Value &value() const noexcept;
 
-    // 获取可修改的value，要求此时处于成功状态，使用者保证修改是线程安全的
-    Value &mutable_value();
+    // 获取可修改的value，要求此时处于成功状态。使用者保证后续对value的修改是线程安全的。
+    Value &mutable_value() noexcept;
     ```
 
 ## 示例

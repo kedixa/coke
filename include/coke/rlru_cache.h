@@ -16,70 +16,100 @@
  * Authors: kedixa (https://github.com/kedixa)
  */
 
-#ifndef COKE_LRU_CACHE_H
-#define COKE_LRU_CACHE_H
+#ifndef COKE_RLRU_CACHE_H
+#define COKE_RLRU_CACHE_H
 
+#include <atomic>
+#include <chrono>
 #include <concepts>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <shared_mutex>
 #include <type_traits>
 
 #include "coke/detail/condition_impl.h"
+#include "coke/detail/random.h"
 #include "coke/detail/ref_counted.h"
 #include "coke/utils/hashtable.h"
-#include "coke/utils/list.h"
 
 namespace coke {
 
 template<typename, typename, typename, typename>
-class LruCache;
+class RlruCache;
 
 namespace detail {
 
 enum : uint16_t {
-    LRU_WAITING = 0,
-    LRU_SUCCESS = 1,
-    LRU_FAILED = 2,
+    RLRU_WAITING = 0,
+    RLRU_SUCCESS = 1,
+    RLRU_FAILED = 2,
+};
+
+struct RlruSharedData {
+    std::mutex mtx;
+    std::atomic<uint64_t> access_count{0};
 };
 
 template<typename K, typename V>
-struct LruEntry : public RefCounted<LruEntry<K, V>> {
+struct RlruEntry : public detail::RefCounted<RlruEntry<K, V>> {
+    constexpr static auto relaxed = std::memory_order_relaxed;
+
     using Key = K;
     using Value = V;
 
     template<typename U>
-    LruEntry(uint16_t state, std::mutex *mtx, const U &key)
-        : removed(false), state(state), mtx(mtx), key(key)
+    RlruEntry(uint16_t state, RlruSharedData *data, const U &key) noexcept
+        : removed(false), state(state), data(data), last_access(0), key(key)
     {
+    }
+
+    void update_last_access() noexcept
+    {
+        last_access.store(data->access_count.fetch_add(1, relaxed), relaxed);
+    }
+
+    uint64_t load_last_access() const noexcept
+    {
+        return last_access.load(relaxed);
+    }
+
+    void set_state(uint16_t new_state) noexcept
+    {
+        state.store(new_state, std::memory_order_release);
+    }
+
+    bool check_state(uint16_t expected) const noexcept
+    {
+        return state.load(std::memory_order_acquire) == expected;
     }
 
     bool removed;
     std::atomic<uint16_t> state;
+    std::atomic<uint64_t> last_access;
     HashtableNode ht;
-    ListNode lst;
-    std::mutex *mtx;
+    RlruSharedData *data;
 
     Key key;
     std::optional<Value> value;
 };
 
 template<typename K, typename V>
-class LruHandle {
+class RlruHandle {
 public:
-    using Entry = LruEntry<K, V>;
+    using Entry = RlruEntry<K, V>;
     using Key = typename Entry::Key;
     using Value = typename Entry::Value;
 
     /**
      * @brief Create an empty handle.
      */
-    LruHandle() noexcept : entry(nullptr) {}
+    RlruHandle() noexcept : entry(nullptr) {}
 
     /**
      * @brief Create from other handle, they share the same entry.
      */
-    LruHandle(const LruHandle &other) noexcept : entry(other.entry)
+    RlruHandle(const RlruHandle &other) noexcept : entry(other.entry)
     {
         if (entry)
             entry->inc_ref();
@@ -88,7 +118,7 @@ public:
     /**
      * @brief Move from other handle.
      */
-    LruHandle(LruHandle &&other) noexcept : entry(other.entry)
+    RlruHandle(RlruHandle &&other) noexcept : entry(other.entry)
     {
         other.entry = nullptr;
     }
@@ -96,7 +126,7 @@ public:
     /**
      * @brief Assign from other handle, they share the same entry.
      */
-    LruHandle &operator=(const LruHandle &other) noexcept
+    RlruHandle &operator=(const RlruHandle &other) noexcept
     {
         if (this != &other) {
             if (entry)
@@ -113,7 +143,7 @@ public:
     /**
      * @brief Move assign from other handle.
      */
-    LruHandle &operator=(LruHandle &&other) noexcept
+    RlruHandle &operator=(RlruHandle &&other) noexcept
     {
         if (this != &other) {
             if (entry)
@@ -131,20 +161,15 @@ public:
      */
     operator bool() const noexcept { return entry != nullptr; }
 
-    uint16_t get_state() const noexcept
-    {
-        return entry->state.load(std::memory_order_acquire);
-    }
-
     /**
      * @brief Check if the handle is waiting for value.
      */
-    bool waiting() const noexcept { return get_state() == LRU_WAITING; }
+    bool waiting() const noexcept { return entry->check_state(RLRU_WAITING); }
 
     /**
      * @brief Check if the handle's value is emplaced or created.
      */
-    bool success() const noexcept { return get_state() == LRU_SUCCESS; }
+    bool success() const noexcept { return entry->check_state(RLRU_SUCCESS); }
 
     /**
      * @brief Check if give up to create value for this handle.
@@ -152,7 +177,7 @@ public:
      * For example, the coroutine that created the handle failed to obtain value
      * and give up updating it.
      */
-    bool failed() const noexcept { return get_state() == LRU_FAILED; }
+    bool failed() const noexcept { return entry->check_state(RLRU_FAILED); }
 
     /**
      * @brief Emplace value to the handle.
@@ -163,9 +188,10 @@ public:
     template<typename... Args>
     void emplace_value(Args &&...args)
     {
-        std::unique_lock lk(*entry->mtx);
+        std::unique_lock lk(entry->data->mtx);
         entry->value.emplace(std::forward<Args>(args)...);
-        entry->state.store(LRU_SUCCESS, std::memory_order_release);
+        entry->update_last_access();
+        entry->set_state(RLRU_SUCCESS);
     }
 
     /**
@@ -182,7 +208,8 @@ public:
     {
         std::unique_lock lk(*entry->mtx);
         creater(entry->value);
-        entry->state.store(LRU_SUCCESS, std::memory_order_release);
+        entry->update_access_time();
+        entry->set_state(RLRU_SUCCESS);
     }
 
     /**
@@ -190,10 +217,7 @@ public:
      * @attention The user should wake up the waiting coroutine by
      *            notify_one/notify_all.
      */
-    void set_failed() noexcept
-    {
-        entry->state.store(LRU_FAILED, std::memory_order_release);
-    }
+    void set_failed() noexcept { entry->set_state(RLRU_FAILED); }
 
     /**
      * @brief Wake up one coroutine that waiting for the handle.
@@ -208,11 +232,11 @@ public:
     /**
      * @brief Wait for the handle's value to be emplaced or created, or
      *        set_failed to be called.
-     * @return Same as Condition::wait.
+     * @return See coke::Condition::wait.
      */
     Task<int> wait()
     {
-        std::unique_lock lk(*entry->mtx);
+        std::unique_lock lk(entry->data->mtx);
         int ret = co_await cv_wait(lk, entry, [this] { return !waiting(); });
         co_return ret;
     }
@@ -220,11 +244,11 @@ public:
     /**
      * @brief Wait for the handle's value to be emplaced or created, or
      *        set_failed to be called.
-     * @return Same as Condition::wait_for.
+     * @return See coke::Condition::wait_for.
      */
     Task<int> wait_for(NanoSec nsec)
     {
-        std::unique_lock lk(*entry->mtx);
+        std::unique_lock lk(entry->data->mtx);
         int ret = co_await cv_wait_for(lk, entry, nsec,
                                        [this] { return !waiting(); });
         co_return ret;
@@ -260,14 +284,14 @@ public:
         }
     }
 
-    ~LruHandle()
+    ~RlruHandle()
     {
         if (entry)
             entry->dec_ref();
     }
 
 private:
-    LruHandle(Entry *entry) : entry(entry)
+    RlruHandle(Entry *entry) : entry(entry)
     {
         if (entry)
             entry->inc_ref();
@@ -277,21 +301,21 @@ private:
     Entry *entry;
 
     template<typename, typename, typename, typename>
-    friend class coke::LruCache;
+    friend class ::coke::RlruCache;
 };
 
 } // namespace detail
 
 template<typename K, typename V, typename H = std::hash<K>,
          typename E = std::equal_to<>>
-class LruCache {
+class RlruCache {
 public:
     using Key = K;
     using Value = V;
     using Hash = H;
     using Equal = E;
-    using Entry = detail::LruEntry<K, V>;
-    using Handle = detail::LruHandle<K, V>;
+    using Entry = detail::RlruEntry<K, V>;
+    using Handle = detail::RlruHandle<K, V>;
     using SizeType = std::size_t;
 
     struct EntryHash {
@@ -321,53 +345,53 @@ public:
     };
 
     using HtableType = Hashtable<Entry, &Entry::ht, EntryHash, EntryEqual>;
-    using ListType = List<Entry, &Entry::lst>;
     using EntryGuard = std::unique_ptr<Entry>;
 
     static_assert(
         HashEqualComparable<Hash, Equal, Key, Key>,
-        "LruCache requires HashEqualComparable<Hash, Equal, Key, Key>");
+        "RlruCache requires HashEqualComparable<Hash, Equal, Key, Key>");
 
 public:
     /**
-     * @brief Create lru cache.
+     * @brief Create rlru cache.
      * @param max_size The max size of cache, 0 means no limit. If cache is
      *        full and new element is added, another element will be dropped.
+     * @param max_scan How many elements to scan when dropping an element.
      * @param hash Hash function for key.
      * @param equal Equal function for key.
      */
-    explicit LruCache(SizeType max_size = 0, const Hash &hash = Hash(),
-                      const Equal &equal = Equal())
+    explicit RlruCache(SizeType max_size = 0, SizeType max_scan = 5,
+                       const Hash &hash = Hash(), const Equal &equal = Equal())
         : entry_table(EntryHash{hash}, EntryEqual{equal}),
-          cap(max_size == 0 ? SizeType(-1) : max_size)
+          cap(max_size == 0 ? SizeType(-1) : max_size), max_scan(max_scan)
     {
     }
 
     /**
-     * @brief Lru cache is not copyable.
+     * @brief Rlru cache is not copyable.
      */
-    LruCache(const LruCache &) = delete;
-    LruCache &operator=(const LruCache &) = delete;
+    RlruCache(const RlruCache &) = delete;
+    RlruCache &operator=(const RlruCache &) = delete;
 
     /**
-     * @brief Lru cache is not movable.
+     * @brief Rlru cache is not movable.
      */
-    LruCache(LruCache &&) = delete;
-    LruCache &operator=(LruCache &&) = delete;
+    RlruCache(RlruCache &&) = delete;
+    RlruCache &operator=(RlruCache &&) = delete;
 
     /**
      * @brief Destroy the cache.
      * @pre All the handle returned by get_or_create are no longer in the
      *      waiting state.
      */
-    ~LruCache() { clear(); }
+    ~RlruCache() { clear(); }
 
     /**
      * @brief Get the size of the cache.
      */
     SizeType size() const
     {
-        std::lock_guard lg(mtx);
+        std::shared_lock lk(mtx);
         return entry_table.size();
     }
 
@@ -377,19 +401,19 @@ public:
     SizeType capacity() const noexcept { return cap; }
 
     /**
-     * @brief Get lru handle by key. If not found, return an empty handle.
+     * @brief Get rlru handle by key. If the key is not found, return an empty
+     *        handle.
      */
     template<typename U>
         requires HashEqualComparable<Hash, Equal, Key, U>
     Handle get(const U &key)
     {
-        std::lock_guard lg(mtx);
+        std::shared_lock lk(mtx);
 
         auto it = entry_table.find(key);
         if (it != entry_table.end()) {
             Entry *entry = it.get_pointer();
-            entry_list.erase(entry);
-            entry_list.push_back(entry);
+            entry->update_last_access();
             return Handle(entry);
         }
 
@@ -397,7 +421,7 @@ public:
     }
 
     /**
-     * @brief Get lru handle by key. If the key is not found, create a new
+     * @brief Get rlru handle by key. If the key is not found, create a new
      *        one and return it.
      *
      * @return The first element is the handle, the second element is whether
@@ -411,18 +435,32 @@ public:
     [[nodiscard]]
     std::pair<Handle, bool> get_or_create(const U &key)
     {
-        std::lock_guard lg(mtx);
+        {
+            std::shared_lock lk(mtx);
+
+            auto it = entry_table.find(key);
+            if (it != entry_table.end()) {
+                Entry *entry = it.get_pointer();
+                entry->update_last_access();
+                return std::make_pair(Handle(entry), false);
+            }
+        }
+
+        std::unique_lock lk(mtx);
 
         auto it = entry_table.find(key);
-        if (it != entry_table.end())
-            return std::make_pair(Handle(it.get_pointer()), false);
+        if (it != entry_table.end()) {
+            Entry *entry = it.get_pointer();
+            entry->update_last_access();
+            return std::make_pair(Handle(entry), false);
+        }
 
         if (entry_table.size() >= cap)
-            remove_entry(entry_list.front());
+            drop_one_element();
 
-        EntryGuard entry(new Entry(detail::LRU_WAITING, next_mtx(), key));
+        EntryGuard entry(new Entry(detail::RLRU_WAITING, &data, key));
+        entry->update_last_access();
         entry_table.insert(entry.get());
-        entry_list.push_back(entry.get());
 
         return std::make_pair(Handle(entry.release()), true);
     }
@@ -432,24 +470,24 @@ public:
      * @return The handle of the new object.
      */
     template<typename U, typename... Args>
-        requires (HashEqualComparable<Hash, Equal, Key, const U &> &&
+        requires (HashEqualComparable<Hash, Equal, Key, U> &&
                   std::constructible_from<Key, const U &> &&
                   std::constructible_from<Value, Args && ...>)
     Handle put(const U &key, Args &&...args)
     {
-        EntryGuard entry(new Entry(detail::LRU_SUCCESS, nullptr, key));
+        EntryGuard entry(new Entry(detail::RLRU_SUCCESS, &data, key));
         entry->value.emplace(std::forward<Args>(args)...);
+        entry->update_last_access();
 
-        std::lock_guard lg(mtx);
+        std::unique_lock lk(mtx);
 
         auto it = entry_table.find(key);
         if (it != entry_table.end())
             remove_entry(it.get_pointer());
         else if (entry_table.size() >= cap)
-            remove_entry(entry_list.front());
+            drop_one_element();
 
         entry_table.insert(entry.get());
-        entry_list.push_back(entry.get());
 
         return Handle(entry.release());
     }
@@ -461,7 +499,7 @@ public:
         requires HashEqualComparable<Hash, Equal, Key, const U &>
     void remove(const U &key)
     {
-        std::lock_guard lg(mtx);
+        std::unique_lock lk(mtx);
 
         auto it = entry_table.find(key);
         if (it != entry_table.end())
@@ -473,7 +511,7 @@ public:
      */
     void remove(const Handle &handle)
     {
-        std::lock_guard lg(mtx);
+        std::unique_lock lk(mtx);
         remove_entry(handle.entry);
     }
 
@@ -482,14 +520,14 @@ public:
      */
     void clear()
     {
+        std::unique_lock lk(mtx);
         Entry *entry;
-        std::lock_guard lg(mtx);
 
-        // Clear the table before dec_ref.
-        entry_table.clear();
+        auto it = entry_table.begin();
+        while (it != entry_table.end()) {
+            entry = it.get_pointer();
+            it = entry_table.erase(it);
 
-        while (!entry_list.empty()) {
-            entry = entry_list.pop_front();
             entry->removed = true;
             entry->dec_ref();
         }
@@ -499,32 +537,54 @@ private:
     void remove_entry(Entry *entry)
     {
         if (!entry->removed) {
-            entry->removed = true;
             entry_table.erase(entry);
-            entry_list.erase(entry);
+            entry->removed = true;
             entry->dec_ref();
         }
     }
 
-    constexpr static SizeType MUTEX_TBL_SIZE = 4;
-
-    std::mutex *next_mtx()
+    void drop_one_element()
     {
-        auto id = mid.fetch_add(1, std::memory_order_relaxed);
-        return &mtx_tbl[id % MUTEX_TBL_SIZE];
+        if (entry_table.empty())
+            return;
+
+        SizeType scan_cnt, pos;
+
+        if (entry_table.size() <= max_scan) {
+            pos = 0;
+            scan_cnt = entry_table.size();
+        }
+        else {
+            pos = (SizeType)(rand_u64() % entry_table.size());
+            scan_cnt = max_scan;
+        }
+
+        auto min_it = entry_table.element_at(pos);
+        uint64_t min_access = min_it->load_last_access();
+
+        for (SizeType i = 1; i < scan_cnt; i++) {
+            pos = (pos + 1) % entry_table.size();
+
+            auto it = entry_table.element_at(pos);
+            uint64_t last_access = it->load_last_access();
+            if (min_access > last_access) {
+                min_access = last_access;
+                min_it = it;
+            }
+        }
+
+        remove_entry(min_it.get_pointer());
     }
 
 private:
-    mutable std::mutex mtx;
+    mutable std::shared_mutex mtx;
     HtableType entry_table;
-    ListType entry_list;
     SizeType cap;
+    SizeType max_scan;
 
-    // mutex table for entry
-    std::atomic<unsigned> mid;
-    std::mutex mtx_tbl[MUTEX_TBL_SIZE];
+    detail::RlruSharedData data;
 };
 
 } // namespace coke
 
-#endif // COKE_LRU_CACHE_H
+#endif // COKE_RLRU_CACHE_H

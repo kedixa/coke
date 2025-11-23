@@ -25,6 +25,7 @@ cc_library(
         "src/dag.cpp",
         "src/fileio.cpp",
         "src/go.cpp",
+        "src/hashtable.cpp",
         "src/latch.cpp",
         "src/mutex.cpp",
         "src/qps_pool.cpp",
@@ -52,6 +53,7 @@ cc_library(
         "include/coke/qps_pool.h",
         "include/coke/queue_common.h",
         "include/coke/queue.h",
+        "include/coke/rlru_cache.h",
         "include/coke/semaphore.h",
         "include/coke/series.h",
         "include/coke/shared_mutex.h",
@@ -62,6 +64,7 @@ cc_library(
         "include/coke/wait_group.h",
         "include/coke/wait.h",
 
+        "include/coke/utils/hashtable.h",
         "include/coke/utils/list.h",
         "include/coke/utils/rbtree.h",
         "include/coke/utils/str_holder.h",
