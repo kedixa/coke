@@ -11,6 +11,7 @@ cc_library(
 create_benchmark_target("bench_exception")
 create_benchmark_target("bench_go")
 create_benchmark_target("bench_graph")
+create_benchmark_target("bench_lru")
 create_benchmark_target("bench_queue")
 create_benchmark_target("bench_redis_cli", extra_deps=["//:redis"])
 create_benchmark_target("bench_timer")
@@ -23,6 +24,7 @@ cc_library(
         ":bench_exception",
         ":bench_go",
         ":bench_graph",
+        ":bench_lru",
         ":bench_queue",
         ":bench_redis_cli",
         ":bench_timer",

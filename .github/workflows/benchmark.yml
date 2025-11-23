@@ -98,6 +98,16 @@ jobs:
         echo "</p> </details>"
         echo ""
 
+        echo "## LruCache"
+        echo "Bench command \`./bazel-bin/benchmark/bench_lru --total-ops 1000000 --max-threads 6 -y\`"
+        echo ""
+        echo "<details><summary>Details</summary> <p>"
+        echo ""
+        ./bazel-bin/benchmark/bench_lru --total-ops 1000000 --max-threads 6 -y
+        echo ""
+        echo "</p> </details>"
+        echo ""
+
         ) > bench.md
 
     - name: Comment
