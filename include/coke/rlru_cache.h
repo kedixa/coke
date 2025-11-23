@@ -360,8 +360,8 @@ public:
      * @param hash Hash function for key.
      * @param equal Equal function for key.
      */
-    RlruCache(SizeType max_size = 0, SizeType max_scan = 5,
-              const Hash &hash = Hash(), const Equal &equal = Equal())
+    explicit RlruCache(SizeType max_size = 0, SizeType max_scan = 5,
+                       const Hash &hash = Hash(), const Equal &equal = Equal())
         : entry_table(EntryHash{hash}, EntryEqual{equal}),
           cap(max_size == 0 ? SizeType(-1) : max_size), max_scan(max_scan)
     {
