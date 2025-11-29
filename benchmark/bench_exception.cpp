@@ -14,14 +14,14 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <atomic>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
+#include <random>
 #include <string>
 #include <vector>
-#include <random>
 
 #include "bench_common.h"
 #include "coke/coke.h"
@@ -40,7 +40,8 @@ bool yes = false;
 // Not sure if it's thread safe but it runs fine so far.
 std::uniform_int_distribution<int> dist(0, 99);
 
-bool next(long long &cur) {
+bool next(long long &cur)
+{
     cur = current.fetch_add(1, std::memory_order_relaxed);
     if (cur < total)
         return true;
@@ -49,30 +50,34 @@ bool next(long long &cur) {
     return false;
 }
 
-coke::Task<> recursive_yield(int depth, std::mt19937_64 &mt, int p) {
+coke::Task<> recursive_yield(int depth, std::mt19937_64 &mt, int p)
+{
     if (depth <= 1) {
         co_await coke::yield();
         if (dist(mt) < p)
             throw std::runtime_error("this is an exception");
     }
     else
-        co_await recursive_yield(depth-1, mt, p);
+        co_await recursive_yield(depth - 1, mt, p);
 }
 
-coke::Task<> do_test(int dpt, std::mt19937_64 mt, int p) {
+coke::Task<> do_test(int dpt, std::mt19937_64 mt, int p)
+{
     long long i;
 
     while (next(i)) {
         try {
             co_await recursive_yield(dpt, mt, p);
         }
-        catch (const std::runtime_error &) { }
+        catch (const std::runtime_error &) {
+        }
     }
 }
 
 // benchmark
 
-coke::Task<> bench_normal_yield() {
+coke::Task<> bench_normal_yield()
+{
     long long i;
 
     while (next(i)) {
@@ -80,35 +85,74 @@ coke::Task<> bench_normal_yield() {
     }
 }
 
-coke::Task<> bench_yield_catch() {
+coke::Task<> bench_yield_catch()
+{
     long long i;
 
     while (next(i)) {
         try {
             co_await coke::yield();
         }
-        catch (...) { }
+        catch (...) {
+        }
     }
 }
 
-coke::Task<> bench_d1_p0() { co_await do_test(1, std::mt19937_64{}, 0); }
-coke::Task<> bench_d2_p0() { co_await do_test(2, std::mt19937_64{}, 0); }
-coke::Task<> bench_d5_p0() { co_await do_test(5, std::mt19937_64{}, 0); }
+coke::Task<> bench_d1_p0()
+{
+    co_await do_test(1, std::mt19937_64{}, 0);
+}
+coke::Task<> bench_d2_p0()
+{
+    co_await do_test(2, std::mt19937_64{}, 0);
+}
+coke::Task<> bench_d5_p0()
+{
+    co_await do_test(5, std::mt19937_64{}, 0);
+}
 
-coke::Task<> bench_d1_p100() { co_await do_test(1, std::mt19937_64{}, 100); }
-coke::Task<> bench_d2_p100() { co_await do_test(2, std::mt19937_64{}, 100); }
-coke::Task<> bench_d5_p100() { co_await do_test(5, std::mt19937_64{}, 100); }
+coke::Task<> bench_d1_p100()
+{
+    co_await do_test(1, std::mt19937_64{}, 100);
+}
+coke::Task<> bench_d2_p100()
+{
+    co_await do_test(2, std::mt19937_64{}, 100);
+}
+coke::Task<> bench_d5_p100()
+{
+    co_await do_test(5, std::mt19937_64{}, 100);
+}
 
-coke::Task<> bench_d1_p1() { co_await do_test(1, std::mt19937_64{}, 1); }
-coke::Task<> bench_d1_p5() { co_await do_test(1, std::mt19937_64{}, 5); }
-coke::Task<> bench_d1_p10() { co_await do_test(1, std::mt19937_64{}, 10); }
-coke::Task<> bench_d1_p20() { co_await do_test(1, std::mt19937_64{}, 20); }
-coke::Task<> bench_d1_p50() { co_await do_test(1, std::mt19937_64{}, 50); }
+coke::Task<> bench_d1_p1()
+{
+    co_await do_test(1, std::mt19937_64{}, 1);
+}
+coke::Task<> bench_d1_p5()
+{
+    co_await do_test(1, std::mt19937_64{}, 5);
+}
+coke::Task<> bench_d1_p10()
+{
+    co_await do_test(1, std::mt19937_64{}, 10);
+}
+coke::Task<> bench_d1_p20()
+{
+    co_await do_test(1, std::mt19937_64{}, 20);
+}
+coke::Task<> bench_d1_p50()
+{
+    co_await do_test(1, std::mt19937_64{}, 50);
+}
 
-coke::Task<> warm_up() { co_await coke::yield(); }
+coke::Task<> warm_up()
+{
+    co_await coke::yield();
+}
 
-using bench_func_t = coke::Task<>(*)();
-coke::Task<> do_benchmark(const char *name, bench_func_t func) {
+using bench_func_t = coke::Task<> (*)();
+coke::Task<> do_benchmark(const char *name, bench_func_t func)
+{
     int run_times = 0;
     long long start, total_cost = 0;
     std::vector<long long> costs;
@@ -135,12 +179,12 @@ coke::Task<> do_benchmark(const char *name, bench_func_t func) {
     data_distribution(costs, mean, stddev);
     tps = 1.0e3 * current / (mean + 1e-9);
 
-    table_line(std::cout, width, name, total_cost, run_times,
-               mean, stddev, (long)tps);
+    table_line(std::cout, width, name, total_cost, run_times, mean, stddev,
+               (long)tps);
 }
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::OptionParser args;
 
     args.add_integer(concurrency, 'c', "concurrency")
@@ -178,12 +222,11 @@ int main(int argc, char *argv[]) {
 
     coke::sync_wait(warm_up());
 
-    table_line(std::cout, width,
-               "name", "cost", "times",
-               "mean(ms)", "stddev", "per sec");
+    table_line(std::cout, width, "name", "cost", "times", "mean(ms)", "stddev",
+               "per sec");
     delimiter(std::cout, width, '-');
 
-#define DO_BENCHMARK(func) coke::sync_wait(do_benchmark(#func, bench_ ## func))
+#define DO_BENCHMARK(func) coke::sync_wait(do_benchmark(#func, bench_##func))
     DO_BENCHMARK(normal_yield);
     DO_BENCHMARK(yield_catch);
     delimiter(std::cout, width);

@@ -14,29 +14,32 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
+#include <cassert>
 #include <chrono>
 #include <cmath>
-#include <cassert>
 
 #include "coke/qps_pool.h"
 
 namespace coke {
 
-static int64_t __get_current_nano() noexcept {
+static int64_t __get_current_nano() noexcept
+{
     auto now = std::chrono::steady_clock::now().time_since_epoch();
     return std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
 }
 
-QpsPool::QpsPool(long query, long seconds) {
+QpsPool::QpsPool(long query, long seconds)
+{
     last_nano = 0;
     last_sub = 0;
 
     reset_qps(query, seconds);
 }
 
-void QpsPool::reset_qps(long query, long seconds) {
+void QpsPool::reset_qps(long query, long seconds)
+{
     assert(query >= 0 && seconds >= 1);
 
     std::lock_guard<std::mutex> lg(mtx);
@@ -55,8 +58,8 @@ void QpsPool::reset_qps(long query, long seconds) {
     }
 }
 
-QpsPool::AwaiterType
-QpsPool::get_if(unsigned count, NanoSec nsec) {
+QpsPool::AwaiterType QpsPool::get_if(unsigned count, NanoSec nsec)
+{
     std::lock_guard<std::mutex> lg(mtx);
     NanoType current, next_nano, next_sub;
 

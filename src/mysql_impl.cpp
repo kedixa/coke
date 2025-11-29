@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <atomic>
 #include <mutex>
@@ -29,8 +29,8 @@
 
 namespace coke {
 
-MySQLClient::MySQLClient(const MySQLClientParams &p,
-                         bool unique_conn, std::size_t conn_id)
+MySQLClient::MySQLClient(const MySQLClientParams &p, bool unique_conn,
+                         std::size_t conn_id)
     : unique_conn(unique_conn), conn_id(conn_id), params(p)
 {
     std::string username, password, dbname, host;
@@ -67,11 +67,12 @@ MySQLClient::MySQLClient(const MySQLClientParams &p,
     if (!params.character_set.empty())
         url.append("&character_set=").append(params.character_set);
     if (!params.character_set_results.empty())
-        url.append("&character_set_results=").append(params.character_set_results);
+        url.append("&character_set_results=")
+            .append(params.character_set_results);
 
     if (unique_conn)
         url.append("&transaction=coke_mysql_transaction_id_")
-           .append(std::to_string(conn_id));
+            .append(std::to_string(conn_id));
 
     if (url.size() > pos)
         url[pos] = '?';
@@ -79,7 +80,8 @@ MySQLClient::MySQLClient(const MySQLClientParams &p,
     URIParser::parse(url, uri);
 }
 
-MySQLClient::AwaiterType MySQLClient::request(const std::string &query) {
+MySQLClient::AwaiterType MySQLClient::request(const std::string &query)
+{
     WFMySQLTask *task;
 
     task = WFTaskFactory::create_mysql_task(uri, params.retry_max, nullptr);
@@ -91,14 +93,15 @@ MySQLClient::AwaiterType MySQLClient::request(const std::string &query) {
     return AwaiterType(task);
 }
 
-
 struct __MySQLConnId {
-    static __MySQLConnId *get_instance() {
+    static __MySQLConnId *get_instance()
+    {
         static __MySQLConnId instance;
         return &instance;
     }
 
-    std::size_t acquire() {
+    std::size_t acquire()
+    {
         std::lock_guard<std::mutex> lg(mtx);
 
         if (que.empty())
@@ -109,7 +112,8 @@ struct __MySQLConnId {
         return conn_id;
     }
 
-    void release(std::size_t cid) {
+    void release(std::size_t cid)
+    {
         std::lock_guard<std::mutex> lg(mtx);
 
         if (cid + 1 == uid)
@@ -124,18 +128,20 @@ private:
     std::priority_queue<std::size_t> que;
 };
 
-
-std::size_t MySQLConnection::acquire_conn_id() {
+std::size_t MySQLConnection::acquire_conn_id()
+{
     __MySQLConnId *p = __MySQLConnId::get_instance();
     return p->acquire();
 }
 
-void MySQLConnection::release_conn_id(std::size_t conn_id) {
+void MySQLConnection::release_conn_id(std::size_t conn_id)
+{
     __MySQLConnId *p = __MySQLConnId::get_instance();
     p->release(conn_id);
 }
 
-MySQLConnection::AwaiterType MySQLConnection::disconnect() {
+MySQLConnection::AwaiterType MySQLConnection::disconnect()
+{
     WFMySQLTask *task;
 
     task = WFTaskFactory::create_mysql_task(uri, params.retry_max, nullptr);
@@ -147,13 +153,17 @@ MySQLConnection::AwaiterType MySQLConnection::disconnect() {
     return AwaiterType(task);
 }
 
-void MySQLFieldView::reset(const char *buf, mysql_field_t *field) {
-    name        = std::string_view(buf + field->name_offset, field->name_length);
-    org_name    = std::string_view(buf + field->org_name_offset, field->org_name_length);
-    table       = std::string_view(buf + field->table_offset, field->table_length);
-    org_table   = std::string_view(buf + field->org_table_offset, field->org_table_length);
-    db          = std::string_view(buf + field->db_offset, field->db_length);
-    catalog     = std::string_view(buf + field->catalog_offset, field->catalog_length);
+void MySQLFieldView::reset(const char *buf, mysql_field_t *field)
+{
+    name = std::string_view(buf + field->name_offset, field->name_length);
+    org_name = std::string_view(buf + field->org_name_offset,
+                                field->org_name_length);
+    table = std::string_view(buf + field->table_offset, field->table_length);
+    org_table = std::string_view(buf + field->org_table_offset,
+                                 field->org_table_length);
+    db = std::string_view(buf + field->db_offset, field->db_length);
+    catalog = std::string_view(buf + field->catalog_offset,
+                               field->catalog_length);
 
     if (field->def_offset == std::size_t(-1) && field->def_length == 0)
         def = std::string_view();
@@ -167,7 +177,8 @@ void MySQLFieldView::reset(const char *buf, mysql_field_t *field) {
     data_type = field->data_type;
 }
 
-bool MySQLResultSetView::get_fields(std::vector<MySQLFieldView> &fields) const {
+bool MySQLResultSetView::get_fields(std::vector<MySQLFieldView> &fields) const
+{
     if (!is_result_set())
         return false;
 
@@ -182,7 +193,8 @@ bool MySQLResultSetView::get_fields(std::vector<MySQLFieldView> &fields) const {
     return true;
 }
 
-bool MySQLResultSetView::next_row(std::vector<MySQLCellView> &cells) {
+bool MySQLResultSetView::next_row(std::vector<MySQLCellView> &cells)
+{
     unsigned long long len;
     const unsigned char *data, *p;
     int dtype;
@@ -216,7 +228,8 @@ bool MySQLResultSetView::next_row(std::vector<MySQLCellView> &cells) {
     return true;
 }
 
-void MySQLResultSetView::rewind() noexcept {
+void MySQLResultSetView::rewind() noexcept
+{
     if (is_result_set()) {
         const auto *p = reinterpret_cast<const unsigned char *>(buf);
         off_begin = p + result_set->rows_begin_offset;

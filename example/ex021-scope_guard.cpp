@@ -1,12 +1,13 @@
 #include <iostream>
 
+#include "coke/mutex.h"
 #include "coke/tools/scope.h"
 #include "coke/wait.h"
-#include "coke/mutex.h"
 
 coke::Mutex m;
 
-coke::Task<> scope_example(bool release) {
+coke::Task<> scope_example(bool release)
+{
     co_await m.lock();
 
     coke::ScopeExit scope([]() noexcept { m.unlock(); });
@@ -21,7 +22,8 @@ coke::Task<> scope_example(bool release) {
     }
 }
 
-int main() {
+int main()
+{
     coke::sync_wait(scope_example(true), scope_example(false));
     return 0;
 }

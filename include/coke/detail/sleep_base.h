@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_SLEEP_BASE_H
 #define COKE_DETAIL_SLEEP_BASE_H
@@ -30,19 +30,18 @@ using NanoSec = std::chrono::nanoseconds;
 class SleepBase : public AwaiterBase {
 public:
     SleepBase(SleepBase &&that) noexcept;
-    SleepBase &operator= (SleepBase &&that) noexcept;
+    SleepBase &operator=(SleepBase &&that) noexcept;
     ~SleepBase() = default;
 
     int await_resume() noexcept;
 
 protected:
-    SleepBase() noexcept : timer(nullptr), result(-1) { }
+    SleepBase() noexcept : timer(nullptr), result(-1) {}
 
 protected:
     SubTask *timer;
     int result;
 };
-
 
 class TimedWaitHelper {
 public:
@@ -52,11 +51,9 @@ public:
     constexpr static TimePoint max() noexcept { return TimePoint::max(); }
     static TimePoint now() noexcept { return ClockType::now(); }
 
-    TimedWaitHelper() noexcept : abs_time(max()) { }
+    TimedWaitHelper() noexcept : abs_time(max()) {}
 
-    TimedWaitHelper(NanoSec nano) noexcept
-        : abs_time(now() + nano)
-    { }
+    TimedWaitHelper(NanoSec nano) noexcept : abs_time(now() + nano) {}
 
     bool infinite() const noexcept { return abs_time == max(); }
 

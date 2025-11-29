@@ -14,25 +14,27 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
-#include <mutex>
 #include <chrono>
+#include <mutex>
 
 #include "coke/detail/random.h"
 
 namespace coke::detail {
 
 class LockedRandomU64 {
-    static auto time_seed() {
+    static auto time_seed()
+    {
         auto now = std::chrono::system_clock::now().time_since_epoch();
         return (std::mt19937_64::result_type)now.count();
     }
 
 public:
-    LockedRandomU64() : mt64(time_seed()) { }
+    LockedRandomU64() : mt64(time_seed()) {}
 
-    uint64_t operator()() {
+    uint64_t operator()()
+    {
         std::lock_guard<std::mutex> lg(mtx);
         return mt64();
     }
@@ -42,7 +44,8 @@ private:
     std::mt19937_64 mt64;
 };
 
-uint64_t rand_seed() {
+uint64_t rand_seed()
+{
     static LockedRandomU64 r;
     return r();
 }

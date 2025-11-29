@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <atomic>
 #include <iostream>
@@ -47,7 +47,8 @@ bool yes = false;
 // Not sure if it's thread safe but it runs fine so far.
 std::uniform_int_distribution<int> dist(300, 700);
 
-bool next(long long &cur) {
+bool next(long long &cur)
+{
     cur = current.fetch_add(1, std::memory_order_relaxed);
     if (cur < total)
         return true;
@@ -57,22 +58,25 @@ bool next(long long &cur) {
 }
 
 template<typename Awaiter>
-coke::Task<> detach(Awaiter awaiter) {
+coke::Task<> detach(Awaiter awaiter)
+{
     co_await std::move(awaiter);
 }
 
 template<typename Awaiter>
-coke::Task<> detach3(Awaiter a, Awaiter b, Awaiter c) {
+coke::Task<> detach3(Awaiter a, Awaiter b, Awaiter c)
+{
     co_await coke::async_wait(std::move(a), std::move(b), std::move(c));
 }
 
 // benchmark
 
-coke::Task<> bench_wf_repeat() {
+coke::Task<> bench_wf_repeat()
+{
     std::mt19937_64 mt(current_msec());
     long long i;
 
-    auto create = [&] (WFRepeaterTask *) -> SubTask * {
+    auto create = [&](WFRepeaterTask *) -> SubTask * {
         if (next(i)) {
             int nsec = dist(mt) * 1000;
             return WFTaskFactory::create_timer_task(0, nsec, nullptr);
@@ -84,7 +88,8 @@ coke::Task<> bench_wf_repeat() {
     co_await RepeaterAwaiter(rep);
 }
 
-coke::Task<> bench_default_timer() {
+coke::Task<> bench_default_timer()
+{
     std::mt19937_64 mt(current_msec());
     long long i;
 
@@ -93,7 +98,8 @@ coke::Task<> bench_default_timer() {
     }
 }
 
-coke::Task<> bench_yield() {
+coke::Task<> bench_yield()
+{
     long long i;
 
     while (next(i)) {
@@ -101,7 +107,8 @@ coke::Task<> bench_yield() {
     }
 }
 
-coke::Task<> bench_timer_in_task() {
+coke::Task<> bench_timer_in_task()
+{
     std::mt19937_64 mt(current_msec());
     long long i;
 
@@ -112,7 +119,8 @@ coke::Task<> bench_timer_in_task() {
 
 // bench by name
 
-coke::Task<> bench_timer_by_name() {
+coke::Task<> bench_timer_by_name()
+{
     std::mt19937_64 mt(current_msec());
     long long i;
     std::string name;
@@ -123,7 +131,8 @@ coke::Task<> bench_timer_by_name() {
     }
 }
 
-coke::Task<> bench_cancel_by_name() {
+coke::Task<> bench_cancel_by_name()
+{
     std::mt19937_64 mt(current_msec());
     long long i;
     std::string name;
@@ -136,7 +145,8 @@ coke::Task<> bench_cancel_by_name() {
     }
 }
 
-coke::Task<> bench_detach_by_name() {
+coke::Task<> bench_detach_by_name()
+{
     std::mt19937_64 mt(current_msec());
     long long i;
     std::string name;
@@ -152,7 +162,8 @@ coke::Task<> bench_detach_by_name() {
     }
 }
 
-coke::Task<> bench_detach3_by_name() {
+coke::Task<> bench_detach3_by_name()
+{
     std::mt19937_64 mt(current_msec());
     long long i;
     std::string name;
@@ -171,24 +182,35 @@ coke::Task<> bench_detach3_by_name() {
     }
 }
 
-coke::Task<> bench_pool_name(int max) {
+coke::Task<> bench_pool_name(int max)
+{
     std::mt19937_64 mt(current_msec());
     long long i;
 
     while (next(i)) {
-        const std::string &name = name_pool[i%max];
+        const std::string &name = name_pool[i % max];
         co_await coke::sleep(name, microseconds(dist(mt)));
     }
     co_return;
 }
 
-coke::Task<> bench_one_name() { return bench_pool_name(1); }
+coke::Task<> bench_one_name()
+{
+    return bench_pool_name(1);
+}
 
-coke::Task<> bench_two_name() { return bench_pool_name(2); }
+coke::Task<> bench_two_name()
+{
+    return bench_pool_name(2);
+}
 
-coke::Task<> bench_ten_name() { return bench_pool_name(10); }
+coke::Task<> bench_ten_name()
+{
+    return bench_pool_name(10);
+}
 
-coke::Task<> bench_name_one_by_one() {
+coke::Task<> bench_name_one_by_one()
+{
     auto sleep = std::chrono::seconds(10);
     auto first = std::chrono::milliseconds(10);
     std::string name = name_pool[0];
@@ -206,7 +228,8 @@ coke::Task<> bench_name_one_by_one() {
 
 // bench by id
 
-coke::Task<> bench_timer_by_id() {
+coke::Task<> bench_timer_by_id()
+{
     std::mt19937_64 mt(current_msec());
     uint64_t id;
     long long i;
@@ -217,7 +240,8 @@ coke::Task<> bench_timer_by_id() {
     }
 }
 
-coke::Task<> bench_timer_by_addr() {
+coke::Task<> bench_timer_by_addr()
+{
     std::mt19937_64 mt(current_msec());
     uint64_t id;
     long long i;
@@ -228,7 +252,8 @@ coke::Task<> bench_timer_by_addr() {
     }
 }
 
-coke::Task<> bench_cancel_by_id() {
+coke::Task<> bench_cancel_by_id()
+{
     std::mt19937_64 mt(current_msec());
     uint64_t id;
     long long i;
@@ -241,7 +266,8 @@ coke::Task<> bench_cancel_by_id() {
     }
 }
 
-coke::Task<> bench_detach_by_id() {
+coke::Task<> bench_detach_by_id()
+{
     std::mt19937_64 mt(current_msec());
     uint64_t id;
     long long i;
@@ -256,7 +282,8 @@ coke::Task<> bench_detach_by_id() {
     }
 }
 
-coke::Task<> bench_detach3_by_id() {
+coke::Task<> bench_detach3_by_id()
+{
     std::mt19937_64 mt(current_msec());
     uint64_t id;
     long long i;
@@ -274,7 +301,8 @@ coke::Task<> bench_detach3_by_id() {
     }
 }
 
-coke::Task<> bench_detach_inf_by_id() {
+coke::Task<> bench_detach_inf_by_id()
+{
     uint64_t id;
     long long i;
 
@@ -288,7 +316,8 @@ coke::Task<> bench_detach_inf_by_id() {
     }
 }
 
-coke::Task<> bench_detach3_inf_by_id() {
+coke::Task<> bench_detach3_inf_by_id()
+{
     uint64_t id;
     long long i;
 
@@ -305,24 +334,35 @@ coke::Task<> bench_detach3_inf_by_id() {
     }
 }
 
-coke::Task<> bench_pool_id(int max) {
+coke::Task<> bench_pool_id(int max)
+{
     std::mt19937_64 mt(current_msec());
     long long i;
 
     while (next(i)) {
-        uint64_t id = id_pool[i%max];
+        uint64_t id = id_pool[i % max];
         co_await coke::sleep(id, microseconds(dist(mt)));
     }
     co_return;
 }
 
-coke::Task<> bench_one_id() { return bench_pool_id(1); }
+coke::Task<> bench_one_id()
+{
+    return bench_pool_id(1);
+}
 
-coke::Task<> bench_two_id() { return bench_pool_id(2); }
+coke::Task<> bench_two_id()
+{
+    return bench_pool_id(2);
+}
 
-coke::Task<> bench_ten_id() { return bench_pool_id(10); }
+coke::Task<> bench_ten_id()
+{
+    return bench_pool_id(10);
+}
 
-coke::Task<> bench_id_one_by_one() {
+coke::Task<> bench_id_one_by_one()
+{
     auto sleep = std::chrono::seconds(10);
     auto first = std::chrono::milliseconds(10);
     auto id = id_pool[0];
@@ -338,13 +378,15 @@ coke::Task<> bench_id_one_by_one() {
     }
 }
 
-coke::Task<> warm_up() {
+coke::Task<> warm_up()
+{
     co_await coke::yield();
     co_await coke::switch_go_thread();
 }
 
-using bench_func_t = coke::Task<>(*)();
-coke::Task<> do_benchmark(const char *name, bench_func_t func) {
+using bench_func_t = coke::Task<> (*)();
+coke::Task<> do_benchmark(const char *name, bench_func_t func)
+{
     int run_times = 0;
     long long start, total_cost = 0;
     std::vector<long long> costs;
@@ -371,11 +413,12 @@ coke::Task<> do_benchmark(const char *name, bench_func_t func) {
     data_distribution(costs, mean, stddev);
     tps = 1.0e3 * current / (mean + 1e-9);
 
-    table_line(std::cout, width, name, total_cost, run_times,
-               mean, stddev, (long)tps);
+    table_line(std::cout, width, name, total_cost, run_times, mean, stddev,
+               (long)tps);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::OptionParser args;
 
     args.add_integer(concurrency, 'c', "concurrency")
@@ -423,12 +466,11 @@ int main(int argc, char *argv[]) {
         id_pool[i] = coke::get_unique_id();
     }
 
-    table_line(std::cout, width,
-               "name", "cost", "times",
-               "mean(ms)", "stddev", "per sec");
+    table_line(std::cout, width, "name", "cost", "times", "mean(ms)", "stddev",
+               "per sec");
     delimiter(std::cout, width, '-');
 
-#define DO_BENCHMARK(func) coke::sync_wait(do_benchmark(#func, bench_ ## func))
+#define DO_BENCHMARK(func) coke::sync_wait(do_benchmark(#func, bench_##func))
     DO_BENCHMARK(wf_repeat);
     DO_BENCHMARK(default_timer);
     DO_BENCHMARK(yield);
@@ -452,9 +494,9 @@ int main(int argc, char *argv[]) {
     DO_BENCHMARK(cancel_by_id);
     DO_BENCHMARK(detach_by_id);
     // disable this test case, it always make workflow deadlock
-    //DO_BENCHMARK(detach3_by_id);
+    // DO_BENCHMARK(detach3_by_id);
     DO_BENCHMARK(detach_inf_by_id);
-    //DO_BENCHMARK(detach3_inf_by_id);
+    // DO_BENCHMARK(detach3_inf_by_id);
     DO_BENCHMARK(one_id);
     DO_BENCHMARK(two_id);
     DO_BENCHMARK(ten_id);

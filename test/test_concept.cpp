@@ -14,12 +14,12 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <array>
-#include <string>
-#include <map>
 #include <gtest/gtest.h>
+#include <map>
+#include <string>
 
 #include "coke/coke.h"
 
@@ -36,13 +36,15 @@ struct Move {
 struct PrivateDestructor {
     PrivateDestructor() = default;
     PrivateDestructor(PrivateDestructor &&) = default;
+
 private:
     ~PrivateDestructor() = default;
 };
 
-void func() { }
+void func() {}
 
-TEST(CONCEPT, cokeable) {
+TEST(CONCEPT, cokeable)
+{
     EXPECT_TRUE(coke::Cokeable<int>);
     EXPECT_TRUE(coke::Cokeable<std::string>);
     EXPECT_TRUE((coke::Cokeable<std::map<std::string, bool>>));
@@ -54,21 +56,23 @@ TEST(CONCEPT, cokeable) {
     EXPECT_TRUE((coke::Cokeable<std::array<int, 10>>));
 
     EXPECT_FALSE(coke::Cokeable<int[]>);
-    EXPECT_FALSE(coke::Cokeable<int&>);
+    EXPECT_FALSE(coke::Cokeable<int &>);
     EXPECT_FALSE(coke::Cokeable<const int>);
     EXPECT_FALSE(coke::Cokeable<int &&>);
-    EXPECT_FALSE(coke::Cokeable<void(&)()>);
+    EXPECT_FALSE(coke::Cokeable<void (&)()>);
     EXPECT_FALSE(coke::Cokeable<PrivateDestructor>);
 }
 
-TEST(CONCEPT, co_promise) {
+TEST(CONCEPT, co_promise)
+{
     EXPECT_TRUE(coke::IsCokePromise<coke::detail::CoPromise<void>>);
     EXPECT_TRUE(coke::IsCokePromise<coke::detail::CoPromise<int>>);
     EXPECT_FALSE(coke::IsCokePromise<void>);
     EXPECT_FALSE(coke::IsCokePromise<int>);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

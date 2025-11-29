@@ -14,25 +14,29 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
-#include <string>
 #include <gtest/gtest.h>
+#include <string>
 
 #include "coke/coke.h"
 
-coke::Task<> simple_latch() {
+coke::Task<> simple_latch()
+{
     std::string s = "hello";
     std::string t;
 
     {
         coke::Latch lt(1);
 
-        coke::make_task([](std::string &x, coke::Latch &lt) -> coke::Task<> {
-            x = "hello";
-            lt.count_down();
-            co_return;
-        }, t, lt).detach();
+        coke::make_task(
+            [](std::string &x, coke::Latch &lt) -> coke::Task<> {
+                x = "hello";
+                lt.count_down();
+                co_return;
+            },
+            t, lt)
+            .detach();
 
         co_await lt.wait();
         EXPECT_EQ(s, t);
@@ -42,20 +46,24 @@ coke::Task<> simple_latch() {
         coke::Latch lt(1);
         t.clear();
 
-        coke::make_task([](std::string &x, coke::Latch &lt) -> coke::Task<> {
-            // switch to another thread
-            co_await coke::yield();
+        coke::make_task(
+            [](std::string &x, coke::Latch &lt) -> coke::Task<> {
+                // switch to another thread
+                co_await coke::yield();
 
-            x = "hello";
-            lt.count_down();
-        }, t, lt).detach();
+                x = "hello";
+                lt.count_down();
+            },
+            t, lt)
+            .detach();
 
         co_await lt.wait();
         EXPECT_EQ(s, t);
     }
 }
 
-coke::Task<> ret_value() {
+coke::Task<> ret_value()
+{
     coke::Latch lt(1);
     int ret;
 
@@ -73,15 +81,18 @@ coke::Task<> ret_value() {
     EXPECT_EQ(ret, coke::LATCH_SUCCESS);
 }
 
-TEST(LATCH, simple) {
+TEST(LATCH, simple)
+{
     coke::sync_wait(simple_latch());
 }
 
-TEST(LATCH, ret_value) {
+TEST(LATCH, ret_value)
+{
     coke::sync_wait(ret_value());
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 2;
     s.handler_threads = 2;

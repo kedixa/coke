@@ -1,19 +1,19 @@
-#include <iostream>
 #include <cstdio>
+#include <iostream>
 #include <string>
 
 #include "coke/global.h"
-#include "coke/http/http_server.h"
 #include "coke/http/http_client.h"
+#include "coke/http/http_server.h"
 #include "workflow/URIParser.h"
 
-coke::HttpClientParams cli_params {
-    .retry_max          = 2,
-    .send_timeout       = -1,
-    .receive_timeout    = -1,
+coke::HttpClientParams cli_params{
+    .retry_max = 2,
+    .send_timeout = -1,
+    .receive_timeout = -1,
     .keep_alive_timeout = 60 * 1000,
-    .redirect_max       = 0,
-    .proxy              = "",
+    .redirect_max = 0,
+    .proxy = "",
 };
 
 coke::HttpClient cli(cli_params);
@@ -21,8 +21,9 @@ coke::HttpClient cli(cli_params);
 /**
  * This example implements a simple http proxy, forwards http requests
  * to the target server, and returns the result.
-*/
-coke::Task<> process(coke::HttpServerContext ctx) {
+ */
+coke::Task<> process(coke::HttpServerContext ctx)
+{
     std::string url;
     ParsedURI uri;
     std::string status_code("0");
@@ -78,11 +79,12 @@ coke::Task<> process(coke::HttpServerContext ctx) {
 
     if (reply_result.state != coke::STATE_SUCCESS) {
         std::cout << "Reply Failed " << url << " state:" << reply_result.state
-            << " error:" << reply_result.error << std::endl;
+                  << " error:" << reply_result.error << std::endl;
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     int port = 8000;
     coke::HttpServerParams params;
     params.request_size_limit = 8 * 1024 * 1024;
@@ -92,7 +94,8 @@ int main(int argc, char *argv[]) {
 
     coke::HttpServer server(params, process);
     if (server.start(port) == 0) {
-        std::cout << "Start proxy on port " << port << "\nPress Enter to exit" << std::endl;
+        std::cout << "Start proxy on port " << port << "\nPress Enter to exit"
+                  << std::endl;
 
         std::cin.get();
         server.stop();

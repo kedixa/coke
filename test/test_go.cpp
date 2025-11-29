@@ -14,41 +14,48 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
-#include <vector>
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "coke/coke.h"
 
-void simple() { }
-int add(int a, int b) { return a + b; }
+void simple() {}
+int add(int a, int b)
+{
+    return a + b;
+}
 
 template<typename T>
-T ref(T &a, T b) { a = b; return b; }
+T ref(T &a, T b)
+{
+    a = b;
+    return b;
+}
 
 template<typename T>
-void swap(T &a, T &b) {
+void swap(T &a, T &b)
+{
     std::string c(std::move(a));
     a = std::move(b);
     b = std::move(c);
 }
 
 struct Callable {
-    Callable() { }
-    Callable(const std::string &s) : s(s) { }
+    Callable() {}
+    Callable(const std::string &s) : s(s) {}
 
     int operator()() & { return 1; }
     int operator()() && { return 2; }
 
-    std::string call(const std::string &t) {
-        return s + t;
-    }
+    std::string call(const std::string &t) { return s + t; }
 
     std::string s;
 };
 
-coke::Task<> test_more() {
+coke::Task<> test_more()
+{
     Callable callable;
 
     int ret1 = co_await coke::go(callable);
@@ -83,30 +90,32 @@ coke::Task<> test_more() {
     EXPECT_EQ(b, std::string(100, 'a'));
 }
 
-TEST(GO, simple) {
-    coke::sync_wait(
-        coke::go(simple),
-        coke::go("queue", simple)
-    );
+TEST(GO, simple)
+{
+    coke::sync_wait(coke::go(simple), coke::go("queue", simple));
 }
 
-TEST(GO, add) {
+TEST(GO, add)
+{
     int ret = coke::sync_wait(coke::go(add, 1, 2));
     EXPECT_EQ(ret, 3);
 }
 
-TEST(GO, ref) {
+TEST(GO, ref)
+{
     std::vector<int> a;
     std::vector<int> b{1, 2, 3, 4};
     coke::sync_wait(coke::go(ref<std::vector<int>>, std::ref(a), b));
     EXPECT_EQ(a, b);
 }
 
-TEST(GO, more) {
+TEST(GO, more)
+{
     coke::sync_wait(test_more());
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 2;
     s.handler_threads = 2;

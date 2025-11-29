@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_CONSTANT_H
 #define COKE_DETAIL_CONSTANT_H

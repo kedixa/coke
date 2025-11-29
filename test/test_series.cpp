@@ -14,11 +14,11 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
+#include <gtest/gtest.h>
 #include <map>
 #include <string>
-#include <gtest/gtest.h>
 
 #include "coke/coke.h"
 
@@ -26,15 +26,11 @@ using CtxMap = std::map<std::string, std::string>;
 
 class MySeries : public SeriesWork {
 public:
-    static SeriesWork *create(SubTask *first) {
-        return new MySeries(first);
-    }
+    static SeriesWork *create(SubTask *first) { return new MySeries(first); }
 
-    CtxMap &get_ctx() {
-        return m;
-    }
+    CtxMap &get_ctx() { return m; }
 
-    MySeries(SubTask *first) : SeriesWork(first , nullptr) { }
+    MySeries(SubTask *first) : SeriesWork(first, nullptr) {}
 
 private:
     CtxMap m;
@@ -42,7 +38,8 @@ private:
 
 std::string key("key"), value("value");
 
-coke::Task<> worker() {
+coke::Task<> worker()
+{
     co_await coke::sleep(0.1);
 
     SeriesWork *series = co_await coke::current_series();
@@ -53,7 +50,8 @@ coke::Task<> worker() {
     co_await coke::sleep(0.1);
 }
 
-coke::Task<> my_series(coke::SyncLatch &lt) {
+coke::Task<> my_series(coke::SyncLatch &lt)
+{
     co_await worker();
 
     SeriesWork *series = co_await coke::current_series();
@@ -65,7 +63,8 @@ coke::Task<> my_series(coke::SyncLatch &lt) {
     lt.count_down();
 }
 
-coke::Task<> default_series(coke::SyncLatch &lt) {
+coke::Task<> default_series(coke::SyncLatch &lt)
+{
     SeriesWork *s1 = co_await coke::current_series();
     co_await coke::sleep(0.1);
 
@@ -76,19 +75,22 @@ coke::Task<> default_series(coke::SyncLatch &lt) {
     lt.count_down();
 }
 
-TEST(SERIES, my) {
+TEST(SERIES, my)
+{
     coke::SyncLatch lt(1);
     coke::detach(default_series(lt));
     lt.wait();
 }
 
-TEST(SERIES, default) {
+TEST(SERIES, default)
+{
     coke::SyncLatch lt(1);
     coke::detach_on_new_series(my_series(lt), MySeries::create);
     lt.wait();
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 2;
     s.handler_threads = 2;

@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_GO_TASK_H
 #define COKE_DETAIL_GO_TASK_H
@@ -23,8 +23,8 @@
 #include <optional>
 #include <string>
 
-#include "workflow/ExecRequest.h"
 #include "coke/detail/awaiter_base.h"
+#include "workflow/ExecRequest.h"
 
 namespace coke::detail {
 
@@ -59,19 +59,18 @@ protected:
 template<typename T>
 class GoTask : public GoTaskBase {
 public:
-    GoTask(ExecQueue *queue, Executor *executor,
-           std::function<T()> &&func)
+    GoTask(ExecQueue *queue, Executor *executor, std::function<T()> &&func)
         : GoTaskBase(queue, executor), func(std::move(func))
-    { }
-
-    void set_function(std::function<T()> func) {
-        this->func = std::move(func);
+    {
     }
+
+    void set_function(std::function<T()> func) { this->func = std::move(func); }
 
     T &get_result() { return result.value(); }
 
 private:
-    virtual void execute() override {
+    virtual void execute() override
+    {
         if (func)
             result.emplace(func());
     }
@@ -84,17 +83,19 @@ private:
 template<>
 class GoTask<void> : public GoTaskBase {
 public:
-    GoTask(ExecQueue *queue, Executor *executor,
-           std::function<void()> &&func)
+    GoTask(ExecQueue *queue, Executor *executor, std::function<void()> &&func)
         : GoTaskBase(queue, executor), func(std::move(func))
-    { }
+    {
+    }
 
-    void set_function(std::function<void()> func) {
+    void set_function(std::function<void()> func)
+    {
         this->func = std::move(func);
     }
 
 private:
-    virtual void execute() override {
+    virtual void execute() override
+    {
         if (func)
             func();
     }

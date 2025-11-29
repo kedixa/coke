@@ -14,12 +14,12 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <atomic>
 #include <chrono>
-#include <vector>
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "coke/coke.h"
 
@@ -46,7 +46,8 @@ struct ParamPack {
     int loop_max;
 };
 
-coke::Task<> do_test_mutex(ParamPack *p) {
+coke::Task<> do_test_mutex(ParamPack *p)
+{
     coke::SharedMutex &mtx = p->mtx;
     bool shared = (p->test_method >= TEST_TRY_LOCK_SHARED);
     int ret;
@@ -107,7 +108,8 @@ coke::Task<> do_test_mutex(ParamPack *p) {
     }
 }
 
-void test_mutex(int test_method) {
+void test_mutex(int test_method)
+{
     ParamPack p;
     p.count = 0;
     p.total = 0;
@@ -125,7 +127,8 @@ void test_mutex(int test_method) {
     EXPECT_EQ(p.total.load(), (MAX_TASKS * p.loop_max));
 }
 
-coke::Task<> test_shared_lock() {
+coke::Task<> test_shared_lock()
+{
     coke::SharedMutex mtx;
 
     co_await mtx.lock_shared();
@@ -167,35 +170,43 @@ coke::Task<> test_shared_lock() {
     }
 }
 
-TEST(SHARED_MUTEX, try_lock) {
+TEST(SHARED_MUTEX, try_lock)
+{
     test_mutex(TEST_TRY_LOCK);
 }
 
-TEST(SHARED_MUTEX, lock) {
+TEST(SHARED_MUTEX, lock)
+{
     test_mutex(TEST_LOCK);
 }
 
-TEST(SHARED_MUTEX, lock_for) {
+TEST(SHARED_MUTEX, lock_for)
+{
     test_mutex(TEST_LOCK_FOR);
 }
 
-TEST(SHARED_MUTEX, try_lock_shared) {
+TEST(SHARED_MUTEX, try_lock_shared)
+{
     test_mutex(TEST_TRY_LOCK_SHARED);
 }
 
-TEST(SHARED_MUTEX, lock_shared) {
+TEST(SHARED_MUTEX, lock_shared)
+{
     test_mutex(TEST_LOCK_SHARED);
 }
 
-TEST(SHARED_MUTEX, lock_shared_for) {
+TEST(SHARED_MUTEX, lock_shared_for)
+{
     test_mutex(TEST_TRY_LOCK_SHARED_FOR);
 }
 
-TEST(MUTEX, shared_lock) {
+TEST(MUTEX, shared_lock)
+{
     coke::sync_wait(test_shared_lock());
 }
 
-TEST(SHARED_MUTEX, shared_and_unique) {
+TEST(SHARED_MUTEX, shared_and_unique)
+{
     int loop_max = 128;
     std::atomic<bool> finish{false};
     std::atomic<int> shared_count{0};
@@ -222,16 +233,12 @@ TEST(SHARED_MUTEX, shared_and_unique) {
         finish.store(true);
     };
 
-    coke::sync_wait(
-        lock_shared(),
-        lock_shared(),
-        lock_shared(),
-        lock_shared(),
-        lock_unique()
-    );
+    coke::sync_wait(lock_shared(), lock_shared(), lock_shared(), lock_shared(),
+                    lock_unique());
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 4;
     s.handler_threads = 8;

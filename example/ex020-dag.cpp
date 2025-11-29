@@ -19,7 +19,8 @@ struct MyGraphContext {
 
 using MyDagPtr = std::shared_ptr<coke::DagGraph<MyGraphContext>>;
 
-auto create_node(char x) {
+auto create_node(char x)
+{
     return [x](MyGraphContext &ctx) -> coke::Task<> {
         // Coke's dag does not have a cancellation mechanism, but it can be
         // achieved by setting a flag in the Context.
@@ -37,7 +38,8 @@ auto create_node(char x) {
     };
 }
 
-MyDagPtr create_dag() {
+MyDagPtr create_dag()
+{
     coke::DagBuilder<MyGraphContext> builder;
 
     auto root = builder.root();
@@ -78,10 +80,12 @@ MyDagPtr create_dag() {
     return builder.build();
 }
 
-coke::Task<> use_dag() {
+coke::Task<> use_dag()
+{
     auto dag = create_dag();
 
-    std::cout << "Is this DAG valid? " << (dag->valid() ? "yes!" : "no!") << std::endl;
+    std::cout << "Is this DAG valid? " << (dag->valid() ? "yes!" : "no!")
+              << std::endl;
     std::cout << "The DAG in dot format:\n";
     dag->dump(std::cout);
 
@@ -119,7 +123,8 @@ coke::Task<> use_dag() {
     }
 }
 
-int main() {
+int main()
+{
     coke::sync_wait(use_dag());
     return 0;
 }

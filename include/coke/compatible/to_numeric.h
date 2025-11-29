@@ -14,14 +14,14 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_COMPATIBLE_TO_NUMERIC_H
 #define COKE_COMPATIBLE_TO_NUMERIC_H
 
 #include <charconv>
-#include <string>
 #include <stdexcept>
+#include <string>
 
 namespace coke::comp {
 
@@ -30,9 +30,10 @@ namespace coke::comp {
  *
  * This function is implemented here for compatibility, because some versions of
  * clang do not yet implement std::from_chars with float and double.
-*/
+ */
 template<typename T>
-std::errc to_numeric(const std::string_view &data, T &value) noexcept {
+std::errc to_numeric(const std::string_view &data, T &value) noexcept
+{
     const char *first = data.data();
     const char *last = first + data.size();
     auto r = std::from_chars(first, last, value);
@@ -44,10 +45,12 @@ std::errc to_numeric(const std::string_view &data, T &value) noexcept {
 
 #ifndef __cpp_lib_to_chars
 template<typename T>
-using strto_func_t = T(*)(const std::string &, std::size_t *);
+using strto_func_t = T (*)(const std::string &, std::size_t *);
 
 template<typename T>
-std::errc __to_numeric(const std::string &str, T &value, strto_func_t<T> func) noexcept {
+std::errc __to_numeric(const std::string &str, T &value,
+                       strto_func_t<T> func) noexcept
+{
     std::size_t pos = 0;
 
     try {
@@ -64,17 +67,20 @@ std::errc __to_numeric(const std::string &str, T &value, strto_func_t<T> func) n
     }
 }
 
-template<> inline
-std::errc to_numeric(const std::string_view &data, float &value) noexcept {
+template<>
+inline std::errc to_numeric(const std::string_view &data, float &value) noexcept
+{
     return __to_numeric(std::string(data), value, std::stof);
 }
 
-template<> inline
-std::errc to_numeric(const std::string_view &data, double &value) noexcept {
+template<>
+inline std::errc to_numeric(const std::string_view &data,
+                            double &value) noexcept
+{
     return __to_numeric(std::string(data), value, std::stod);
 }
 #endif
 
-}
+} // namespace coke::comp
 
 #endif // COKE_COMPATIBLE_TO_NUMERIC_H

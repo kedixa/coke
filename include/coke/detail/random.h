@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_RANDOM_H
 #define COKE_DETAIL_RANDOM_H
@@ -33,7 +33,8 @@ uint64_t rand_seed();
 /**
  * @brief Thread safe 64 bit random integer generator.
  */
-inline uint64_t rand_u64() {
+inline uint64_t rand_u64()
+{
     thread_local std::mt19937_64 mt64(detail::rand_seed());
     return mt64();
 }

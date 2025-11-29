@@ -14,39 +14,39 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <gtest/gtest.h>
 
-#include "coke/tools/scope.h"
 #include "coke/mutex.h"
+#include "coke/tools/scope.h"
 #include "coke/wait.h"
 
-coke::Task<> scope_exit(coke::Mutex &mtx) {
+coke::Task<> scope_exit(coke::Mutex &mtx)
+{
     co_await mtx.lock();
 
-    coke::ScopeExit scope([&mtx]() noexcept {
-        mtx.unlock();
-    });
+    coke::ScopeExit scope([&mtx]() noexcept { mtx.unlock(); });
 }
 
-coke::Task<> scope_exit_release(coke::Mutex &mtx) {
+coke::Task<> scope_exit_release(coke::Mutex &mtx)
+{
     co_await mtx.lock();
 
-    coke::ScopeExit scope([&mtx]() noexcept {
-        mtx.unlock();
-    });
+    coke::ScopeExit scope([&mtx]() noexcept { mtx.unlock(); });
 
     mtx.unlock();
     scope.release();
 }
 
-TEST(SCOPE, scope_exit) {
+TEST(SCOPE, scope_exit)
+{
     coke::Mutex mtx;
     coke::sync_wait(scope_exit(mtx), scope_exit_release(mtx));
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     testing::InitGoogleTest(&argc, argv);
 
     return RUN_ALL_TESTS();

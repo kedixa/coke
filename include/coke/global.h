@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_GLOBAL_H
 #define COKE_GLOBAL_H
@@ -24,8 +24,8 @@
 
 #include "workflow/EndpointParams.h"
 
-#define COKE_BUILD_VERSION_NUMBER(major, minor, patch) \
-        (major * 0x010000L + minor * 0x0100L + patch * 0x01L)
+#define COKE_BUILD_VERSION_NUMBER(major, minor, patch)                         \
+    (major * 0x010000L + minor * 0x0100L + patch * 0x01L)
 
 #define COKE_VERSION_NUMBER COKE_BUILD_VERSION_NUMBER(0, 6, 0)
 
@@ -73,37 +73,34 @@ constexpr int TOP_ABORTED = 2;
 // current operation failed because the container has been closed.
 constexpr int TOP_CLOSED = 3;
 
-
 using EndpointParams = ::EndpointParams;
 
 struct GlobalSettings {
-    EndpointParams endpoint_params      = ENDPOINT_PARAMS_DEFAULT;
-    EndpointParams dns_server_params    = ENDPOINT_PARAMS_DEFAULT;
-    unsigned int dns_ttl_default        = 3600;
-    unsigned int dns_ttl_min            = 60;
-    int dns_threads                     = 4;
-    int poller_threads                  = 4;
-    int handler_threads                 = 20;
-    int compute_threads                 = -1;
-    int fio_max_events                  = 4096;
-    const char *resolv_conf_path        = "/etc/resolv.conf";
-    const char *hosts_path              = "/etc/hosts";
+    EndpointParams endpoint_params = ENDPOINT_PARAMS_DEFAULT;
+    EndpointParams dns_server_params = ENDPOINT_PARAMS_DEFAULT;
+    unsigned int dns_ttl_default = 3600;
+    unsigned int dns_ttl_min = 60;
+    int dns_threads = 4;
+    int poller_threads = 4;
+    int handler_threads = 20;
+    int compute_threads = -1;
+    int fio_max_events = 4096;
+    const char *resolv_conf_path = "/etc/resolv.conf";
+    const char *hosts_path = "/etc/hosts";
 };
-
 
 void library_init(const GlobalSettings &s);
 const char *get_error_string(int state, int error);
 
-
 /**
  * @brief Get a globally unique id, which must be greater than zero,
  *        so zero can be treated as an illegal id.
-*/
+ */
 uint64_t get_unique_id() noexcept;
 
 /**
  * @brief Invalid unique id.
-*/
+ */
 constexpr uint64_t INVALID_UNIQUE_ID = 0;
 
 /**
@@ -114,7 +111,7 @@ constexpr uint64_t INVALID_UNIQUE_ID = 0;
  * with coke::yield(), or other async operations.
  *
  * @param clear Reset recursive count to zero and return false.
-*/
+ */
 bool prevent_recursive_stack(bool clear = false);
 
 } // namespace coke

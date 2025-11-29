@@ -88,8 +88,8 @@ public:
     size_type find_pos(T x) const
     {
         size_type pos = 0;
-        size_type p   = capacity >> 1;
-        T cur         = ZERO_OF_T;
+        size_type p = capacity >> 1;
+        T cur = ZERO_OF_T;
 
         while (p > 0) {
             if (cur + tree[pos + p] <= x) {
@@ -118,7 +118,7 @@ private:
 
         tree.resize(new_cap + 1, ZERO_OF_T);
         tree[new_cap] = tree[capacity];
-        capacity      = new_cap;
+        capacity = new_cap;
     }
 
 private:

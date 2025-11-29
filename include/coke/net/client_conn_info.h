@@ -75,7 +75,7 @@ public:
     static ClientConnInfo create_instance(const std::string &full_info,
                                           bool unique_conn);
 
-    ClientConnInfo()  = default;
+    ClientConnInfo() = default;
     ~ClientConnInfo() = default;
 
     /**

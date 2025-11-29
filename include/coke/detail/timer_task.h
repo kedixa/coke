@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_TIMER_TASK_H
 #define COKE_DETAIL_TIMER_TASK_H
@@ -23,8 +23,8 @@
 
 #include "coke/detail/sleep_base.h"
 
-#include "workflow/Workflow.h"
 #include "workflow/SleepRequest.h"
+#include "workflow/Workflow.h"
 
 namespace coke::detail {
 
@@ -34,7 +34,8 @@ public:
 
     TimerTask(CommScheduler *scheduler, NanoSec nsec) noexcept
         : SleepRequest(scheduler), awaiter(nullptr), nsec(nsec)
-    { }
+    {
+    }
 
     virtual ~TimerTask() = default;
 
@@ -47,7 +48,8 @@ public:
     int get_result() noexcept;
 
 protected:
-    virtual SubTask *done() override {
+    virtual SubTask *done() override
+    {
         SeriesWork *series = series_of(this);
 
         awaiter->done();
@@ -56,7 +58,8 @@ protected:
         return series->pop();
     }
 
-    virtual int duration(struct timespec *value) override {
+    virtual int duration(struct timespec *value) override
+    {
         constexpr int64_t N = 1'000'000'000;
         NanoSec::rep cnt = nsec.count();
 
@@ -80,11 +83,13 @@ protected:
 class YieldTask : public TimerTask {
 public:
     YieldTask(CommScheduler *scheduler) noexcept
-        : TimerTask(scheduler, std::chrono::seconds(1)),
-          cancel_done(false), ref(2)
-    { }
+        : TimerTask(scheduler, std::chrono::seconds(1)), cancel_done(false),
+          ref(2)
+    {
+    }
 
-    virtual void dispatch() override {
+    virtual void dispatch() override
+    {
         if (this->scheduler->sleep(this) >= 0) {
             this->cancel();
 
@@ -102,7 +107,8 @@ public:
 protected:
     virtual void handle(int state, int error) override;
 
-    virtual SubTask *done() override {
+    virtual SubTask *done() override
+    {
         SeriesWork *series = series_of(this);
 
         awaiter->done();
@@ -117,7 +123,8 @@ protected:
         return series->pop();
     }
 
-    void dec_ref() {
+    void dec_ref()
+    {
         if (ref.fetch_sub(1, std::memory_order_acq_rel) == 1)
             delete this;
     }

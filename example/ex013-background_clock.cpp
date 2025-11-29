@@ -9,11 +9,12 @@
 /**
  * This example starts a background coroutine that outputs `counter` every
  * interval time and exits immediately when the main tasks are done.
-*/
+ */
 
 std::atomic<std::size_t> counter{0};
 
-coke::Task<> background(coke::StopToken &tk, std::chrono::nanoseconds interval) {
+coke::Task<> background(coke::StopToken &tk, std::chrono::nanoseconds interval)
+{
     // call tk.set_finished() when this coroutine is finished
     coke::StopToken::FinishGuard guard(&tk);
     bool stop;
@@ -26,7 +27,8 @@ coke::Task<> background(coke::StopToken &tk, std::chrono::nanoseconds interval) 
     std::cout << "Stop background counter" << std::endl;
 }
 
-coke::Task<> async_main() {
+coke::Task<> async_main()
+{
     coke::StopToken tk(1);
     auto interval = std::chrono::seconds(1);
 
@@ -44,7 +46,8 @@ coke::Task<> async_main() {
     co_await tk.wait_finish();
 }
 
-int main() {
+int main()
+{
     coke::sync_wait(async_main());
     return 0;
 }

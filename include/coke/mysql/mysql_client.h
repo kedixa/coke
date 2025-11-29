@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_MYSQL_CLIENT_H
 #define COKE_MYSQL_CLIENT_H
@@ -34,13 +34,13 @@ using MySQLAwaiter = NetworkAwaiter<MySQLRequest, MySQLResponse>;
 using MySQLResult = MySQLAwaiter::ResultType;
 
 struct MySQLClientParams {
-    int retry_max           = 0;
-    int send_timeout        = -1;
-    int receive_timeout     = -1;
-    int keep_alive_timeout  = 60 * 1000;
+    int retry_max = 0;
+    int send_timeout = -1;
+    int receive_timeout = -1;
+    int keep_alive_timeout = 60 * 1000;
 
-    bool use_ssl            = false;
-    int port                = 3306;
+    bool use_ssl = false;
+    int port = 3306;
     std::string host;
     std::string username;
     std::string password;
@@ -58,14 +58,15 @@ public:
 public:
     explicit MySQLClient(const MySQLClientParams &params)
         : MySQLClient(params, false, 0)
-    { }
+    {
+    }
 
     virtual ~MySQLClient() = default;
 
     /**
      * Return the `params` to create this instance, except retry will be
      * force reset to zero when this is MySQLConnection.
-    */
+     */
     MySQLClientParams get_params() const { return params; }
 
     /**
@@ -74,12 +75,12 @@ public:
      * MySQLClient cli(params);
      * MySQLResult res = co_await cli.request("show tables;");
      * // check res.status and view response
-    */
+     */
     AwaiterType request(const std::string &query);
 
 protected:
-    MySQLClient(const MySQLClientParams &params,
-                bool unique_conn, std::size_t conn_id);
+    MySQLClient(const MySQLClientParams &params, bool unique_conn,
+                std::size_t conn_id);
 
 protected:
     bool unique_conn;
@@ -99,7 +100,7 @@ protected:
  * fails, the current connection will be closed, and the connection will be
  * re-established for the next request.
  *
-*/
+ */
 class MySQLConnection : public MySQLClient {
     static std::size_t acquire_conn_id();
     static void release_conn_id(std::size_t conn_id);
@@ -107,17 +108,16 @@ class MySQLConnection : public MySQLClient {
 public:
     explicit MySQLConnection(const MySQLClientParams &params)
         : MySQLClient(params, true, acquire_conn_id())
-    { }
-
-    virtual ~MySQLConnection() {
-        release_conn_id(conn_id);
+    {
     }
+
+    virtual ~MySQLConnection() { release_conn_id(conn_id); }
 
     /**
      * @brief Disconnect this Connection.
      *
      * When the object is no longer used, the connection MUST be disconnected.
-    */
+     */
     AwaiterType disconnect();
 };
 

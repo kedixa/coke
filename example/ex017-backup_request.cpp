@@ -1,10 +1,10 @@
-#include <iostream>
 #include <chrono>
-#include <vector>
+#include <iostream>
 #include <string>
+#include <vector>
 
-#include "coke/sleep.h"
 #include "coke/future.h"
+#include "coke/sleep.h"
 #include "coke/wait.h"
 
 /**
@@ -25,13 +25,15 @@ constexpr std::chrono::milliseconds backup_timeout(40);
 
 std::string current();
 
-coke::Task<Response> request_once(Request req) {
+coke::Task<Response> request_once(Request req)
+{
     // Simulate time-consuming network request
     int ret = co_await coke::sleep(req);
     co_return ret;
 }
 
-coke::Task<Response> handle_request(milliseconds t1, milliseconds t2) {
+coke::Task<Response> handle_request(milliseconds t1, milliseconds t2)
+{
     std::cout << "------------------------------\n";
     std::cout << current() << "Handle request\n";
 
@@ -41,7 +43,8 @@ coke::Task<Response> handle_request(milliseconds t1, milliseconds t2) {
     vec.emplace_back(coke::create_future(request_once(t1)));
     ret = co_await vec[0].wait_for(first_timeout);
 
-    // For simplicity, we assume that future has only two states: Ready and Timeout.
+    // For simplicity, we assume that future has only two states: Ready and
+    // Timeout.
     if (ret == coke::FUTURE_STATE_READY) {
         std::cout << current() << "First request success\n";
         co_return vec[0].get();
@@ -59,11 +62,13 @@ coke::Task<Response> handle_request(milliseconds t1, milliseconds t2) {
     }
     else {
         if (vec[0].ready()) {
-            std::cout << current() << "First request success before backup request\n";
+            std::cout << current()
+                      << "First request success before backup request\n";
             co_return vec[0].get();
         }
         else {
-            std::cout << current() << "Backup request success before first request\n";
+            std::cout << current()
+                      << "Backup request success before first request\n";
             co_return vec[1].get();
         }
     }
@@ -72,7 +77,8 @@ coke::Task<Response> handle_request(milliseconds t1, milliseconds t2) {
     // whose coke::Future is not ready now.
 }
 
-int main() {
+int main()
+{
     // Case 1: First request success
     coke::sync_wait(handle_request(milliseconds(40), milliseconds(20)));
 
@@ -88,7 +94,8 @@ int main() {
     return 0;
 }
 
-std::string current() {
+std::string current()
+{
     static auto start = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
     std::chrono::duration<double> d = now - start;

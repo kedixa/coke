@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_SERIES_TASK_H
 #define COKE_DETAIL_SERIES_TASK_H
@@ -28,14 +28,13 @@ namespace coke::detail {
 template<Cokeable T>
 class DetachTask final : public SubTask {
 public:
-    DetachTask(Task<T> &&task) : task(std::move(task)) { }
+    DetachTask(Task<T> &&task) : task(std::move(task)) {}
 
 protected:
-    virtual void dispatch() override {
-        this->subtask_done();
-    }
+    virtual void dispatch() override { this->subtask_done(); }
 
-    virtual SubTask *done() override {
+    virtual SubTask *done() override
+    {
         SeriesWork *series = series_of(this);
         task.detach_on_series(series);
 
@@ -49,17 +48,16 @@ private:
 
 class SeriesTask final : public SubTask {
 public:
-    SeriesTask() noexcept : awaiter(nullptr) { }
+    SeriesTask() noexcept : awaiter(nullptr) {}
 
     AwaiterBase *get_awaiter() const noexcept { return awaiter; }
     void set_awaiter(AwaiterBase *awaiter) noexcept { this->awaiter = awaiter; }
 
 private:
-    virtual void dispatch() override {
-        this->subtask_done();
-    }
+    virtual void dispatch() override { this->subtask_done(); }
 
-    virtual SubTask *done() override {
+    virtual SubTask *done() override
+    {
         SeriesWork *series = series_of(this);
         awaiter->done();
 
@@ -74,11 +72,13 @@ private:
 // Create tasks.
 
 template<Cokeable T>
-auto create_detach_task(Task<T> &&task) {
+auto create_detach_task(Task<T> &&task)
+{
     return new DetachTask<T>(std::move(task));
 }
 
-inline auto create_series_task() {
+inline auto create_series_task()
+{
     return new SeriesTask();
 }
 

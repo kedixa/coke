@@ -14,37 +14,36 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_FUTURE_BASE_H
 #define COKE_DETAIL_FUTURE_BASE_H
 
 #include <atomic>
-#include <optional>
+#include <functional>
 #include <memory>
 #include <mutex>
-#include <functional>
+#include <optional>
 
 #include "coke/detail/exception_config.h"
-#include "coke/task.h"
-#include "coke/sleep.h"
 #include "coke/latch.h"
+#include "coke/sleep.h"
+#include "coke/task.h"
 
 namespace coke {
 
-constexpr int FUTURE_STATE_READY        = 0;
-constexpr int FUTURE_STATE_TIMEOUT      = 1;
-constexpr int FUTURE_STATE_ABORTED      = 2;
-constexpr int FUTURE_STATE_BROKEN       = 3;
-constexpr int FUTURE_STATE_EXCEPTION    = 4;
-constexpr int FUTURE_STATE_NOTSET       = 5;
+constexpr int FUTURE_STATE_READY = 0;
+constexpr int FUTURE_STATE_TIMEOUT = 1;
+constexpr int FUTURE_STATE_ABORTED = 2;
+constexpr int FUTURE_STATE_BROKEN = 3;
+constexpr int FUTURE_STATE_EXCEPTION = 4;
+constexpr int FUTURE_STATE_NOTSET = 5;
 
 template<Cokeable Res>
 class Future;
 
 template<Cokeable Res>
 class Promise;
-
 
 namespace detail {
 
@@ -53,41 +52,42 @@ struct FutureStateBase {
     constexpr static auto release = std::memory_order_release;
 
 public:
-    FutureStateBase() noexcept
-        : canceled(false), state(FUTURE_STATE_NOTSET)
-    { }
+    FutureStateBase() noexcept : canceled(false), state(FUTURE_STATE_NOTSET) {}
 
     int get_state() const noexcept { return state.load(acquire); }
 
-    bool set_broken() {
-        return set_once([](bool *flag) {
-            *flag = true;
-        }, FUTURE_STATE_BROKEN);
+    bool set_broken()
+    {
+        return set_once([](bool *flag) { *flag = true; }, FUTURE_STATE_BROKEN);
     }
 
-    bool set_exception(const std::exception_ptr &eptr) {
-        return set_once([&, this](bool *flag) {
-            this->eptr = eptr;
-            *flag = true;
-        }, FUTURE_STATE_EXCEPTION);
+    bool set_exception(const std::exception_ptr &eptr)
+    {
+        return set_once(
+            [&, this](bool *flag) {
+                this->eptr = eptr;
+                *flag = true;
+            },
+            FUTURE_STATE_EXCEPTION);
     }
 
     std::exception_ptr get_exception() { return eptr; }
 
-    void raise_exception() {
+    void raise_exception()
+    {
         if (eptr)
             std::rethrow_exception(eptr);
     }
 
-    Task<int> wait() {
-        return wait_impl(TimedWaitHelper{});
-    }
+    Task<int> wait() { return wait_impl(TimedWaitHelper{}); }
 
-    Task<int> wait_for(NanoSec nsec) {
+    Task<int> wait_for(NanoSec nsec)
+    {
         return wait_impl(TimedWaitHelper{nsec});
     }
 
-    void set_callback(std::function<void(int)> &&cb) {
+    void set_callback(std::function<void(int)> &&cb)
+    {
         std::lock_guard<std::mutex> lg(mtx);
 
         int st = get_state();
@@ -97,22 +97,20 @@ public:
             callback = std::move(cb);
     }
 
-    void remove_callback() {
+    void remove_callback()
+    {
         std::lock_guard<std::mutex> lg(mtx);
         callback = nullptr;
     }
 
-    void set_canceled() {
-        canceled.store(true, release);
-    }
+    void set_canceled() { canceled.store(true, release); }
 
-    bool is_canceled() const noexcept {
-        return canceled.load(acquire);
-    }
+    bool is_canceled() const noexcept { return canceled.load(acquire); }
 
 protected:
     template<typename Callable>
-    bool set_once(Callable &&func, int new_state) {
+    bool set_once(Callable &&func, int new_state)
+    {
         bool set_succ = false;
         std::call_once(once_flag, std::forward<Callable>(func), &set_succ);
 
@@ -124,7 +122,8 @@ protected:
         return set_succ;
     }
 
-    void wakeup() {
+    void wakeup()
+    {
         std::lock_guard<std::mutex> lg(mtx);
 
         if (callback) {
@@ -136,7 +135,8 @@ protected:
         cancel_sleep_by_addr(get_addr());
     }
 
-    Task<int> wait_impl(TimedWaitHelper helper) {
+    Task<int> wait_impl(TimedWaitHelper helper)
+    {
         int st = get_state();
         if (st != FUTURE_STATE_NOTSET)
             co_return st;
@@ -166,9 +166,7 @@ protected:
         co_return st;
     }
 
-    const void *get_addr() const noexcept {
-        return (const char *)this + 1;
-    }
+    const void *get_addr() const noexcept { return (const char *)this + 1; }
 
 protected:
     std::once_flag once_flag;
@@ -183,21 +181,28 @@ protected:
 template<typename T>
 class FutureState : public FutureStateBase {
 public:
-    bool set_value(const T &value) {
-        return set_once([&, this](bool *flag) {
-            this->opt.emplace(value);
-            *flag = true;
-        }, FUTURE_STATE_READY);
+    bool set_value(const T &value)
+    {
+        return set_once(
+            [&, this](bool *flag) {
+                this->opt.emplace(value);
+                *flag = true;
+            },
+            FUTURE_STATE_READY);
     }
 
-    bool set_value(T &&value) {
-        return set_once([&, this](bool *flag) {
-            this->opt.emplace(std::move(value));
-            *flag = true;
-        }, FUTURE_STATE_READY);
+    bool set_value(T &&value)
+    {
+        return set_once(
+            [&, this](bool *flag) {
+                this->opt.emplace(std::move(value));
+                *flag = true;
+            },
+            FUTURE_STATE_READY);
     }
 
-    T &get() {
+    T &get()
+    {
         raise_exception();
         return opt.value();
     }
@@ -209,19 +214,19 @@ private:
 template<>
 class FutureState<void> : public FutureStateBase {
 public:
-    bool set_value() {
-        return set_once([](bool *flag) {
-            *flag = true;
-        }, FUTURE_STATE_READY);
+    bool set_value()
+    {
+        return set_once([](bool *flag) { *flag = true; }, FUTURE_STATE_READY);
     }
 
     void get() { raise_exception(); }
 };
 
-
 template<Cokeable T>
-Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
-    coke_try {
+Task<void> detach_task(coke::Promise<T> promise, Task<T> task)
+{
+    coke_try
+    {
         if constexpr (std::is_void_v<T>) {
             co_await std::move(task);
             promise.set_value();
@@ -230,7 +235,8 @@ Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
             promise.set_value(co_await std::move(task));
         }
     }
-    coke_catch (...) {
+    coke_catch(...)
+    {
         promise.set_exception(std::current_exception());
     }
 
@@ -239,22 +245,17 @@ Task<void> detach_task(coke::Promise<T> promise, Task<T> task) {
 
 class FutureWaitHelper {
 public:
-    FutureWaitHelper(std::size_t n) noexcept
-        : lt(1), x(0), n(n)
-    { }
+    FutureWaitHelper(std::size_t n) noexcept : lt(1), x(0), n(n) {}
 
-    void count_down() {
+    void count_down()
+    {
         if (x.fetch_add(1, std::memory_order_relaxed) + 1 == n)
             lt.count_down(1);
     }
 
-    auto wait() {
-        return lt.wait();
-    }
+    auto wait() { return lt.wait(); }
 
-    auto wait_for(NanoSec nsec) {
-        return lt.wait_for(nsec);
-    }
+    auto wait_for(NanoSec nsec) { return lt.wait_for(nsec); }
 
 private:
     Latch lt;

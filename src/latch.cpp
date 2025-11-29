@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include "coke/latch.h"
 
@@ -23,7 +23,8 @@
 
 namespace coke {
 
-void Latch::count_down(long n) {
+void Latch::count_down(long n)
+{
     const void *addr = nullptr;
 
     {
@@ -43,7 +44,8 @@ void Latch::count_down(long n) {
     // ATTENTION: *this maybe destroyed
 }
 
-LatchAwaiter Latch::create_awaiter(long n) {
+LatchAwaiter Latch::create_awaiter(long n)
+{
     LatchAwaiter a;
     const void *addr = nullptr;
 
@@ -69,7 +71,8 @@ LatchAwaiter Latch::create_awaiter(long n) {
     return a;
 }
 
-LatchAwaiter Latch::wait_impl(detail::TimedWaitHelper helper) {
+LatchAwaiter Latch::wait_impl(detail::TimedWaitHelper helper)
+{
     std::lock_guard<std::mutex> lg(mtx);
     if (this->expected > 0)
         return sleep(get_addr(), helper);

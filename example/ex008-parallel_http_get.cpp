@@ -2,17 +2,18 @@
 #include <string>
 #include <vector>
 
-#include "coke/wait.h"
 #include "coke/http/http_client.h"
 #include "coke/http/http_utils.h"
+#include "coke/wait.h"
 
 /**
  * This example send multiple http requests, waits for the results
  * and outputs them to stdout, showing how to start a group of tasks
  * in parallel.
-*/
+ */
 
-coke::Task<> parallel_http_get(std::vector<std::string> urls) {
+coke::Task<> parallel_http_get(std::vector<std::string> urls)
+{
     coke::HttpClient cli;
     std::vector<coke::HttpResult> results;
     std::vector<coke::HttpAwaiter> tasks;
@@ -32,8 +33,8 @@ coke::Task<> parallel_http_get(std::vector<std::string> urls) {
             coke::HttpResponse &resp = res.resp;
 
             std::cout << resp.get_http_version() << ' '
-                << resp.get_status_code() << ' '
-                << resp.get_reason_phrase() << "\n\n";
+                      << resp.get_status_code() << ' '
+                      << resp.get_reason_phrase() << "\n\n";
 
             for (coke::HttpHeaderView h : coke::HttpHeaderCursor(resp))
                 std::cout << h.name << ": " << h.value << "\n";
@@ -52,8 +53,10 @@ coke::Task<> parallel_http_get(std::vector<std::string> urls) {
             }
         }
         else {
-            std::cout << "ERROR: state:" << res.state << " error:" << res.error << std::endl;
-            std::cout << coke::get_error_string(res.state, res.error) << std::endl;
+            std::cout << "ERROR: state:" << res.state << " error:" << res.error
+                      << std::endl;
+            std::cout << coke::get_error_string(res.state, res.error)
+                      << std::endl;
         }
 
         std::cout << std::string(80, '-') << std::endl;
@@ -61,7 +64,8 @@ coke::Task<> parallel_http_get(std::vector<std::string> urls) {
 }
 
 // Example: ./parallel_http_get http://example.com/ http://example.com/notfound
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     std::vector<std::string> urls;
     for (int i = 1; i < argc; i++)
         urls.emplace_back(argv[i]);

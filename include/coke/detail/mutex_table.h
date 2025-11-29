@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_MUTEX_TABLE_H
 #define COKE_DETAIL_MUTEX_TABLE_H
@@ -28,7 +28,7 @@ namespace coke::detail {
  *
  * @param ptr The same ptr obtains same mutex, `this` pointer is always used.
  * @return The reference of std::mutex.
-*/
+ */
 std::mutex &get_mutex(const void *ptr) noexcept;
 
 } // namespace coke::detail

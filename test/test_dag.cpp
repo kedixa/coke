@@ -14,14 +14,14 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <algorithm>
 #include <chrono>
+#include <gtest/gtest.h>
 #include <mutex>
 #include <random>
 #include <vector>
-#include <gtest/gtest.h>
 
 #include "coke/coke.h"
 #include "coke/dag.h"
@@ -34,13 +34,16 @@ struct Context {
 using DagGroup = coke::DagNodeGroup<Context>;
 using DagBuilder = coke::DagBuilder<Context>;
 
-uint64_t rand64() {
-    static std::mt19937_64 m(std::chrono::system_clock::now().time_since_epoch().count());
+uint64_t rand64()
+{
+    static std::mt19937_64 m(
+        std::chrono::system_clock::now().time_since_epoch().count());
     static thread_local std::mt19937_64 lm(m());
     return lm();
 }
 
-coke::Task<> push(Context &ctx, char x) {
+coke::Task<> push(Context &ctx, char x)
+{
     co_await coke::yield();
 
     {
@@ -51,14 +54,16 @@ coke::Task<> push(Context &ctx, char x) {
     co_await coke::sleep(std::chrono::milliseconds(rand64() % 10));
 }
 
-auto create_node_func(char x) {
-    return [x](Context &ctx) { return push(ctx, x); };
+auto create_node_func(char x)
+{
+    return [x](Context &ctx) {
+        return push(ctx, x);
+    };
 }
 
-void expect_before(const std::vector<char> &v,
-                   const std::vector<char> &l,
-                   const std::vector<char> &r,
-                   bool any = false) {
+void expect_before(const std::vector<char> &v, const std::vector<char> &l,
+                   const std::vector<char> &r, bool any = false)
+{
     std::vector<std::size_t> li;
     std::vector<std::size_t> ri;
 
@@ -83,12 +88,13 @@ void expect_before(const std::vector<char> &v,
         EXPECT_LE(li.back(), ri.front());
 }
 
-std::shared_ptr<coke::DagGraph<Context>> create_dag1() {
+std::shared_ptr<coke::DagGraph<Context>> create_dag1()
+{
     DagBuilder builder;
 
     /**
      * root -> A -> B -> C
-    */
+     */
     builder.root()
         .then(create_node_func('A'))
         .then(create_node_func('B'))
@@ -97,18 +103,20 @@ std::shared_ptr<coke::DagGraph<Context>> create_dag1() {
     return builder.build();
 }
 
-void validate_dag1(Context &ctx) {
+void validate_dag1(Context &ctx)
+{
     expect_before(ctx.v, {'A'}, {'B', 'C'});
     expect_before(ctx.v, {'B'}, {'C'});
 }
 
-std::shared_ptr<coke::DagGraph<Context>> create_dag2() {
+std::shared_ptr<coke::DagGraph<Context>> create_dag2()
+{
     DagBuilder builder;
 
     /**
      * root --> A --> C
      *      \-> B -/
-    */
+     */
     auto root = builder.root();
     auto a = builder.node(create_node_func('A'));
     auto b = builder.node(create_node_func('B'));
@@ -119,11 +127,13 @@ std::shared_ptr<coke::DagGraph<Context>> create_dag2() {
     return builder.build();
 }
 
-void validate_dag2(Context &ctx) {
+void validate_dag2(Context &ctx)
+{
     expect_before(ctx.v, {'A', 'B'}, {'C'});
 }
 
-std::shared_ptr<coke::DagGraph<Context>> create_dag3() {
+std::shared_ptr<coke::DagGraph<Context>> create_dag3()
+{
     DagBuilder builder;
 
     /**
@@ -132,7 +142,7 @@ std::shared_ptr<coke::DagGraph<Context>> create_dag3() {
      *      \-> C ~~/
      *
      * Use ~ to indicate weak connections.
-    */
+     */
 
     auto root = builder.root();
     auto a = builder.node(create_node_func('A'));
@@ -147,7 +157,8 @@ std::shared_ptr<coke::DagGraph<Context>> create_dag3() {
     return builder.build();
 }
 
-void validate_dag3(Context &ctx) {
+void validate_dag3(Context &ctx)
+{
     expect_before(ctx.v, {'A'}, {'D'});
     expect_before(ctx.v, {'B', 'C'}, {'D'}, true);
 }
@@ -155,7 +166,8 @@ void validate_dag3(Context &ctx) {
 using creator_t = std::shared_ptr<coke::DagGraph<Context>> (*)();
 using validator_t = void (*)(Context &);
 
-void test_dag(creator_t c, validator_t v) {
+void test_dag(creator_t c, validator_t v)
+{
     Context ctx;
     auto dag = c();
     EXPECT_TRUE(dag->valid());
@@ -164,11 +176,21 @@ void test_dag(creator_t c, validator_t v) {
     v(ctx);
 }
 
-TEST(DAG, test1) { test_dag(create_dag1, validate_dag1); }
-TEST(DAG, test2) { test_dag(create_dag2, validate_dag2); }
-TEST(DAG, test3) { test_dag(create_dag3, validate_dag3); }
+TEST(DAG, test1)
+{
+    test_dag(create_dag1, validate_dag1);
+}
+TEST(DAG, test2)
+{
+    test_dag(create_dag2, validate_dag2);
+}
+TEST(DAG, test3)
+{
+    test_dag(create_dag3, validate_dag3);
+}
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 2;
     s.handler_threads = 4;

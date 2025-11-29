@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_LATCH_H
 #define COKE_LATCH_H
@@ -32,7 +32,7 @@ using LatchAwaiter = SleepAwaiter;
 /**
  * @brief The return value of LatchAwaiter does not conform to normal semantics,
  *        define constant for it to distinguish from SleepAwaiter.
-*/
+ */
 constexpr int LATCH_SUCCESS = SLEEP_CANCELED;
 constexpr int LATCH_TIMEOUT = SLEEP_SUCCESS;
 
@@ -41,23 +41,25 @@ public:
     /**
      * @brief Create a latch that can be counted EXACTLY `n` times.
      * @param n Number to be counted and should >= 0.
-    */
+     */
     explicit Latch(long n) noexcept
         : mtx(detail::get_mutex(get_addr())), expected(n)
-    { }
+    {
+    }
 
-    ~Latch() { }
+    ~Latch() {}
 
     /**
      * @brief coke::Latch is neither copyable nor movable.
-    */
+     */
     Latch(const Latch &) = delete;
-    Latch &operator= (const Latch &) = delete;
+    Latch &operator=(const Latch &) = delete;
 
     /**
      * @brief Return whether the internal counter has reached zero.
-    */
-    bool try_wait() const {
+     */
+    bool try_wait() const
+    {
         std::lock_guard<std::mutex> lg(this->mtx);
         return this->expected >= 0;
     }
@@ -67,9 +69,7 @@ public:
      * @return An awaiter that should be awaited immediately.
      * @retval coke::LATCH_SUCCESS.
      */
-    LatchAwaiter wait() {
-        return wait_impl(detail::TimedWaitHelper{});
-    }
+    LatchAwaiter wait() { return wait_impl(detail::TimedWaitHelper{}); }
 
     /**
      * @brief Wait for the Latch to be counted to zero, or timeout.
@@ -77,7 +77,8 @@ public:
      * @retval coke::LATCH_SUCCESS if Latch is counted to zero.
      * @retval coke::LATCH_TIMEOUT if `nsec` timeout.
      */
-    LatchAwaiter wait_for(NanoSec nsec) {
+    LatchAwaiter wait_for(NanoSec nsec)
+    {
         return wait_impl(detail::TimedWaitHelper{nsec});
     }
 
@@ -89,9 +90,7 @@ public:
      * @param n Count the Latch by n. n should >= 1.
      * @return An awaiter needs to be awaited immediately.
      */
-    LatchAwaiter arrive_and_wait(long n = 1) {
-        return create_awaiter(n);
-    }
+    LatchAwaiter arrive_and_wait(long n = 1) { return create_awaiter(n); }
 
     /**
      * @brief Count down the Latch without wait. n should >= 1.
@@ -99,13 +98,11 @@ public:
      * to the `n` passed into Latch's constructor.
      *
      * @param n Count the Latch by n. n should >= 1.
-    */
+     */
     void count_down(long n = 1);
 
 private:
-    const void *get_addr() const noexcept {
-        return (const char *)this + 1;
-    }
+    const void *get_addr() const noexcept { return (const char *)this + 1; }
 
     LatchAwaiter wait_impl(detail::TimedWaitHelper helper);
 
@@ -118,11 +115,12 @@ private:
 
 class SyncLatch final {
 public:
-    explicit SyncLatch(long n) : lt(n) { }
+    explicit SyncLatch(long n) : lt(n) {}
 
     void count_down(long n = 1) { lt.count_down(n); }
 
-    void wait() const {
+    void wait() const
+    {
         if (!lt.try_wait()) {
             SyncGuard guard(true);
             lt.wait();

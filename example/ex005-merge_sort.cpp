@@ -1,26 +1,27 @@
 #include <algorithm>
 #include <chrono>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <iterator>
 #include <random>
 #include <string>
 #include <vector>
 
 #include "coke/go.h"
-#include "coke/wait.h"
 #include "coke/tools/option_parser.h"
+#include "coke/wait.h"
 
 /**
  * This example implements a simple parallel stable merge sort to show how to
  * call coroutines recursively.
-*/
+ */
 
 constexpr int MAX_DEPTH = 8;
 constexpr std::size_t MIN_DIVIDE_SIZE = 8192;
 
 template<std::random_access_iterator Iter, typename Comp>
-coke::Task<> merge_sort_impl(Iter first, Iter last, Comp cmp, int depth) {
+coke::Task<> merge_sort_impl(Iter first, Iter last, Comp cmp, int depth)
+{
     std::size_t n = (std::size_t)(last - first);
 
     // When n is large, use divide-and-conquer to solve small problems.
@@ -28,10 +29,8 @@ coke::Task<> merge_sort_impl(Iter first, Iter last, Comp cmp, int depth) {
         Iter mid = first + n / 2;
 
         // Async wait two coroutine until finish
-        co_await coke::async_wait(
-            merge_sort_impl(first, mid, cmp, depth + 1),
-            merge_sort_impl(mid, last, cmp, depth + 1)
-        );
+        co_await coke::async_wait(merge_sort_impl(first, mid, cmp, depth + 1),
+                                  merge_sort_impl(mid, last, cmp, depth + 1));
 
         std::inplace_merge(first, mid, last, cmp);
     }
@@ -43,21 +42,22 @@ coke::Task<> merge_sort_impl(Iter first, Iter last, Comp cmp, int depth) {
          * `co_await coke::go(func, arg1, arg2, ...)`, or just switch to
          * workflow's compute thread using `co_await coke::switch_go_thread()`
          * and write code as flexible as we want.
-        */
+         */
         co_await coke::switch_go_thread();
 
         /**
          * For a smaller n, just std::stable_sort. Because recursively calling
          * functions and creating coroutines will also have a certain overhead,
          * recursion too deep will make it worse.
-        */
+         */
         std::stable_sort(first, last, cmp);
     }
 }
 
 // Note that we do not support sorting std::vector<bool>
 template<std::random_access_iterator Iter, typename Comp = std::less<>>
-coke::Task<> merge_sort(Iter first, Iter last, Comp cmp = Comp()) {
+coke::Task<> merge_sort(Iter first, Iter last, Comp cmp = Comp())
+{
     co_await merge_sort_impl(first, last, cmp, 0);
 }
 
@@ -68,22 +68,22 @@ long current_usec();
 template<typename T>
 void generate(std::vector<T> &vec, std::size_t n, std::size_t seed);
 
-void show_cost(const char *title, long cost, long base = 100) {
+void show_cost(const char *title, long cost, long base = 100)
+{
     double percent = 100.0 * cost / base;
-    std::cout << std::setw(20) << title
-        << std::setw(10) << cost << "us"
-        << std::setw(10)
-        << std::fixed << std::setprecision(2) << percent << "%"
-        << std::endl;
+    std::cout << std::setw(20) << title << std::setw(10) << cost << "us"
+              << std::setw(10) << std::fixed << std::setprecision(2) << percent
+              << "%" << std::endl;
 }
 
 template<typename T>
-void run_merge_sort(std::string type, std::size_t n, std::size_t seed) {
+void run_merge_sort(std::string type, std::size_t n, std::size_t seed)
+{
     std::vector<T> v1, v2;
     long start, base;
 
-    std::cout << "Run merge sort on " << n << " random value of type "
-        << type << std::endl;
+    std::cout << "Run merge sort on " << n << " random value of type " << type
+              << std::endl;
 
     // 1. Prepare
     generate(v1, n, seed);
@@ -126,20 +126,25 @@ void run_merge_sort(std::string type, std::size_t n, std::size_t seed) {
         std::cout << "Sort Success" << std::endl;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     std::size_t n = 10000000;
     std::size_t seed = 0;
     std::string type = "int";
     int compute_threads = -1;
 
     coke::OptionParser args;
-    args.add_integer(n, 'n', "num").set_default(10000000)
+    args.add_integer(n, 'n', "num")
+        .set_default(10000000)
         .set_description("Number of elements to sort");
-    args.add_integer(seed, 's', "seed").set_default(0)
+    args.add_integer(seed, 's', "seed")
+        .set_default(0)
         .set_description("Random generator seed");
-    args.add_integer(compute_threads, 'c', "compute-threads").set_default(-1)
+    args.add_integer(compute_threads, 'c', "compute-threads")
+        .set_default(-1)
         .set_description("Set compute threads");
-    args.add_string(type, 't', "type").set_default("int")
+    args.add_string(type, 't', "type")
+        .set_default("int")
         .set_description("Element type, one of int, double, string");
     args.set_help_flag('h', "help");
 
@@ -169,14 +174,16 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-long current_usec() {
+long current_usec()
+{
     auto dur = std::chrono::steady_clock::now().time_since_epoch();
     auto usec = std::chrono::duration_cast<std::chrono::microseconds>(dur);
     return usec.count();
 }
 
 template<typename T>
-void generate(std::vector<T> &vec, std::size_t n, std::size_t seed) {
+void generate(std::vector<T> &vec, std::size_t n, std::size_t seed)
+{
     std::mt19937_64 mt(seed);
     vec.resize(n);
 

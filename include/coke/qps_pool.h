@@ -14,13 +14,13 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_QPS_POOL_H
 #define COKE_QPS_POOL_H
 
-#include <mutex>
 #include <cstdint>
+#include <mutex>
 
 #include "coke/sleep.h"
 
@@ -37,20 +37,21 @@ public:
     /**
      * @brief Create QpsPool with `query` query in `seconds` seconds.
      *        Requires `query` >= 0 and seconds >= 1.
-    */
+     */
     QpsPool(long query, long seconds = 1);
 
     /**
      * @brief Reset another `qps` limit, even if pool is already in use.
      *        The new limit will take effect the next time `get` is called.
-    */
+     */
     void reset_qps(long query, long seconds = 1);
 
     /**
      * @brief Acquire `count` license from QpsPool.
      * @return An awaitable object that should be co awaited immediately.
-    */
-    AwaiterType get(unsigned count = 1) {
+     */
+    AwaiterType get(unsigned count = 1)
+    {
         return get_if(count, NanoSec::max());
     }
 
@@ -59,7 +60,7 @@ public:
      * @return An awaitable object that should be co awaited immediately.
      * @retval coke::SLEEP_SUCCESS if the license if acquired.
      * @retval coke::SLEEP_CANCELED if cannot be acquired in nsec.
-    */
+     */
     AwaiterType get_if(unsigned count, NanoSec nsec);
 
 private:

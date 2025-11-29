@@ -14,32 +14,34 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
-#include <vector>
-#include <string>
-#include <random>
-#include <optional>
+#include <gtest/gtest.h>
 #include <iterator>
 #include <memory>
 #include <memory_resource>
-#include <gtest/gtest.h>
+#include <optional>
+#include <random>
+#include <string>
+#include <vector>
 
-#include "coke/global.h"
-#include "coke/wait.h"
 #include "coke/deque.h"
-#include "coke/queue.h"
 #include "coke/future.h"
+#include "coke/global.h"
+#include "coke/queue.h"
+#include "coke/wait.h"
 
 constexpr int LOOP_HINT = 10;
 
-uint64_t now_nsec() {
+uint64_t now_nsec()
+{
     auto now = std::chrono::system_clock::now();
     return (uint64_t)now.time_since_epoch().count();
 }
 
 template<typename Q>
-coke::Task<void> single_push(Q &que, uint64_t seed, uint64_t count) {
+coke::Task<void> single_push(Q &que, uint64_t seed, uint64_t count)
+{
     // don't block main thread, switch to handler
     co_await coke::yield();
 
@@ -91,7 +93,8 @@ coke::Task<void> single_push(Q &que, uint64_t seed, uint64_t count) {
 }
 
 template<typename Q>
-coke::Task<void> single_pop(Q &que, uint64_t seed, uint64_t &count) {
+coke::Task<void> single_pop(Q &que, uint64_t seed, uint64_t &count)
+{
     co_await coke::yield();
 
     constexpr std::chrono::nanoseconds nsec_base(20000);
@@ -149,7 +152,8 @@ coke::Task<void> single_pop(Q &que, uint64_t seed, uint64_t &count) {
 }
 
 template<typename Q>
-coke::Task<> batch_push(Q &que, uint64_t batch_size, uint64_t count) {
+coke::Task<> batch_push(Q &que, uint64_t batch_size, uint64_t count)
+{
     co_await coke::yield();
 
     std::vector<std::string> vs;
@@ -176,7 +180,8 @@ coke::Task<> batch_push(Q &que, uint64_t batch_size, uint64_t count) {
 }
 
 template<typename Q>
-coke::Task<> batch_pop(Q &que, uint64_t batch_size, uint64_t &total_pop) {
+coke::Task<> batch_pop(Q &que, uint64_t batch_size, uint64_t &total_pop)
+{
     co_await coke::yield();
 
     std::mt19937_64 mt(now_nsec());
@@ -216,8 +221,8 @@ coke::Task<> batch_pop(Q &que, uint64_t batch_size, uint64_t &total_pop) {
 }
 
 template<typename Q>
-coke::Task<> test_single(int num_co, int op_per_co,
-                         std::size_t max_qsize) {
+coke::Task<> test_single(int num_co, int op_per_co, std::size_t max_qsize)
+{
     std::vector<coke::Task<>> push_tasks;
     std::vector<coke::Future<void>> pop_futs;
     std::vector<uint64_t> vcount(num_co, 0);
@@ -232,8 +237,7 @@ coke::Task<> test_single(int num_co, int op_per_co,
 
     for (int i = 0; i < num_co; i++) {
         pop_futs.emplace_back(
-            coke::create_future(single_pop(que, (uint64_t)i, vcount[i]))
-        );
+            coke::create_future(single_pop(que, (uint64_t)i, vcount[i])));
     }
 
     co_await coke::async_wait(std::move(push_tasks));
@@ -253,8 +257,8 @@ coke::Task<> test_single(int num_co, int op_per_co,
 }
 
 template<typename Q>
-coke::Task<> test_batch(int num_co, int op_per_co,
-                        std::size_t batch_size, std::size_t max_qsize)
+coke::Task<> test_batch(int num_co, int op_per_co, std::size_t batch_size,
+                        std::size_t max_qsize)
 {
     std::vector<coke::Task<>> push_tasks;
     std::vector<coke::Future<void>> pop_futs;
@@ -270,8 +274,7 @@ coke::Task<> test_batch(int num_co, int op_per_co,
 
     for (int i = 0; i < num_co; i++) {
         pop_futs.emplace_back(
-            coke::create_future(single_pop(que, batch_size, vcount[i]))
-        );
+            coke::create_future(single_pop(que, batch_size, vcount[i])));
     }
 
     co_await coke::async_wait(std::move(push_tasks));
@@ -291,7 +294,8 @@ coke::Task<> test_batch(int num_co, int op_per_co,
 }
 
 template<typename Q>
-void test_order(std::vector<int> in, std::vector<int> out) {
+void test_order(std::vector<int> in, std::vector<int> out)
+{
     Q que(in.size());
     bool ret;
 
@@ -309,7 +313,8 @@ void test_order(std::vector<int> in, std::vector<int> out) {
     }
 }
 
-coke::Task<> test_deque_order() {
+coke::Task<> test_deque_order()
+{
     std::chrono::seconds sec(1);
     std::vector<int> out;
     std::vector<int> expected_out;
@@ -348,50 +353,60 @@ coke::Task<> test_deque_order() {
 
 /// Tests.
 
-TEST(QUEUE, queue_single) {
+TEST(QUEUE, queue_single)
+{
     using Queue = coke::Queue<std::string>;
     coke::sync_wait(test_single<Queue>(20, 200, (uint64_t)15));
 }
 
-TEST(QUEUE, stack_single) {
+TEST(QUEUE, stack_single)
+{
     using Stack = coke::Stack<std::string>;
     coke::sync_wait(test_single<Stack>(20, 200, (uint64_t)15));
 }
 
-TEST(QUEUE, priority_queue_single) {
+TEST(QUEUE, priority_queue_single)
+{
     using PriorityQueue = coke::PriorityQueue<std::string>;
     coke::sync_wait(test_single<PriorityQueue>(20, 200, (uint64_t)15));
 }
 
-TEST(QUEUE, queue_batch) {
+TEST(QUEUE, queue_batch)
+{
     using Queue = coke::Queue<std::string>;
     coke::sync_wait(test_batch<Queue>(10, 100, 10, (uint64_t)95));
 }
 
-TEST(QUEUE, stack_batch) {
+TEST(QUEUE, stack_batch)
+{
     using Stack = coke::Stack<std::string>;
     coke::sync_wait(test_batch<Stack>(10, 100, 10, (uint64_t)95));
 }
 
-TEST(QUEUE, priority_queue_batch) {
+TEST(QUEUE, priority_queue_batch)
+{
     using PriorityQueue = coke::PriorityQueue<std::string>;
     coke::sync_wait(test_batch<PriorityQueue>(10, 100, 10, (uint64_t)95));
 }
 
-TEST(QUEUE, queue_order) {
+TEST(QUEUE, queue_order)
+{
     test_order<coke::Queue<int>>({1, 4, 7, 2, 5, 8}, {1, 4, 7, 2, 5, 8});
 }
 
-TEST(QUEUE, stack_order) {
+TEST(QUEUE, stack_order)
+{
     test_order<coke::Stack<int>>({1, 4, 7, 2, 5, 8}, {8, 5, 2, 7, 4, 1});
 }
 
-TEST(QUEUE, priority_queue_order) {
+TEST(QUEUE, priority_queue_order)
+{
     test_order<coke::PriorityQueue<int>>({1, 4, 7, 2, 5, 8},
                                          {8, 7, 5, 4, 2, 1});
 }
 
-TEST(QUEUE, queue_force) {
+TEST(QUEUE, queue_force)
+{
     coke::Queue<std::string> que(1);
     bool b;
 
@@ -422,11 +437,13 @@ TEST(QUEUE, queue_force) {
     EXPECT_FALSE(b);
 }
 
-TEST(QUEUE, deque_order) {
+TEST(QUEUE, deque_order)
+{
     coke::sync_wait(test_deque_order());
 }
 
-TEST(QUEUE, deque_force) {
+TEST(QUEUE, deque_force)
+{
     coke::Deque<std::string> que(1);
     bool b;
 
@@ -457,7 +474,8 @@ TEST(QUEUE, deque_force) {
     EXPECT_FALSE(b);
 }
 
-TEST(QUEUE, priority_queue_move_only) {
+TEST(QUEUE, priority_queue_move_only)
+{
     coke::PriorityQueue<std::unique_ptr<int>> que(1);
     std::unique_ptr<int> ptr = std::make_unique<int>(1234);
     bool b1, b2;
@@ -471,7 +489,8 @@ TEST(QUEUE, priority_queue_move_only) {
     EXPECT_FALSE(que.try_pop(ptr));
 }
 
-TEST(QUEUE, allocator) {
+TEST(QUEUE, allocator)
+{
     auto *res = std::pmr::get_default_resource();
     coke::Queue<int, std::pmr::deque<int>> q(10, res);
     coke::PriorityQueue<std::string, std::pmr::vector<std::string>> p(20, res);
@@ -479,7 +498,8 @@ TEST(QUEUE, allocator) {
     coke::Deque<short, std::pmr::polymorphic_allocator<short>> d(40, res);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 4;
     s.handler_threads = 8;

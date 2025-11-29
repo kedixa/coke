@@ -14,12 +14,12 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <atomic>
 #include <chrono>
-#include <vector>
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "coke/coke.h"
 
@@ -42,7 +42,8 @@ struct ParamPack {
     int loop_max;
 };
 
-coke::Task<> do_test_mutex(ParamPack *p) {
+coke::Task<> do_test_mutex(ParamPack *p)
+{
     coke::Mutex &mtx = p->mtx;
     int ret;
 
@@ -79,7 +80,8 @@ coke::Task<> do_test_mutex(ParamPack *p) {
     }
 }
 
-void test_mutex(int test_method) {
+void test_mutex(int test_method)
+{
     ParamPack p;
     p.count = 0;
     p.total = 0;
@@ -97,7 +99,8 @@ void test_mutex(int test_method) {
     EXPECT_EQ(p.total.load(), (MAX_TASKS * p.loop_max));
 }
 
-coke::Task<> test_unique_lock() {
+coke::Task<> test_unique_lock()
+{
     coke::Mutex mtx;
 
     co_await mtx.lock();
@@ -139,23 +142,28 @@ coke::Task<> test_unique_lock() {
     }
 }
 
-TEST(MUTEX, try_lock) {
+TEST(MUTEX, try_lock)
+{
     test_mutex(TEST_TRY_LOCK);
 }
 
-TEST(MUTEX, lock) {
+TEST(MUTEX, lock)
+{
     test_mutex(TEST_LOCK);
 }
 
-TEST(MUTEX, lock_for) {
+TEST(MUTEX, lock_for)
+{
     test_mutex(TEST_LOCK_FOR);
 }
 
-TEST(MUTEX, unique_lock) {
+TEST(MUTEX, unique_lock)
+{
     coke::sync_wait(test_unique_lock());
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 4;
     s.handler_threads = 8;
