@@ -60,7 +60,7 @@ struct RlruEntry : public detail::RefCounted<RlruEntry<K, V>> {
 
     template<typename U>
     RlruEntry(uint16_t state, RlruSharedData *data, const U &key) noexcept
-        : removed(false), state(state), data(data), last_access(0), key(key)
+        : removed(false), state(state), last_access(0), data(data), key(key)
     {
     }
 

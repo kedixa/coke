@@ -4,6 +4,7 @@ set(ALL_BENCHMARK
     bench_exception
     bench_go
     bench_graph
+    bench_lru
     bench_queue
     bench_redis_cli
     bench_timer
