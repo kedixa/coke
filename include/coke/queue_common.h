@@ -26,6 +26,7 @@
 #include <utility>
 
 #include "coke/condition.h"
+#include "coke/detail/exception_config.h"
 
 namespace coke {
 
@@ -393,14 +394,16 @@ public:
             return first;
 
         SizeType n = 0, m = max_qsize - cur_qsize;
-        try {
+        coke_try
+        {
             while (first != last && n < m) {
                 get().do_push(*first);
                 ++n;
                 ++first;
             }
         }
-        catch (...) {
+        coke_catch(...)
+        {
             // Because no way to roll back, accept what was pushed.
             if (n)
                 after_push(lk, n);
@@ -443,14 +446,16 @@ public:
             return first;
 
         SizeType n = 0;
-        try {
+        coke_try
+        {
             while (first != last && n < cur_size) {
                 get().do_pop(*first);
                 ++n;
                 ++first;
             }
         }
-        catch (...) {
+        coke_catch(...)
+        {
             // Because no way to roll back, discard what was popped.
             if (n)
                 after_pop(lk, n);
@@ -487,14 +492,16 @@ public:
             return 0;
 
         SizeType n = 0, m = min(cur_size, max_pop);
-        try {
+        coke_try
+        {
             while (n < m) {
                 get().do_pop(*iter);
                 ++n;
                 ++iter;
             }
         }
-        catch (...) {
+        coke_catch(...)
+        {
             // Because no way to roll back, discard what was popped.
             if (n)
                 after_pop(lk, n);

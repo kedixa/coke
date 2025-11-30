@@ -28,6 +28,7 @@
 
 #include "coke/condition.h"
 #include "coke/detail/basic_concept.h"
+#include "coke/detail/exception_config.h"
 
 namespace coke {
 
@@ -474,14 +475,16 @@ public:
             return first;
 
         SizeType n = 0, m = max_qsize - cur_qsize;
-        try {
+        coke_try
+        {
             while (first != last && n < m) {
                 que.push_back(*first);
                 ++n;
                 ++first;
             }
         }
-        catch (...) {
+        coke_catch(...)
+        {
             // Because no way to roll back, accept what was pushed.
             if (n)
                 after_push(lk, n);
@@ -524,7 +527,8 @@ public:
             return first;
 
         SizeType n = 0;
-        try {
+        coke_try
+        {
             while (first != last && n < cur_size) {
                 *first = std::move(que.front());
                 que.pop_front();
@@ -533,7 +537,8 @@ public:
                 ++first;
             }
         }
-        catch (...) {
+        coke_catch(...)
+        {
             // Because no way to roll back, discard what was popped.
             if (n)
                 after_pop(lk, n);
@@ -570,7 +575,8 @@ public:
             return 0;
 
         SizeType n = 0, m = min(cur_size, max_pop);
-        try {
+        coke_try
+        {
             while (n < m) {
                 *iter = std::move(que.front());
                 que.pop_front();
@@ -579,7 +585,8 @@ public:
                 ++iter;
             }
         }
-        catch (...) {
+        coke_catch(...)
+        {
             // Because no way to roll back, discard what was popped.
             if (n)
                 after_pop(lk, n);
