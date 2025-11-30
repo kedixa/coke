@@ -542,7 +542,7 @@ struct RedisHashCommands {
     {
         StrHolderVec v;
 
-        v.reserve(3 + with_values ? 1 : 0);
+        v.reserve(3 + (with_values ? 1 : 0));
         v.push_back("HRANDFIELD"_sv);
         v.push_back(std::move(key));
         v.push_back(std::to_string(count));
