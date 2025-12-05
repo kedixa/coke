@@ -93,12 +93,13 @@ constexpr std::size_t PRIME_MAX = prime_table[PRIME_CNT - 1];
 static std::size_t find_prime(double factor, std::size_t cap)
 {
     double n = std::ceil(cap / factor);
-    if (n >= PRIME_MAX)
+    if (n >= static_cast<double>(PRIME_MAX))
         return PRIME_MAX;
 
+    // This cast is safe after the above check
+    const std::size_t target = static_cast<std::size_t>(n);
     const std::size_t *begin = prime_table;
     const std::size_t *end = begin + PRIME_CNT;
-    const std::size_t target = static_cast<std::size_t>(n);
     const std::size_t *p = std::lower_bound(begin, end, target);
     return (p == end ? PRIME_MAX : *p);
 }
@@ -267,8 +268,8 @@ void HashtableBase::reserve_impl(size_type cap)
     size_type bkt_count = find_prime(max_factor, cap);
     double new_cap = std::floor(bkt_count * max_factor);
 
-    if (new_cap > cap) {
-        if (new_cap <= size_type(-1))
+    if (new_cap > static_cast<double>(cap)) {
+        if (new_cap < static_cast<double>(size_type(-1)))
             cap = static_cast<size_type>(new_cap);
         else
             cap = size_type(-1);

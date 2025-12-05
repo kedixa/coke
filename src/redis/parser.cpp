@@ -29,7 +29,6 @@ enum : int {
     REDIS_PARSE_FINISH = 2,
 };
 
-constexpr std::size_t REDIS_STRING_MAX_SIZE = 512UL * 1024 * 1024;
 constexpr std::size_t REDIS_STRING_INIT_SIZE_HINT = 256 * 1024;
 constexpr std::size_t REDIS_ARRAY_INIT_SIZE_HINT = 16;
 constexpr std::size_t REDIS_INLINE_COMMAND_SIZE_HINT = 8;
