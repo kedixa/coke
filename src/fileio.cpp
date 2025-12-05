@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ * Copyright 2024-2025 Coke Project (https://github.com/kedixa/coke)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,27 @@
  * Authors: kedixa (https://github.com/kedixa)
  */
 
-#include "coke/fileio.h"
+#include <concepts>
 
+#include "coke/fileio.h"
 #include "workflow/WFTaskFactory.h"
 
 namespace coke {
+
+namespace detail {
+
+template<typename T>
+inline auto create_fdatasync_task(int fd)
+{
+    constexpr bool has_fdatasync = requires { T::create_fdatasync_task; };
+
+    if constexpr (has_fdatasync)
+        return T::create_fdatasync_task(fd, nullptr);
+    else
+        return T::create_fdsync_task(fd, nullptr);
+}
+
+} // namespace detail
 
 template<typename Task>
 FileAwaiter::FileAwaiter(Task *task)
@@ -72,7 +88,7 @@ FileAwaiter fsync(int fd)
 
 FileAwaiter fdatasync(int fd)
 {
-    auto *task = WFTaskFactory::create_fdsync_task(fd, nullptr);
+    auto *task = detail::create_fdatasync_task<WFTaskFactory>(fd);
     return FileAwaiter(task);
 }
 
