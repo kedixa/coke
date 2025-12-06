@@ -326,28 +326,28 @@ public:
     using NodeGroup = std::initializer_list<DagNodeRef<T>>;
     using NodeVector = std::vector<DagNodeRef<T>>;
 
-    const NodeGroup &then(const NodeGroup &group)
+    const NodeGroup &then(const NodeGroup &group) const
     {
         for (const auto &r : group)
             then(r);
         return group;
     }
 
-    const NodeGroup &weak_then(const NodeGroup &group)
+    const NodeGroup &weak_then(const NodeGroup &group) const
     {
         for (const auto &r : group)
             weak_then(r);
         return group;
     }
 
-    const NodeVector &then(const NodeVector &vec)
+    const NodeVector &then(const NodeVector &vec) const
     {
         for (const auto &r : vec)
             then(r);
         return vec;
     }
 
-    const NodeVector &weak_then(const NodeVector &vec)
+    const NodeVector &weak_then(const NodeVector &vec) const
     {
         for (const auto &r : vec)
             weak_then(r);
@@ -449,72 +449,52 @@ using DagNodeGroup = typename DagNodeRef<T>::NodeGroup;
 template<typename T>
 using DagNodeVector = typename DagNodeRef<T>::NodeVector;
 
-template<typename T>
-DagNodeRef<T> operator>(DagNodeRef<T> l, DagNodeRef<T> r)
+template<typename T, typename U>
+    requires requires(const DagNodeRef<T> &l, U &&r) { l.then(r); }
+decltype(auto) operator>(const DagNodeRef<T> &l, U &&r)
 {
-    return l.then(r);
+    l.then(r);
+    return (r);
 }
 
 template<typename T>
-const DagNodeGroup<T> &operator>(DagNodeRef<T> l, const DagNodeGroup<T> &r)
-{
-    return l.then(r);
-}
-
-template<typename T>
-const DagNodeVector<T> &operator>(DagNodeRef<T> l, const DagNodeVector<T> &r)
-{
-    return l.then(r);
-}
-
-template<typename T>
-DagNodeRef<T> operator>(const DagNodeGroup<T> &l, DagNodeRef<T> r)
+decltype(auto) operator>(const DagNodeGroup<T> &l, const DagNodeRef<T> &r)
 {
     for (const auto &x : l)
         x.then(r);
-    return r;
+    return (r);
 }
 
 template<typename T>
-DagNodeRef<T> operator>(const DagNodeVector<T> &l, DagNodeRef<T> r)
+decltype(auto) operator>(const DagNodeVector<T> &l, const DagNodeRef<T> &r)
 {
     for (const auto &x : l)
         x.then(r);
-    return r;
+    return (r);
 }
 
-template<typename T>
-DagNodeRef<T> operator>=(DagNodeRef<T> l, DagNodeRef<T> r)
+template<typename T, typename U>
+    requires requires(const DagNodeRef<T> &l, U &&r) { l.weak_then(r); }
+decltype(auto) operator>=(const DagNodeRef<T> &l, U &&r)
 {
-    return l.weak_then(r);
+    l.weak_then(r);
+    return (r);
 }
 
 template<typename T>
-const DagNodeGroup<T> &operator>=(DagNodeRef<T> l, const DagNodeGroup<T> &r)
-{
-    return l.weak_then(r);
-}
-
-template<typename T>
-const DagNodeVector<T> &operator>=(DagNodeRef<T> l, const DagNodeVector<T> &r)
-{
-    return l.weak_then(r);
-}
-
-template<typename T>
-DagNodeRef<T> operator>=(const DagNodeGroup<T> &l, DagNodeRef<T> r)
+decltype(auto) operator>=(const DagNodeGroup<T> &l, const DagNodeRef<T> &r)
 {
     for (const auto &x : l)
         x.weak_then(r);
-    return r;
+    return (r);
 }
 
 template<typename T>
-DagNodeRef<T> operator>=(const DagNodeVector<T> &l, DagNodeRef<T> r)
+decltype(auto) operator>=(const DagNodeVector<T> &l, const DagNodeRef<T> &r)
 {
     for (const auto &x : l)
         x.weak_then(r);
-    return r;
+    return (r);
 }
 
 } // namespace coke
