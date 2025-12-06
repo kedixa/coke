@@ -172,8 +172,8 @@ class DagBuilder;
 
 ```cpp
 template<typename T, typename U>
-    requires requires(const DagNodeRef<T> &l, U &&r) { l.then(r); }
-decltype(auto) operator>(const DagNodeRef<T> &l, U &&r);
+    requires requires(const DagNodeRef<T> &l, const U &r) { l.then(r); }
+const U &operator>(const DagNodeRef<T> &l, const U &r);
 
 template<typename T>
 decltype(auto) operator>(const DagNodeGroup<T> &l, const DagNodeRef<T> &r);
@@ -184,8 +184,8 @@ decltype(auto) operator>(const DagNodeVector<T> &l, const DagNodeRef<T> &r);
 
 ```cpp
 template<typename T, typename U>
-    requires requires(const DagNodeRef<T> &l, U &&r) { l.weak_then(r); }
-decltype(auto) operator>=(const DagNodeRef<T> &l, U &&r);
+    requires requires(const DagNodeRef<T> &l, const U &r) { l.weak_then(r); }
+const U &operator>=(const DagNodeRef<T> &l, const U &r);
 
 template<typename T>
 decltype(auto) operator>=(const DagNodeGroup<T> &l, const DagNodeRef<T> &r);
