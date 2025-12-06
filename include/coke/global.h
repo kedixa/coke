@@ -32,46 +32,49 @@
 namespace coke {
 
 // version
-constexpr int COKE_MAJOR_VERSION = 0;
-constexpr int COKE_MINOR_VERSION = 6;
-constexpr int COKE_PATCH_VERSION = 0;
+inline constexpr int COKE_MAJOR_VERSION = 0;
+inline constexpr int COKE_MINOR_VERSION = 6;
+inline constexpr int COKE_PATCH_VERSION = 0;
 
-constexpr const char COKE_VERSION_STR[] = "0.6.0";
+inline constexpr const char COKE_VERSION_STR[] = "0.6.0";
 
 // state constant from workflow, see WFTask.h
-constexpr int STATE_UNDEFINED = -1;
-constexpr int STATE_SUCCESS = 0;
-constexpr int STATE_TOREPLY = 3;
-constexpr int STATE_NOREPLY = 4;
-constexpr int STATE_SYS_ERROR = 1;
-constexpr int STATE_SSL_ERROR = 65;
-constexpr int STATE_DNS_ERROR = 66;
-constexpr int STATE_TASK_ERROR = 67;
-constexpr int STATE_ABORTED = 2;
+inline constexpr int STATE_UNDEFINED = -1;
+inline constexpr int STATE_SUCCESS = 0;
+inline constexpr int STATE_TOREPLY = 3;
+inline constexpr int STATE_NOREPLY = 4;
+inline constexpr int STATE_SYS_ERROR = 1;
+inline constexpr int STATE_SSL_ERROR = 65;
+inline constexpr int STATE_DNS_ERROR = 66;
+inline constexpr int STATE_TASK_ERROR = 67;
+inline constexpr int STATE_ABORTED = 2;
 
 // timeout reason constant from workflow, see CommRequest.h
 // `CTOR` means `coke timeout reason`
-constexpr int CTOR_NOT_TIMEOUT = 0;
-constexpr int CTOR_WAIT_TIMEOUT = 1;
-constexpr int CTOR_CONNECT_TIMEOUT = 2;
-constexpr int CTOR_TRANSMIT_TIMEOUT = 3;
+inline constexpr int CTOR_NOT_TIMEOUT = 0;
+inline constexpr int CTOR_WAIT_TIMEOUT = 1;
+inline constexpr int CTOR_CONNECT_TIMEOUT = 2;
+inline constexpr int CTOR_TRANSMIT_TIMEOUT = 3;
 
 // return value of coroutine operation such as Mutex::lock
 // Negative numbers indicate system errors
 
 // The operation success
-constexpr int TOP_SUCCESS = 0;
+inline constexpr int TOP_SUCCESS = 0;
 // The operation timeout before success, used by most time-related operations
 // such as Mutex::try_lock_for etc.
-constexpr int TOP_TIMEOUT = 1;
+inline constexpr int TOP_TIMEOUT = 1;
 // TOP_ABORTED only appears when the process is about to exit but there are
 // still coroutines performing time-related operations, but Coke recommends
 // waiting for all coroutines to end before the end of the main function to
 // avoid this situation.
-constexpr int TOP_ABORTED = 2;
+inline constexpr int TOP_ABORTED = 2;
 // TOP_CLOSED is used when using an asynchronous container to indicate that the
 // current operation failed because the container has been closed.
-constexpr int TOP_CLOSED = 3;
+inline constexpr int TOP_CLOSED = 3;
+
+// Invalid unique id.
+inline constexpr uint64_t INVALID_UNIQUE_ID = 0;
 
 using EndpointParams = ::EndpointParams;
 
@@ -97,11 +100,6 @@ const char *get_error_string(int state, int error);
  *        so zero can be treated as an illegal id.
  */
 uint64_t get_unique_id() noexcept;
-
-/**
- * @brief Invalid unique id.
- */
-constexpr uint64_t INVALID_UNIQUE_ID = 0;
 
 /**
  * Some coroutines do not call asynchronous procedures, but perform synchronous

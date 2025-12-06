@@ -33,8 +33,8 @@ using LatchAwaiter = SleepAwaiter;
  * @brief The return value of LatchAwaiter does not conform to normal semantics,
  *        define constant for it to distinguish from SleepAwaiter.
  */
-constexpr int LATCH_SUCCESS = SLEEP_CANCELED;
-constexpr int LATCH_TIMEOUT = SLEEP_SUCCESS;
+inline constexpr int LATCH_SUCCESS = SLEEP_CANCELED;
+inline constexpr int LATCH_TIMEOUT = SLEEP_SUCCESS;
 
 class Latch final {
 public:

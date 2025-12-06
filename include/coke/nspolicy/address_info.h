@@ -31,18 +31,14 @@
 
 namespace coke {
 
-// clang-format off
-
-enum {
-    ADDR_STATE_GOOD     = 0,
-    ADDR_STATE_FAILING  = 1,
+enum _addr_state : int {
+    ADDR_STATE_GOOD = 0,
+    ADDR_STATE_FAILING = 1,
     ADDR_STATE_DISABLED = 2,
-    ADDR_STATE_REMOVED  = 3,
+    ADDR_STATE_REMOVED = 3,
 };
 
-// clang-format on
-
-constexpr static uint16_t ADDRESS_WEIGHT_MAX = 1000;
+inline constexpr uint16_t ADDRESS_WEIGHT_MAX = 1000;
 
 struct AddressParams {
     EndpointParams endpoint_params = ENDPOINT_PARAMS_DEFAULT;

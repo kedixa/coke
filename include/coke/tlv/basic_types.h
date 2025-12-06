@@ -33,10 +33,7 @@ using TlvResponse = protocol::TLVResponse;
 using TlvTask = WFNetworkTask<TlvRequest, TlvResponse>;
 using tlv_callback_t = std::function<void(TlvTask *)>;
 
-/**
- * TLV task errors.
- */
-enum : int {
+enum _tlv_err : int {
     TLV_ERR_CLI_INFO = 1,
     TLV_ERR_AUTH = 2,
 };

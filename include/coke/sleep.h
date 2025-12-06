@@ -35,12 +35,16 @@ using NanoSec = detail::NanoSec;
  */
 struct InfiniteDuration {};
 
-constexpr InfiniteDuration inf_dur;
+inline namespace _constant {
+
+inline constexpr InfiniteDuration inf_dur;
 
 // Negative numbers indicate errors
-constexpr int SLEEP_SUCCESS = 0;
-constexpr int SLEEP_CANCELED = 1;
-constexpr int SLEEP_ABORTED = 2;
+inline constexpr int SLEEP_SUCCESS = 0;
+inline constexpr int SLEEP_CANCELED = 1;
+inline constexpr int SLEEP_ABORTED = 2;
+
+} // namespace _constant
 
 static_assert(SLEEP_SUCCESS == TOP_SUCCESS);
 static_assert(SLEEP_ABORTED == TOP_ABORTED);

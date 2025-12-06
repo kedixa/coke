@@ -31,7 +31,7 @@ using WaitGroupAwaiter = SleepAwaiter;
  * @brief The return value of WaitGroupAwaiter does not conform to normal
  *        semantics, define constant for it to distinguish from SleepAwaiter.
  */
-constexpr int WAIT_GROUP_SUCCESS = SLEEP_CANCELED;
+inline constexpr int WAIT_GROUP_SUCCESS = SLEEP_CANCELED;
 
 class WaitGroup final {
 public:

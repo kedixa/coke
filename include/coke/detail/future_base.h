@@ -32,12 +32,14 @@
 
 namespace coke {
 
-constexpr int FUTURE_STATE_READY = 0;
-constexpr int FUTURE_STATE_TIMEOUT = 1;
-constexpr int FUTURE_STATE_ABORTED = 2;
-constexpr int FUTURE_STATE_BROKEN = 3;
-constexpr int FUTURE_STATE_EXCEPTION = 4;
-constexpr int FUTURE_STATE_NOTSET = 5;
+enum _future_state : int {
+    FUTURE_STATE_READY = 0,
+    FUTURE_STATE_TIMEOUT = 1,
+    FUTURE_STATE_ABORTED = 2,
+    FUTURE_STATE_BROKEN = 3,
+    FUTURE_STATE_EXCEPTION = 4,
+    FUTURE_STATE_NOTSET = 5,
+};
 
 template<Cokeable Res>
 class Future;

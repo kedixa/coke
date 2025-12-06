@@ -40,7 +40,7 @@ class RlruCache;
 
 namespace detail {
 
-enum : uint16_t {
+enum _rlru_state : uint16_t {
     RLRU_WAITING = 0,
     RLRU_SUCCESS = 1,
     RLRU_FAILED = 2,

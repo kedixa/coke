@@ -29,7 +29,7 @@
 namespace coke {
 
 // clang-format off
-enum : int32_t {
+enum _redis_type : int32_t {
     REDIS_TYPE_NULL            = 0,
     REDIS_TYPE_SIMPLE_STRING   = 1,
     REDIS_TYPE_BULK_STRING     = 2,

@@ -28,7 +28,7 @@ namespace coke {
 /**
  * @brief Default ExecQueue name when use coke::go without name.
  */
-constexpr std::string_view GO_DEFAULT_QUEUE{"coke:go"};
+inline constexpr std::string_view GO_DEFAULT_QUEUE{"coke:go"};
 
 template<typename T>
 class [[nodiscard]] GoAwaiter : public AwaiterBase {
