@@ -25,14 +25,20 @@
 
 #include "coke/basic_awaiter.h"
 #include "coke/condition.h"
+#include "coke/dag.h"
+#include "coke/deque.h"
 #include "coke/fileio.h"
 #include "coke/future.h"
 #include "coke/global.h"
 #include "coke/go.h"
 #include "coke/latch.h"
+#include "coke/lru_cache.h"
 #include "coke/make_task.h"
 #include "coke/mutex.h"
 #include "coke/qps_pool.h"
+#include "coke/queue.h"
+#include "coke/queue_common.h"
+#include "coke/rlru_cache.h"
 #include "coke/semaphore.h"
 #include "coke/series.h"
 #include "coke/shared_mutex.h"
@@ -42,5 +48,11 @@
 #include "coke/task.h"
 #include "coke/wait.h"
 #include "coke/wait_group.h"
+
+#include "coke/utils/hashtable.h"
+#include "coke/utils/list.h"
+#include "coke/utils/rbtree.h"
+#include "coke/utils/str_holder.h"
+#include "coke/utils/str_packer.h"
 
 #endif // COKE_COKE_H
