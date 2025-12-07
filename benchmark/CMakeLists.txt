@@ -16,16 +16,9 @@ include (../cmake/find-workflow.cmake)
 foreach(exec_name ${ALL_BENCHMARK})
     add_executable(${exec_name} ${exec_name}.cpp)
 
-    target_link_directories(${exec_name} PRIVATE ${WORKFLOW_LIB_DIR})
-
     target_link_libraries(${exec_name}
-        coke::coke
-        ${COKE_TRY_STATIC_WORKFLOW}
-        Threads::Threads
-        OpenSSL::SSL OpenSSL::Crypto
+        PRIVATE
+            coke::coke
+            coke-workflow
     )
 endforeach()
-
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    target_compile_options("bench_graph" PRIVATE "-Wno-unused-comparison")
-endif ()

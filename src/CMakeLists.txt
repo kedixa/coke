@@ -47,6 +47,11 @@ if (COKE_BUILD_STATIC)
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     )
 
+    target_link_directories(${COKE_STATIC_LIBRARY}
+        PUBLIC
+            $<BUILD_INTERFACE:${WORKFLOW_LIB_DIR}>
+    )
+
     target_link_libraries(${COKE_STATIC_LIBRARY}
         PUBLIC
             OpenSSL::SSL OpenSSL::Crypto
@@ -72,8 +77,14 @@ if (COKE_BUILD_SHARED)
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     )
 
-    target_link_libraries(${COKE_STATIC_LIBRARY}
+    target_link_directories(${COKE_SHARED_LIBRARY}
         PUBLIC
+            $<BUILD_INTERFACE:${WORKFLOW_LIB_DIR}>
+    )
+
+    target_link_libraries(${COKE_SHARED_LIBRARY}
+        PUBLIC
+            workflow
             OpenSSL::SSL OpenSSL::Crypto
             Threads::Threads
     )
