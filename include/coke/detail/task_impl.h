@@ -14,15 +14,15 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_TASK_IMPL_H
 #define COKE_DETAIL_TASK_IMPL_H
 
 #include <coroutine>
+#include <exception>
 #include <memory>
 #include <optional>
-#include <exception>
 #include <utility>
 
 #include "coke/detail/basic_concept.h"
@@ -34,7 +34,7 @@ namespace coke::detail {
 
 /**
  * @brief Base class for coke::Task<T>::promise_type
-*/
+ */
 class PromiseBase {
     using void_handle = std::coroutine_handle<>;
 
@@ -45,7 +45,8 @@ public:
     PromiseBase(const PromiseBase &) = delete;
     PromiseBase(PromiseBase &&) = delete;
 
-    virtual ~PromiseBase() noexcept {
+    virtual ~PromiseBase() noexcept
+    {
         // Do not allow unhandled exceptions to escape.
         if (eptr)
             std::rethrow_exception(eptr);
@@ -64,7 +65,8 @@ public:
 
     void unhandled_exception() { eptr = std::current_exception(); }
 
-    void raise_exception() {
+    void raise_exception()
+    {
         if (eptr) {
             std::exception_ptr tmp_eptr = std::move(eptr);
             eptr = nullptr;
@@ -74,15 +76,19 @@ public:
 
     template<typename T>
         requires IsCokeAwaitable<std::decay_t<T>>
-    auto await_transform(T &&t) const {
-        static_assert(std::is_rvalue_reference_v<T&&>, "Awaitable must be rvalue reference");
+    auto await_transform(T &&t) const
+    {
+        static_assert(std::is_rvalue_reference_v<T &&>,
+                      "Awaitable must be rvalue reference");
         return std::forward<T>(t);
     }
 
     template<typename T>
         requires (!IsCokeAwaitable<std::decay_t<T>>)
-    auto await_transform(T &&) const {
-        static_assert(!std::is_same_v<T, T>, "This type cannot be co awaited in coke::Task");
+    auto await_transform(T &&) const
+    {
+        static_assert(!std::is_same_v<T, T>,
+                      "This type cannot be co awaited in coke::Task");
     }
 
 protected:
@@ -98,20 +104,20 @@ private:
 template<Cokeable T>
 class CoPromise;
 
-
 template<Cokeable T>
 struct FinalAwaiter {
     using promise_type = CoPromise<T>;
     using void_handle = std::coroutine_handle<>;
     using handle_type = std::coroutine_handle<promise_type>;
 
-    FinalAwaiter(bool detached) noexcept : detached(detached) { }
+    FinalAwaiter(bool detached) noexcept : detached(detached) {}
     FinalAwaiter(FinalAwaiter &&) = delete;
 
     bool await_ready() const noexcept { return detached; }
-    void await_resume() const noexcept { }
+    void await_resume() const noexcept {}
 
-    void_handle await_suspend(handle_type h) noexcept {
+    void_handle await_suspend(handle_type h) noexcept
+    {
         auto prev = h.promise().previous_handle();
         if (prev)
             return prev;
@@ -123,18 +129,18 @@ private:
     bool detached{false};
 };
 
-
 template<Cokeable T>
 struct [[nodiscard]] TaskAwaiter {
     using promise_type = CoPromise<T>;
     using handle_type = std::coroutine_handle<promise_type>;
 
-    TaskAwaiter(handle_type hdl) noexcept : hdl(hdl) { }
+    TaskAwaiter(handle_type hdl) noexcept : hdl(hdl) {}
     TaskAwaiter(TaskAwaiter &&) = delete;
 
     bool await_ready() const noexcept { return false; }
 
-    T await_resume() {
+    T await_resume()
+    {
         if constexpr (std::is_same_v<T, void>)
             return hdl.promise().value();
         else
@@ -142,7 +148,8 @@ struct [[nodiscard]] TaskAwaiter {
     }
 
     template<typename PromiseType>
-    auto await_suspend(std::coroutine_handle<PromiseType> h) noexcept {
+    auto await_suspend(std::coroutine_handle<PromiseType> h) noexcept
+    {
         CoPromise<T> &p = hdl.promise();
         p.set_previous_handle(h);
 
@@ -157,21 +164,25 @@ private:
     handle_type hdl;
 };
 
-
 // clang deduce failed if use Cokeable
 
-template<typename T=void>
+template<typename T = void>
 class [[nodiscard]] Task {
 public:
     using promise_type = CoPromise<T>;
     using handle_type = std::coroutine_handle<promise_type>;
     constexpr static bool __is_coke_awaitable_type = true;
 
-    Task() noexcept { }
+    Task() noexcept {}
     Task(Task &&that) noexcept : hdl(that.hdl) { that.hdl = nullptr; }
-    ~Task() { if (hdl) hdl.destroy(); }
+    ~Task()
+    {
+        if (hdl)
+            hdl.destroy();
+    }
 
-    Task &operator=(Task &&that) noexcept {
+    Task &operator=(Task &&that) noexcept
+    {
         if (this != &that) {
             std::swap(this->hdl, that.hdl);
         }
@@ -182,26 +193,33 @@ public:
     /**
      * @brief co_await coke::Task to start and await the result.
      * If this function is called, the returned TaskAwaiter must be awaited.
-    */
+     */
     TaskAwaiter<T> operator co_await() noexcept { return TaskAwaiter<T>{hdl}; }
 
     [[deprecated("Use coke::detach() instead")]]
-    void start() { detach(); }
+    void start()
+    {
+        detach();
+    }
 
     [[deprecated("Use coke::detach_on_series() instead")]]
-    void start_on_series(void *series) { detach_on_series(series); }
+    void start_on_series(void *series)
+    {
+        detach_on_series(series);
+    }
 
     /**
      * @brief Inner only, see coke::detach.
      * Start and detach this coke::Task coroutine.
-    */
+     */
     void detach() { detach_on_series(nullptr); }
 
     /**
      * @brief Inner only, see coke::detach_on_series in coke/series.h.
      * Start and detach this coke::Task coroutine on running series.
-    */
-    void detach_on_series(void *series) {
+     */
+    void detach_on_series(void *series)
+    {
         handle_type h = this->hdl;
         this->hdl = nullptr;
 
@@ -224,50 +242,52 @@ public:
      * The following method will save callable object in ctx, avoid the problem
      * of captured content being released.
      *  coke::make_task([=]() -> coke::Task<> { ... });
-     * 
+     *
      * There may be a better way, welcome to discuss.
-    */
-    void set_context(std::shared_ptr<void> ctx) noexcept {
+     */
+    void set_context(std::shared_ptr<void> ctx) noexcept
+    {
         hdl.promise().set_context(ctx);
     }
 
 private:
-    Task(handle_type hdl) : hdl(hdl) { }
+    Task(handle_type hdl) : hdl(hdl) {}
 
 private:
     handle_type hdl;
     friend promise_type;
 };
 
-
 template<Cokeable T>
 class CoPromise : public PromiseBase {
     using handle_type = std::coroutine_handle<CoPromise<T>>;
 
 public:
-    auto get_return_object() noexcept {
+    auto get_return_object() noexcept
+    {
         return Task<T>(handle_type::from_promise(*this));
     }
 
     auto initial_suspend() const noexcept { return std::suspend_always{}; }
 
-    auto final_suspend() const noexcept {
+    auto final_suspend() const noexcept
+    {
         return FinalAwaiter<T>(get_detached());
     }
 
-    void return_value(const T &t)
-        noexcept(std::is_nothrow_copy_constructible_v<T>)
+    void
+    return_value(const T &t) noexcept(std::is_nothrow_copy_constructible_v<T>)
     {
         result.emplace(t);
     }
 
-    void return_value(T &&t)
-        noexcept(std::is_nothrow_move_constructible_v<T>)
+    void return_value(T &&t) noexcept(std::is_nothrow_move_constructible_v<T>)
     {
         result.emplace(std::move(t));
     }
 
-    T &value() & {
+    T &value() &
+    {
         raise_exception();
         return result.value();
     }
@@ -276,33 +296,32 @@ private:
     std::optional<T> result;
 };
 
-
 template<>
 class CoPromise<void> : public PromiseBase {
     using handle_type = std::coroutine_handle<CoPromise<void>>;
 
 public:
-    auto get_return_object() noexcept {
+    auto get_return_object() noexcept
+    {
         return Task<void>(handle_type::from_promise(*this));
     }
 
     auto initial_suspend() const noexcept { return std::suspend_always{}; }
 
-    auto final_suspend() const noexcept {
+    auto final_suspend() const noexcept
+    {
         return FinalAwaiter<void>(get_detached());
     }
 
-    void return_void() const noexcept { }
+    void return_void() const noexcept {}
 
     void value() { raise_exception(); }
 };
-
 
 template<typename T>
 struct TaskHelper {
     constexpr static bool value = false;
 };
-
 
 template<typename T>
 struct TaskHelper<Task<T>> {

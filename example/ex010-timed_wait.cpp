@@ -1,20 +1,21 @@
-#include <iostream>
-#include <chrono>
 #include <atomic>
+#include <chrono>
+#include <iostream>
 
-#include "coke/future.h"
 #include "coke/coke.h"
+#include "coke/future.h"
 
 using std::chrono::milliseconds;
 
 std::string current();
 
 /**
- * This example uses coke::Future to show how to wait for an asynchronous result,
- * and do different things depending on whether the wait times out.
-*/
+ * This example uses coke::Future to show how to wait for an asynchronous
+ * result, and do different things depending on whether the wait times out.
+ */
 
-coke::Task<int> process(std::atomic<bool> &stop, std::atomic<int> &cur_step) {
+coke::Task<int> process(std::atomic<bool> &stop, std::atomic<int> &cur_step)
+{
     // Suppose this is a complex routine, it needs many steps to finish work
 
     // Because each step can take a long time, we use `cur_step` to inform the
@@ -35,7 +36,8 @@ coke::Task<int> process(std::atomic<bool> &stop, std::atomic<int> &cur_step) {
     co_return 1;
 }
 
-coke::Task<> wait_process(int first_ms, int second_ms) {
+coke::Task<> wait_process(int first_ms, int second_ms)
+{
     std::atomic<bool> stop_flag{false};
     std::atomic<int> cur_step{0};
     int ret;
@@ -56,7 +58,8 @@ coke::Task<> wait_process(int first_ms, int second_ms) {
         //    We can tolerate it for `second_ms` millisecond and try not to
         //    waste all our efforts
         if (cur_step >= 3) {
-            std::cout << current() << "Try to wait another " << second_ms << "ms\n";
+            std::cout << current() << "Try to wait another " << second_ms
+                      << "ms\n";
             ret = co_await fut.wait_for(milliseconds(second_ms));
         }
     }
@@ -85,7 +88,8 @@ coke::Task<> wait_process(int first_ms, int second_ms) {
     }
 }
 
-int main() {
+int main()
+{
     std::cout << current() << "First case:\n";
     coke::sync_wait(wait_process(300, 200));
 
@@ -96,7 +100,8 @@ int main() {
     return 0;
 }
 
-std::string current() {
+std::string current()
+{
     static auto start = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
     std::chrono::duration<double> d = now - start;

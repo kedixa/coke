@@ -1,13 +1,13 @@
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <string>
 #include <vector>
 
-#include "coke/wait.h"
 #include "coke/go.h"
-#include "coke/tools/option_parser.h"
 #include "coke/mysql/mysql_client.h"
 #include "coke/mysql/mysql_utils.h"
+#include "coke/tools/option_parser.h"
+#include "coke/wait.h"
 
 #include "readline_helper.h"
 
@@ -15,11 +15,13 @@ constexpr const char *first_prompt = "mysql> ";
 constexpr const char *other_prompt = "    -> ";
 
 /**
- * This example implements a simple mysql-cli, read commands from standard input,
- * send them to the mysql server, and write the results to standard output.
-*/
+ * This example implements a simple mysql-cli, read commands from standard
+ * input, send them to the mysql server, and write the results to standard
+ * output.
+ */
 
-std::string to_string(const coke::MySQLCellView &c) {
+std::string to_string(const coke::MySQLCellView &c)
+{
     // Only display some simple data types, avoiding unknown data to
     // dirty the console
 
@@ -31,17 +33,20 @@ std::string to_string(const coke::MySQLCellView &c) {
     else if (c.is_null())
         str.assign("NULL");
     else
-        str.assign("type:").append(std::to_string(c.get_data_type()))
-            .append(",len:").append(std::to_string(c.raw_view().size()));
+        str.assign("type:")
+            .append(std::to_string(c.get_data_type()))
+            .append(",len:")
+            .append(std::to_string(c.raw_view().size()));
 
     return str;
 }
 
-void show_result_set(coke::MySQLResultSetView &v) {
+void show_result_set(coke::MySQLResultSetView &v)
+{
     std::vector<coke::MySQLCellView> row;
     auto fields = v.get_fields();
     int field_count = v.get_field_count();
-    int width = 24;  // Use fixed-length tables for simplicity
+    int width = 24; // Use fixed-length tables for simplicity
 
     if (field_count == 0)
         return;
@@ -73,7 +78,8 @@ void show_result_set(coke::MySQLResultSetView &v) {
 }
 
 // Read from stdin, until trailing `;` to indicate end of this sql
-bool get_sql(std::string &sql) {
+bool get_sql(std::string &sql)
+{
     const char *prompt = first_prompt;
     std::string line;
     sql.clear();
@@ -81,7 +87,7 @@ bool get_sql(std::string &sql) {
     while (nextline(prompt, line)) {
         std::size_t pos = line.find_last_not_of(" \t\r\n");
         if (pos != std::string::npos)
-            sql.append(line, 0, pos+1);
+            sql.append(line, 0, pos + 1);
 
         if (!sql.empty() && sql.back() == ';') {
             add_history(sql);
@@ -97,7 +103,8 @@ bool get_sql(std::string &sql) {
     return false;
 }
 
-coke::Task<> mysql_cli(const coke::MySQLClientParams &params) {
+coke::Task<> mysql_cli(const coke::MySQLClientParams &params)
+{
     coke::MySQLClient cli(params);
     coke::MySQLResult res;
     std::string sql;
@@ -125,23 +132,25 @@ coke::Task<> mysql_cli(const coke::MySQLClientParams &params) {
                 int warns = result_view.get_warnings();
                 auto insert_id = result_view.get_insert_id();
                 std::cout << "Query OK, " << rows << " row(s) affected. "
-                    << warns << " warning(s). last insert id "
-                    << insert_id << ". " << result_view.get_info_view() << std::endl;
+                          << warns << " warning(s). last insert id "
+                          << insert_id << ". " << result_view.get_info_view()
+                          << std::endl;
             }
             else
                 show_result_set(result_view);
         }
 
         if (resp.get_packet_type() == MYSQL_PACKET_ERROR) {
-            std::cout << "ERROR " << resp.get_error_code()
-                << ": " << resp.get_error_msg() << std::endl;
+            std::cout << "ERROR " << resp.get_error_code() << ": "
+                      << resp.get_error_msg() << std::endl;
         }
     }
 
     std::cout << "Bye" << std::endl;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::OptionParser args;
     coke::MySQLClientParams params;
     params.port = 3306;
@@ -174,9 +183,12 @@ int main(int argc, char *argv[]) {
         params.dbname.assign(ext[0]);
 
     const char *miss = nullptr;
-    if (params.host.empty()) miss = "host";
-    else if (params.username.empty()) miss = "user";
-    else if (params.dbname.empty()) miss = "dbname";
+    if (params.host.empty())
+        miss = "host";
+    else if (params.username.empty())
+        miss = "user";
+    else if (params.dbname.empty())
+        miss = "dbname";
 
     if (miss) {
         std::cerr << "Missing " << miss << " in command line args" << std::endl;

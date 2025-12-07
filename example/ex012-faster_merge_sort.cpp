@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <chrono>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <iterator>
 #include <memory>
 #include <random>
@@ -9,8 +9,8 @@
 #include <vector>
 
 #include "coke/go.h"
-#include "coke/wait.h"
 #include "coke/tools/option_parser.h"
+#include "coke/wait.h"
 
 /**
  * This example makes two small optimizations to make merge sort faster on
@@ -21,15 +21,16 @@
  * 1. Adding an extra buffer to speeds up merge, of course this will take up
  *    a lot of extra memory to trade space for efficiency.
  * 2. Using parallelism during the merge process.
-*/
+ */
 
 constexpr int MAX_DEPTH = 8;
 constexpr std::size_t MIN_DIVIDE_SIZE = 8192;
 
-template<std::random_access_iterator Iter1,
-         std::random_access_iterator Iter2, typename Comp>
+template<std::random_access_iterator Iter1, std::random_access_iterator Iter2,
+         typename Comp>
 coke::Task<> merge_impl(Iter1 first1, Iter1 last1, Iter1 first2, Iter1 last2,
-                        Iter2 result, Comp cmp, int depth) {
+                        Iter2 result, Comp cmp, int depth)
+{
     std::size_t size1 = (std::size_t)(last1 - first1);
     std::size_t size2 = (std::size_t)(last2 - first2);
     std::size_t tot = size1 + size2;
@@ -48,10 +49,10 @@ coke::Task<> merge_impl(Iter1 first1, Iter1 last1, Iter1 first2, Iter1 last2,
         }
 
         Iter2 rmid = result + (mid1 - first1) + (mid2 - first2);
-        co_await coke::async_wait(
-            merge_impl(first1, mid1, first2, mid2, result, cmp, depth + 1),
-            merge_impl(mid1, last1, mid2, last2, rmid, cmp, depth + 1)
-        );
+        co_await coke::async_wait(merge_impl(first1, mid1, first2, mid2, result,
+                                             cmp, depth + 1),
+                                  merge_impl(mid1, last1, mid2, last2, rmid,
+                                             cmp, depth + 1));
     }
     else {
         // move merge two sorted array into result
@@ -62,11 +63,11 @@ coke::Task<> merge_impl(Iter1 first1, Iter1 last1, Iter1 first2, Iter1 last2,
     }
 }
 
-template<std::random_access_iterator Iter1,
-         std::random_access_iterator Iter2, typename Comp>
-coke::Task<> merge_sort_impl(Iter1 first1, Iter1 last1,
-                             Iter2 first2, Iter2 last2,
-                             Comp cmp, int depth) {
+template<std::random_access_iterator Iter1, std::random_access_iterator Iter2,
+         typename Comp>
+coke::Task<> merge_sort_impl(Iter1 first1, Iter1 last1, Iter2 first2,
+                             Iter2 last2, Comp cmp, int depth)
+{
     std::size_t n = (std::size_t)(last1 - first1);
 
     /**
@@ -77,10 +78,10 @@ coke::Task<> merge_sort_impl(Iter1 first1, Iter1 last1,
         Iter1 mid1 = first1 + n / 2;
         Iter2 mid2 = first2 + n / 2;
 
-        co_await coke::async_wait(
-            merge_sort_impl(first2, mid2, first1, mid1, cmp, depth + 1),
-            merge_sort_impl(mid2, last2, mid1, last1, cmp, depth + 1)
-        );
+        co_await coke::async_wait(merge_sort_impl(first2, mid2, first1, mid1,
+                                                  cmp, depth + 1),
+                                  merge_sort_impl(mid2, last2, mid1, last1, cmp,
+                                                  depth + 1));
 
         co_await merge_impl(first2, mid2, mid2, last2, first1, cmp, depth);
     }
@@ -92,7 +93,8 @@ coke::Task<> merge_sort_impl(Iter1 first1, Iter1 last1,
 
 // Note that we do not support sorting std::vector<bool>
 template<std::random_access_iterator Iter, typename Comp = std::less<>>
-coke::Task<> merge_sort(Iter first, Iter last, Comp cmp = Comp()) {
+coke::Task<> merge_sort(Iter first, Iter last, Comp cmp = Comp())
+{
     using T = typename std::iterator_traits<Iter>::value_type;
     std::size_t n = (std::size_t)(last - first);
 
@@ -111,22 +113,22 @@ long current_usec();
 template<typename T>
 void generate(std::vector<T> &vec, std::size_t n, std::size_t seed);
 
-void show_cost(const char *title, long cost, long base = 100) {
+void show_cost(const char *title, long cost, long base = 100)
+{
     double percent = 100.0 * cost / base;
-    std::cout << std::setw(20) << title
-        << std::setw(10) << cost << "us"
-        << std::setw(10)
-        << std::fixed << std::setprecision(2) << percent << "%"
-        << std::endl;
+    std::cout << std::setw(20) << title << std::setw(10) << cost << "us"
+              << std::setw(10) << std::fixed << std::setprecision(2) << percent
+              << "%" << std::endl;
 }
 
 template<typename T>
-void run_merge_sort(std::string type, std::size_t n, std::size_t seed) {
+void run_merge_sort(std::string type, std::size_t n, std::size_t seed)
+{
     std::vector<T> v1, v2;
     long start, base;
 
-    std::cout << "Run merge sort on " << n << " random value of type "
-        << type << std::endl;
+    std::cout << "Run merge sort on " << n << " random value of type " << type
+              << std::endl;
 
     // 1. Prepare
     generate(v1, n, seed);
@@ -169,20 +171,25 @@ void run_merge_sort(std::string type, std::size_t n, std::size_t seed) {
         std::cout << "Sort Success" << std::endl;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     std::size_t n = 10000000;
     std::size_t seed = 0;
     std::string type = "int";
     int compute_threads = -1;
 
     coke::OptionParser args;
-    args.add_integer(n, 'n', "num").set_default(10000000)
+    args.add_integer(n, 'n', "num")
+        .set_default(10000000)
         .set_description("Number of elements to sort");
-    args.add_integer(seed, 's', "seed").set_default(0)
+    args.add_integer(seed, 's', "seed")
+        .set_default(0)
         .set_description("Random generator seed");
-    args.add_integer(compute_threads, 'c', "compute-threads").set_default(-1)
+    args.add_integer(compute_threads, 'c', "compute-threads")
+        .set_default(-1)
         .set_description("Set compute threads");
-    args.add_string(type, 't', "type").set_default("int")
+    args.add_string(type, 't', "type")
+        .set_default("int")
         .set_description("Element type, one of int, double, string");
     args.set_help_flag('h', "help");
 
@@ -212,14 +219,16 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-long current_usec() {
+long current_usec()
+{
     auto dur = std::chrono::steady_clock::now().time_since_epoch();
     auto usec = std::chrono::duration_cast<std::chrono::microseconds>(dur);
     return usec.count();
 }
 
 template<typename T>
-void generate(std::vector<T> &vec, std::size_t n, std::size_t seed) {
+void generate(std::vector<T> &vec, std::size_t n, std::size_t seed)
+{
     std::mt19937_64 mt(seed);
     vec.resize(n);
 

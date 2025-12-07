@@ -41,18 +41,10 @@ foreach(exec_name ${ALL_TESTS})
         add_test(NAME mem_${exec_name} COMMAND ${MEMCHECK_CMD} ./${exec_name})
     endif ()
 
-    target_link_directories(${exec_name} PRIVATE ${WORKFLOW_LIB_DIR})
-
-    target_include_directories(${exec_name} PRIVATE
-        ${WORKFLOW_INCLUDE_DIR}
-        ${OPENSSL_INCLUDE_DIR}
-    )
-
     target_link_libraries(${exec_name}
-        coke::coke
-        ${COKE_TRY_STATIC_WORKFLOW}
-        Threads::Threads
-        OpenSSL::SSL OpenSSL::Crypto
-        GTest::GTest
+        PRIVATE
+            coke::coke
+            coke-workflow
+            GTest::GTest
     )
 endforeach()

@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_CONCEPT_H
 #define COKE_DETAIL_CONCEPT_H
@@ -27,29 +27,25 @@ namespace coke {
 /**
  * @brief Cokeable concept is used to indicate type constraints in coke,
  *        such as Task<T>, Future<T>, BasicAwaiter<T>.
-*/
+ */
 template<typename T>
-concept Cokeable = (
-    std::is_object_v<T> &&
-    (std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>) &&
-    std::is_destructible_v<T> &&
-    std::is_same_v<T, std::remove_cvref_t<T>> &&
-    !std::is_array_v<T>
-) || std::is_void_v<T>;
-
+concept Cokeable =
+    (std::is_object_v<T> &&
+     (std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>) &&
+     std::is_destructible_v<T> && std::is_same_v<T, std::remove_cvref_t<T>> &&
+     !std::is_array_v<T>) ||
+    std::is_void_v<T>;
 
 /**
  * @brief This concept is used to constrain the types of elements for coke
  *        containers, for example coke::Queue.
-*/
+ */
 template<typename T>
-concept Queueable = (
-    std::is_object_v<T> &&
-    (std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>) &&
-    std::is_destructible_v<T> &&
-    std::is_same_v<T, std::remove_cvref_t<T>> &&
-    !std::is_array_v<T>
-);
+concept Queueable =
+    (std::is_object_v<T> &&
+     (std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>) &&
+     std::is_destructible_v<T> && std::is_same_v<T, std::remove_cvref_t<T>> &&
+     !std::is_array_v<T>);
 
 /**
  * @brief This concept is used to check whether T is coke::CoPromise<U>, used

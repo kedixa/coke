@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_SYNC_GUARD_H
 #define COKE_SYNC_GUARD_H
@@ -31,21 +31,21 @@ public:
      *            sync_operation_end of the same SyncGuard object in different
      *            threads.
      */
-    explicit SyncGuard(bool auto_sync_begin)
-        : guarded(false)
+    explicit SyncGuard(bool auto_sync_begin) : guarded(false)
     {
         if (auto_sync_begin)
             sync_operation_begin();
     }
 
     SyncGuard(const SyncGuard &) = delete;
-    SyncGuard &operator= (const SyncGuard &) = delete;
+    SyncGuard &operator=(const SyncGuard &) = delete;
 
     /**
      * @brief Destroy SyncGuard. If in_guard() is true, sync_operation_end will
      *        be called.
      */
-    ~SyncGuard() {
+    ~SyncGuard()
+    {
         if (guarded)
             sync_operation_end();
     }
@@ -53,9 +53,7 @@ public:
     /**
      * @brief Check whether *this is already in sync guard.
      */
-    bool in_guard() const noexcept {
-        return guarded;
-    }
+    bool in_guard() const noexcept { return guarded; }
 
     /**
      * @brief Call WFGlobal::sync_operation_begin. If multiple SyncGuard objects

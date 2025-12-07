@@ -14,12 +14,12 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <cstdint>
 
-#include "workflow/WFGlobal.h"
 #include "coke/sync_guard.h"
+#include "workflow/WFGlobal.h"
 
 namespace coke {
 
@@ -30,15 +30,16 @@ struct SyncHelper {
     std::size_t counter = 0;
 };
 
-SyncHelper *get_sync_helper() {
+SyncHelper *get_sync_helper()
+{
     static thread_local SyncHelper helper;
     return &helper;
 }
 
 } // namespace detail
 
-
-void SyncGuard::sync_operation_begin() {
+void SyncGuard::sync_operation_begin()
+{
     if (!guarded) {
         detail::SyncHelper *p = detail::get_sync_helper();
 
@@ -49,7 +50,8 @@ void SyncGuard::sync_operation_begin() {
     }
 }
 
-void SyncGuard::sync_operation_end() {
+void SyncGuard::sync_operation_end()
+{
     if (guarded) {
         detail::SyncHelper *p = detail::get_sync_helper();
 

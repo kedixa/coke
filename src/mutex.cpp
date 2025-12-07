@@ -14,14 +14,15 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include "coke/semaphore.h"
 #include "coke/shared_mutex.h"
 
 namespace coke {
 
-Task<int> Semaphore::acquire_impl(detail::TimedWaitHelper helper) {
+Task<int> Semaphore::acquire_impl(detail::TimedWaitHelper helper)
+{
     std::unique_lock<std::mutex> lk(mtx);
     bool insert_head = false;
     int ret;
@@ -56,10 +57,10 @@ Task<int> Semaphore::acquire_impl(detail::TimedWaitHelper helper) {
     co_return TOP_SUCCESS;
 }
 
-
 // SharedMutex Implement
 
-void SharedMutex::unlock() {
+void SharedMutex::unlock()
+{
     std::lock_guard<std::mutex> lg(mtx);
 
     if (state == State::Writing) {
@@ -82,7 +83,8 @@ void SharedMutex::unlock() {
     }
 }
 
-Task<int> SharedMutex::lock_impl(detail::TimedWaitHelper helper) {
+Task<int> SharedMutex::lock_impl(detail::TimedWaitHelper helper)
+{
     std::unique_lock<std::mutex> lk(mtx);
     bool insert_head = false;
     int ret;
@@ -123,7 +125,8 @@ Task<int> SharedMutex::lock_impl(detail::TimedWaitHelper helper) {
     co_return TOP_SUCCESS;
 }
 
-Task<int> SharedMutex::lock_shared_impl(detail::TimedWaitHelper helper) {
+Task<int> SharedMutex::lock_shared_impl(detail::TimedWaitHelper helper)
+{
     std::unique_lock<std::mutex> lk(mtx);
     bool insert_head = false;
     int ret;

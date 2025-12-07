@@ -14,20 +14,23 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
+#include <algorithm>
 #include <functional>
+#include <gtest/gtest.h>
 #include <string>
 #include <vector>
-#include <algorithm>
-#include <gtest/gtest.h>
 
 #include "coke/coke.h"
 
-TEST(WAIT, lambda_empty) {
+TEST(WAIT, lambda_empty)
+{
     coke::sync_call([]() -> coke::Task<> { co_return; });
 
-    auto func = []() -> coke::Task<> { co_return; };
+    auto func = []() -> coke::Task<> {
+        co_return;
+    };
     coke::sync_wait(func(), func());
     coke::sync_wait(func(), func(), func());
 
@@ -37,11 +40,14 @@ TEST(WAIT, lambda_empty) {
     coke::sync_wait(std::move(tasks));
 }
 
-TEST(WAIT, return_value) {
+TEST(WAIT, return_value)
+{
     auto ret1 = coke::sync_call([]() -> coke::Task<int> { co_return 1; });
     EXPECT_EQ(ret1, 1);
 
-    auto func = []() -> coke::Task<int> { co_return 1; };
+    auto func = []() -> coke::Task<int> {
+        co_return 1;
+    };
     auto ret2 = coke::sync_wait(func(), func());
     auto res2 = std::vector<int>(2, 1);
     EXPECT_EQ(ret2, res2);
@@ -54,7 +60,8 @@ TEST(WAIT, return_value) {
     EXPECT_EQ(ret3, res3);
 }
 
-TEST(WAIT, lambda_capture) {
+TEST(WAIT, lambda_capture)
+{
     int a;
 
     auto ret = coke::sync_call([&]() -> coke::Task<int> {
@@ -69,13 +76,16 @@ TEST(WAIT, lambda_capture) {
 }
 
 struct Func {
-    Func() { }
-    Func(Func &&) { }
+    Func() {}
+    Func(Func &&) {}
 
-    coke::Task<std::string> operator()(int a, int b) {
+    coke::Task<std::string> operator()(int a, int b)
+    {
         int x = co_await coke::go(std::plus<int>{}, a, b);
-        s = co_await coke::go(static_cast<std::string(*)(int)>(std::to_string), x);
-        co_await coke::go(std::reverse<std::string::iterator>, s.begin(), s.end());
+        s = co_await coke::go(static_cast<std::string (*)(int)>(std::to_string),
+                              x);
+        co_await coke::go(std::reverse<std::string::iterator>, s.begin(),
+                          s.end());
         co_return s;
     }
 
@@ -83,7 +93,8 @@ private:
     std::string s;
 };
 
-TEST(WAIT, callable_object) {
+TEST(WAIT, callable_object)
+{
     Func f;
 
     std::string ret1(coke::sync_call(Func{}, 32, 14));
@@ -93,21 +104,21 @@ TEST(WAIT, callable_object) {
     EXPECT_EQ(ret2, std::string("42"));
 
     std::vector<std::string> ret3 = coke::sync_wait(
-        coke::make_task(Func{}, 1, 1),
-        coke::make_task(Func{}, 8, 5),
-        coke::make_task(Func{}, 99, 24)
-    );
+        coke::make_task(Func{}, 1, 1), coke::make_task(Func{}, 8, 5),
+        coke::make_task(Func{}, 99, 24));
     std::vector<std::string> res3 = {"2", "31", "321"};
     EXPECT_EQ(ret3, res3);
 }
 
-coke::Task<std::vector<int>> sorted(std::vector<int> v) {
+coke::Task<std::vector<int>> sorted(std::vector<int> v)
+{
     co_await coke::switch_go_thread();
     std::sort(v.begin(), v.end());
     co_return v;
 }
 
-TEST(WAIT, function_pointer) {
+TEST(WAIT, function_pointer)
+{
     std::vector<int> v, s;
     for (size_t i = 0; i < 64; i++)
         v.push_back(int(i * i * 201 % 97));
@@ -118,11 +129,13 @@ TEST(WAIT, function_pointer) {
     EXPECT_EQ(v, s);
 }
 
-coke::Task<std::string> identity(std::string s) {
+coke::Task<std::string> identity(std::string s)
+{
     co_return s;
 }
 
-TEST(WAIT, wait_awaitable) {
+TEST(WAIT, wait_awaitable)
+{
     std::string s("hello");
     std::string t = coke::sync_wait(identity(s));
     EXPECT_EQ(s, t);
@@ -132,36 +145,36 @@ TEST(WAIT, wait_awaitable) {
     EXPECT_EQ(ret, coke::STATE_SUCCESS);
 }
 
-TEST(WAIT, wait_two_awaitable) {
+TEST(WAIT, wait_two_awaitable)
+{
     std::string s("hello");
-    std::vector<std::string> ret = coke::sync_wait(
-        identity(s), identity(s)
-    );
+    std::vector<std::string> ret = coke::sync_wait(identity(s), identity(s));
     std::vector<std::string> expect{s, s};
     EXPECT_EQ(ret, expect);
 }
 
-coke::Task<> test_async() {
+coke::Task<> test_async()
+{
     std::vector<std::string> res{"asdf", "abc", "xyz"};
-    auto ret = co_await coke::async_wait(
-        identity(res[0]),
-        identity(res[1]),
-        identity(res[2])
-    );
+    auto ret = co_await coke::async_wait(identity(res[0]), identity(res[1]),
+                                         identity(res[2]));
 
     EXPECT_EQ(ret, res);
 }
 
-TEST(WAIT, async_wait) {
+TEST(WAIT, async_wait)
+{
     coke::sync_wait(test_async());
 }
 
-coke::Task<bool> test_bool() {
+coke::Task<bool> test_bool()
+{
     co_await coke::yield();
     co_return true;
 }
 
-coke::Task<> async_test_bool() {
+coke::Task<> async_test_bool()
+{
     constexpr std::size_t M = 1024;
     std::vector<bool> vec;
     std::vector<coke::Task<bool>> tasks;
@@ -174,7 +187,8 @@ coke::Task<> async_test_bool() {
     EXPECT_EQ(vec, std::vector<bool>(M, true));
 }
 
-TEST(WAIT, sync_vector_bool) {
+TEST(WAIT, sync_vector_bool)
+{
     constexpr std::size_t M = 1024;
     std::vector<bool> vec;
     std::vector<coke::Task<bool>> tasks;
@@ -187,11 +201,13 @@ TEST(WAIT, sync_vector_bool) {
     EXPECT_EQ(vec, std::vector<bool>(M, true));
 }
 
-TEST(WAIT, async_vector_bool) {
+TEST(WAIT, async_vector_bool)
+{
     coke::sync_wait(async_test_bool());
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 2;
     s.handler_threads = 2;

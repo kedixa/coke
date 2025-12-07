@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_SEMAPHORE_H
 #define COKE_SEMAPHORE_H
@@ -22,8 +22,8 @@
 #include <cstdint>
 #include <mutex>
 
-#include "coke/task.h"
 #include "coke/sleep.h"
+#include "coke/task.h"
 
 namespace coke {
 
@@ -33,16 +33,14 @@ public:
 
     /**
      * @brief Create a Semaphore, with initial count `n`.
-    */
-    explicit Semaphore(CountType n) noexcept
-        : count(n), waiting(0)
-    { }
+     */
+    explicit Semaphore(CountType n) noexcept : count(n), waiting(0) {}
 
     /**
      * @brief Semaphore is neither copyable nor movable.
-    */
+     */
     Semaphore(const Semaphore &) = delete;
-    Semaphore &operator= (const Semaphore &) = delete;
+    Semaphore &operator=(const Semaphore &) = delete;
 
     ~Semaphore() = default;
 
@@ -51,8 +49,9 @@ public:
      *
      * @pre Current coroutine doesn't owns all the counts.
      * @return Return true if acquire success, else false.
-    */
-    bool try_acquire() {
+     */
+    bool try_acquire()
+    {
         std::lock_guard<std::mutex> lg(mtx);
 
         if (count > 0) {
@@ -65,8 +64,9 @@ public:
 
     /**
      * @brief Release `cnt` counts, and wake up those who are waiting.
-    */
-    void release(CountType cnt = 1) {
+     */
+    void release(CountType cnt = 1)
+    {
         std::lock_guard<std::mutex> lg(mtx);
         count += cnt;
 
@@ -79,10 +79,8 @@ public:
      *
      * @pre Current coroutine doesn't owns all the count.
      * @return See try_acquire_for but ignore coke::TOP_TIMEOUT.
-    */
-    Task<int> acquire() {
-        return acquire_impl(detail::TimedWaitHelper{});
-    }
+     */
+    Task<int> acquire() { return acquire_impl(detail::TimedWaitHelper{}); }
 
     /**
      * @brief Acquire a count, block until success or `nsec` timeout.
@@ -95,8 +93,9 @@ public:
      * @retval coke::TOP_ABORTED If process exit.
      * @retval Negative integer to indicate system error, almost never happens.
      * @see coke/global.h
-    */
-    Task<int> try_acquire_for(NanoSec nsec) {
+     */
+    Task<int> try_acquire_for(NanoSec nsec)
+    {
         return acquire_impl(detail::TimedWaitHelper(nsec));
     }
 
@@ -104,12 +103,10 @@ protected:
     /**
      * The `helper` variable must not be a reference to ensure that it exists
      * until the coroutine ends.
-    */
+     */
     Task<int> acquire_impl(detail::TimedWaitHelper helper);
 
-    const void *get_addr() const noexcept {
-        return (const char *)this + 1;
-    }
+    const void *get_addr() const noexcept { return (const char *)this + 1; }
 
 private:
     std::mutex mtx;

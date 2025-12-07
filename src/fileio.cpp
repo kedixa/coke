@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Coke Project (https://github.com/kedixa/coke)
+ * Copyright 2024-2025 Coke Project (https://github.com/kedixa/coke)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,37 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
+
+#include <concepts>
 
 #include "coke/fileio.h"
-
 #include "workflow/WFTaskFactory.h"
 
 namespace coke {
 
+namespace detail {
+
+template<typename T>
+inline auto create_fdatasync_task(int fd)
+{
+    constexpr bool has_fdatasync = requires { T::create_fdatasync_task; };
+
+    if constexpr (has_fdatasync)
+        return T::create_fdatasync_task(fd, nullptr);
+    else
+        return T::create_fdsync_task(fd, nullptr);
+}
+
+} // namespace detail
+
 template<typename Task>
-FileAwaiter::FileAwaiter(Task *task) {
-    task->set_callback([info = this->get_info()] (Task *t) {
+FileAwaiter::FileAwaiter(Task *task)
+{
+    task->set_callback([info = this->get_info()](Task *t) {
         auto *awaiter = info->get_awaiter<FileAwaiter>();
-        awaiter->emplace_result(FileResult{
-            t->get_state(), t->get_error(), t->get_retval()
-        });
+        awaiter->emplace_result(
+            FileResult{t->get_state(), t->get_error(), t->get_retval()});
 
         awaiter->done();
     });
@@ -36,33 +52,43 @@ FileAwaiter::FileAwaiter(Task *task) {
     set_task(task);
 }
 
-FileAwaiter pread(int fd, void *buf, std::size_t count, off_t offset) {
-    auto *task = WFTaskFactory::create_pread_task(fd, buf, count, offset, nullptr);
+FileAwaiter pread(int fd, void *buf, std::size_t count, off_t offset)
+{
+    auto *task = WFTaskFactory::create_pread_task(fd, buf, count, offset,
+                                                  nullptr);
     return FileAwaiter(task);
 }
 
-FileAwaiter pwrite(int fd, const void *buf, std::size_t count, off_t offset) {
-    auto *task = WFTaskFactory::create_pwrite_task(fd, buf, count, offset, nullptr);
+FileAwaiter pwrite(int fd, const void *buf, std::size_t count, off_t offset)
+{
+    auto *task = WFTaskFactory::create_pwrite_task(fd, buf, count, offset,
+                                                   nullptr);
     return FileAwaiter(task);
 }
 
-FileAwaiter preadv(int fd, const struct iovec *iov, int iovcnt, off_t offset) {
-    auto *task = WFTaskFactory::create_preadv_task(fd, iov, iovcnt, offset, nullptr);
+FileAwaiter preadv(int fd, const struct iovec *iov, int iovcnt, off_t offset)
+{
+    auto *task = WFTaskFactory::create_preadv_task(fd, iov, iovcnt, offset,
+                                                   nullptr);
     return FileAwaiter(task);
 }
 
-FileAwaiter pwritev(int fd, const struct iovec *iov, int iovcnt, off_t offset) {
-    auto *task = WFTaskFactory::create_pwritev_task(fd, iov, iovcnt, offset, nullptr);
+FileAwaiter pwritev(int fd, const struct iovec *iov, int iovcnt, off_t offset)
+{
+    auto *task = WFTaskFactory::create_pwritev_task(fd, iov, iovcnt, offset,
+                                                    nullptr);
     return FileAwaiter(task);
 }
 
-FileAwaiter fsync(int fd) {
+FileAwaiter fsync(int fd)
+{
     auto *task = WFTaskFactory::create_fsync_task(fd, nullptr);
     return FileAwaiter(task);
 }
 
-FileAwaiter fdatasync(int fd) {
-    auto *task = WFTaskFactory::create_fdsync_task(fd, nullptr);
+FileAwaiter fdatasync(int fd)
+{
+    auto *task = detail::create_fdatasync_task<WFTaskFactory>(fd);
     return FileAwaiter(task);
 }
 

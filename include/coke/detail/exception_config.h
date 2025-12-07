@@ -4,9 +4,9 @@
 #include <system_error>
 
 #if defined(__GNUC__) || defined(__clang__)
-#   ifndef __EXCEPTIONS
-#       define COKE_NO_EXCEPTIONS
-#   endif
+#ifndef __EXCEPTIONS
+#define COKE_NO_EXCEPTIONS
+#endif
 #endif
 
 #ifdef COKE_NO_EXCEPTIONS
@@ -14,7 +14,7 @@
 #define coke_catch(E) if (false)
 #else
 #define coke_try try
-#define coke_catch(E) catch(E)
+#define coke_catch(E) catch (E)
 #endif
 
 namespace coke::detail {

@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_QUEUE_H
 #define COKE_QUEUE_H
@@ -36,7 +36,7 @@ namespace coke {
  * the public member functions.
  *
  * @tparam T,Container Directly used to create std::queue.
-*/
+ */
 template<Queueable T, typename Container = std::deque<T>>
 class Queue final : public QueueCommon<Queue<T, Container>, T> {
     using BaseType = QueueCommon<Queue<T, Container>, T>;
@@ -53,20 +53,21 @@ public:
      * @brief Create coke::Queue with max_size.
      *
      * @param max_size Max elements in the container. Must greater than 0.
-    */
-    explicit Queue(SizeType max_size) : BaseType(max_size) { }
+     */
+    explicit Queue(SizeType max_size) : BaseType(max_size) {}
 
     /**
      * @brief Create coke::Queue with max_size and alloc.
      *
      * @param max_size Max elements in the container.
      * @param alloc Allocator used to create std::queue.
-    */
+     */
     template<typename Alloc>
         requires std::uses_allocator_v<QueueType, Alloc>
     Queue(SizeType max_size, const Alloc &alloc)
         : BaseType(max_size), que(alloc)
-    { }
+    {
+    }
 
     ~Queue() = default;
 
@@ -74,17 +75,20 @@ private:
     friend BaseType;
 
     template<typename... Args>
-    void do_emplace(Args&&... args) {
+    void do_emplace(Args &&...args)
+    {
         que.emplace(std::forward<Args>(args)...);
     }
 
     template<typename U>
-    void do_push(U &&u) {
+    void do_push(U &&u)
+    {
         que.push(std::forward<U>(u));
     }
 
     template<typename U>
-    void do_pop(U &u) {
+    void do_pop(U &u)
+    {
         u = std::move(que.front());
         que.pop();
     }
@@ -92,7 +96,6 @@ private:
 private:
     QueueType que;
 };
-
 
 /**
  * @class coke::PriorityQueue
@@ -103,15 +106,11 @@ private:
  * most of the public member functions.
  *
  * @tparam T,Container,Compare Directly used to create std::priority_queue.
-*/
-template<
-    Queueable T,
-    typename Container = std::vector<T>,
-    typename Compare = std::less<typename Container::value_type>
->
+ */
+template<Queueable T, typename Container = std::vector<T>,
+         typename Compare = std::less<typename Container::value_type>>
 class PriorityQueue final
-    : public QueueCommon<PriorityQueue<T, Container, Compare>, T>
-{
+    : public QueueCommon<PriorityQueue<T, Container, Compare>, T> {
     using BaseType = QueueCommon<PriorityQueue<T, Container, Compare>, T>;
 
 public:
@@ -127,30 +126,32 @@ public:
      * @brief Create coke::PriorityQueue with max_size.
      *
      * @param max_size Max elements in the container. Must greater than 0.
-    */
-    explicit PriorityQueue(SizeType max_size) : BaseType(max_size) { }
+     */
+    explicit PriorityQueue(SizeType max_size) : BaseType(max_size) {}
 
     /**
      * @brief Create coke::PriorityQueue with max_size and alloc.
      *
      * @param max_size Max elements in the container.
      * @param alloc Allocator used to create std::priority_queue.
-    */
+     */
     template<typename Alloc>
         requires std::uses_allocator_v<QueueType, Alloc>
     PriorityQueue(SizeType max_size, const Alloc &alloc)
         : BaseType(max_size), que(alloc)
-    { }
+    {
+    }
 
     /**
      * @brief Create coke::PriorityQueue with max_size and comp.
      *
      * @param max_size Max elements in the container.
      * @param comp CompareType value that providing a strict weak ordering.
-    */
+     */
     PriorityQueue(SizeType max_size, const CompareType &comp)
         : BaseType(max_size), que(comp)
-    { }
+    {
+    }
 
     /**
      * @brief Create coke::PriorityQueue with max_size, comp and alloc.
@@ -158,13 +159,14 @@ public:
      * @param max_size Max elements in the container.
      * @param comp CompareType value that providing a strict weak ordering.
      * @param alloc Allocator used to create std::priority_queue.
-    */
+     */
     template<typename Alloc>
         requires std::uses_allocator_v<QueueType, Alloc>
     PriorityQueue(SizeType max_size, const CompareType &comp,
                   const Alloc &alloc)
         : BaseType(max_size), que(comp, alloc)
-    { }
+    {
+    }
 
     ~PriorityQueue() = default;
 
@@ -172,23 +174,28 @@ private:
     friend BaseType;
 
     template<typename... Args>
-    void do_emplace(Args&&... args) {
+    void do_emplace(Args &&...args)
+    {
         que.emplace(std::forward<Args>(args)...);
     }
 
     template<typename U>
-    void do_push(U &&u) {
+    void do_push(U &&u)
+    {
         que.push(std::forward<U>(u));
     }
 
     template<typename U>
-    void do_pop(U &u) {
+    void do_pop(U &u)
+    {
         if constexpr (std::is_nothrow_assignable_v<U &, T &&>)
-            u = std::move(const_cast<T&>(que.top()));
+            u = std::move(const_cast<T &>(que.top()));
         else if constexpr (std::is_assignable_v<U &, const T &>)
             u = que.top();
         else
-            static_assert(!std::is_same_v<T, T>, "coke::PriorityQueue<T> requires 'const T &' is assignalbe to 'U &'");
+            static_assert(!std::is_same_v<T, T>,
+                          "coke::PriorityQueue<T> requires 'const T &' is "
+                          "assignalbe to 'U &'");
 
         que.pop();
     }
@@ -196,7 +203,6 @@ private:
 private:
     QueueType que;
 };
-
 
 /**
  * @class coke::Stack
@@ -207,7 +213,7 @@ private:
  * the public member functions.
  *
  * @tparam T,Container Directly used to create std::stack.
-*/
+ */
 template<Queueable T, typename Container = std::deque<T>>
 class Stack final : public QueueCommon<Stack<T, Container>, T> {
     using BaseType = QueueCommon<Stack<T, Container>, T>;
@@ -224,20 +230,21 @@ public:
      * @brief Create coke::Stack with max_size.
      *
      * @param max_size Max elements in the container. Must greater than 0.
-    */
-    explicit Stack(SizeType max_size) : BaseType(max_size) { }
+     */
+    explicit Stack(SizeType max_size) : BaseType(max_size) {}
 
     /**
      * @brief Create coke::Stack with max_size and alloc.
      *
      * @param max_size Max elements in the container.
      * @param alloc Allocator used to create std::stack.
-    */
+     */
     template<typename Alloc>
         requires std::uses_allocator_v<QueueType, Alloc>
     Stack(SizeType max_size, const Alloc &alloc)
         : BaseType(max_size), que(alloc)
-    { }
+    {
+    }
 
     ~Stack() = default;
 
@@ -245,17 +252,20 @@ private:
     friend BaseType;
 
     template<typename... Args>
-    void do_emplace(Args&&... args) {
+    void do_emplace(Args &&...args)
+    {
         que.emplace(std::forward<Args>(args)...);
     }
 
     template<typename U>
-    void do_push(U &&u) {
+    void do_push(U &&u)
+    {
         que.push(std::forward<U>(u));
     }
 
     template<typename U>
-    void do_pop(U &u) {
+    void do_pop(U &u)
+    {
         u = std::move(que.top());
         que.pop();
     }

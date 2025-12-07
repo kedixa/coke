@@ -14,14 +14,15 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <gtest/gtest.h>
 
-#include "workflow/WFTaskFactory.h"
 #include "coke/coke.h"
+#include "workflow/WFTaskFactory.h"
 
-coke::Task<> test_parallel() {
+coke::Task<> test_parallel()
+{
     constexpr int N = 10;
     ParallelWork *par = Workflow::create_parallel_work(nullptr);
 
@@ -29,7 +30,7 @@ coke::Task<> test_parallel() {
         WFTimerTask *t = WFTaskFactory::create_timer_task(0, 0, nullptr);
         SeriesWork *series = Workflow::create_series_work(t, nullptr);
         series->push_back(WFTaskFactory::create_counter_task(0, nullptr));
-        series->push_back(WFTaskFactory::create_go_task("", []{}));
+        series->push_back(WFTaskFactory::create_go_task("", [] {}));
         series->set_context((void *)(intptr_t)i);
         par->add_series(series);
     }
@@ -45,11 +46,13 @@ coke::Task<> test_parallel() {
     }
 }
 
-TEST(PARALLEL, task) {
+TEST(PARALLEL, task)
+{
     coke::sync_wait(test_parallel());
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 2;
     s.handler_threads = 2;

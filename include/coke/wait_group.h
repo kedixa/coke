@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_WAIT_GROUP_H
 #define COKE_WAIT_GROUP_H
@@ -31,20 +31,20 @@ using WaitGroupAwaiter = SleepAwaiter;
  * @brief The return value of WaitGroupAwaiter does not conform to normal
  *        semantics, define constant for it to distinguish from SleepAwaiter.
  */
-constexpr int WAIT_GROUP_SUCCESS = SLEEP_CANCELED;
+inline constexpr int WAIT_GROUP_SUCCESS = SLEEP_CANCELED;
 
 class WaitGroup final {
 public:
     /**
      * @brief Create an empty WaitGroup.
      */
-    WaitGroup() noexcept : count(0) { }
+    WaitGroup() noexcept : count(0) {}
 
     /**
      * @brief WaitGroup is neither copyable nor movable.
-    */
+     */
     WaitGroup(const WaitGroup &) = delete;
-    WaitGroup &operator= (const WaitGroup &) = delete;
+    WaitGroup &operator=(const WaitGroup &) = delete;
 
     ~WaitGroup() = default;
 
@@ -54,14 +54,13 @@ public:
      *
      * The number of calls to done must match the sum of n in add.
      */
-    void add(long n) noexcept {
-        count.fetch_add(n, std::memory_order_relaxed);
-    }
+    void add(long n) noexcept { count.fetch_add(n, std::memory_order_relaxed); }
 
     /**
      * @brief Notify that one count is complete.
      */
-    void done() {
+    void done()
+    {
         if (count.fetch_sub(1, std::memory_order_acq_rel) == 1) {
             cancel_sleep_by_addr(get_addr());
         }
@@ -70,7 +69,8 @@ public:
     /**
      * @brief Wait for all counts to complete.
      */
-    WaitGroupAwaiter wait() {
+    WaitGroupAwaiter wait()
+    {
         SleepAwaiter a(SleepAwaiter::ImmediateTag{}, WAIT_GROUP_SUCCESS);
         auto c = load_count();
 
@@ -85,18 +85,14 @@ public:
     }
 
 private:
-    const void *get_addr() {
-        return (const char *)this + 1;
-    }
+    const void *get_addr() { return (const char *)this + 1; }
 
-    long load_count() {
-        return count.load(std::memory_order_acquire);
-    }
+    long load_count() { return count.load(std::memory_order_acquire); }
 
 private:
     std::atomic<long> count;
 };
 
-}
+} // namespace coke
 
 #endif // COKE_WAIT_GROUP_H

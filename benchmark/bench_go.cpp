@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <atomic>
 #include <string>
@@ -38,7 +38,8 @@ int compute_threads = -1;
 int times = 1;
 bool yes = false;
 
-bool next(long long &cur) {
+bool next(long long &cur)
+{
     cur = current.fetch_add(1, std::memory_order_relaxed);
     if (cur < total)
         return true;
@@ -47,7 +48,8 @@ bool next(long long &cur) {
     return false;
 }
 
-void do_calculate() {
+void do_calculate()
+{
     volatile int x = 0;
     for (int i = 0; i < 128; i++)
         x = x + i;
@@ -55,12 +57,14 @@ void do_calculate() {
     global_total += x;
 }
 
-coke::Task<> bench_wf_go_name(int max) {
+coke::Task<> bench_wf_go_name(int max)
+{
     long long i = 0;
 
     auto creater = [i, max](WFRepeaterTask *) mutable -> SubTask * {
         if (next(i))
-            return WFTaskFactory::create_go_task(name_pool[i%max], do_calculate);
+            return WFTaskFactory::create_go_task(name_pool[i % max],
+                                                 do_calculate);
         return nullptr;
     };
 
@@ -68,47 +72,80 @@ coke::Task<> bench_wf_go_name(int max) {
     co_await RepeaterAwaiter(rep);
 }
 
-coke::Task<> bench_go_name(int max) {
+coke::Task<> bench_go_name(int max)
+{
     long long i;
 
     while (next(i)) {
-        const std::string &name = name_pool[i%max];
+        const std::string &name = name_pool[i % max];
         co_await coke::go(name, do_calculate);
     }
 }
 
-coke::Task<> bench_switch_name(int max) {
+coke::Task<> bench_switch_name(int max)
+{
     long long i;
 
     while (next(i)) {
-        const std::string &name = name_pool[i%max];
+        const std::string &name = name_pool[i % max];
         co_await coke::switch_go_thread(name);
         do_calculate();
     }
 }
 
-coke::Task<> bench_wf_go_one_name() { return bench_wf_go_name(1); }
+coke::Task<> bench_wf_go_one_name()
+{
+    return bench_wf_go_name(1);
+}
 
-coke::Task<> bench_wf_go_five_name() { return bench_wf_go_name(5); }
+coke::Task<> bench_wf_go_five_name()
+{
+    return bench_wf_go_name(5);
+}
 
-coke::Task<> bench_wf_go_ten_name() { return bench_wf_go_name(10); }
+coke::Task<> bench_wf_go_ten_name()
+{
+    return bench_wf_go_name(10);
+}
 
-coke::Task<> bench_go_one_name() { return bench_go_name(1); }
+coke::Task<> bench_go_one_name()
+{
+    return bench_go_name(1);
+}
 
-coke::Task<> bench_go_five_name() { return bench_go_name(5); }
+coke::Task<> bench_go_five_name()
+{
+    return bench_go_name(5);
+}
 
-coke::Task<> bench_go_ten_name() { return bench_go_name(10); }
+coke::Task<> bench_go_ten_name()
+{
+    return bench_go_name(10);
+}
 
-coke::Task<> bench_switch_one_name() { return bench_switch_name(1); }
+coke::Task<> bench_switch_one_name()
+{
+    return bench_switch_name(1);
+}
 
-coke::Task<> bench_switch_five_name() { return bench_switch_name(5); }
+coke::Task<> bench_switch_five_name()
+{
+    return bench_switch_name(5);
+}
 
-coke::Task<> bench_switch_ten_name() { return bench_switch_name(10); }
+coke::Task<> bench_switch_ten_name()
+{
+    return bench_switch_name(10);
+}
 
-coke::Task<> warm_up() { co_await coke::switch_go_thread(); }
+coke::Task<> warm_up()
+{
+    co_await coke::switch_go_thread();
+}
 
-using bench_func_t = coke::Task<>(*)();
-coke::Task<> do_benchmark(const char *name, bench_func_t func) {
+using bench_func_t = coke::Task<> (*)();
+coke::Task<> do_benchmark(const char *name, bench_func_t func)
+{
     int run_times = 0;
     long long start, total_cost = 0;
     std::vector<long long> costs;
@@ -137,11 +174,12 @@ coke::Task<> do_benchmark(const char *name, bench_func_t func) {
     data_distribution(costs, mean, stddev);
     tps = 1.0e3 * current / (mean + 1e-9);
 
-    table_line(std::cout, width, name, total_cost, run_times,
-               mean, stddev, (long)tps);
+    table_line(std::cout, width, name, total_cost, run_times, mean, stddev,
+               (long)tps);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::OptionParser args;
 
     args.add_integer(concurrency, 'c', "concurrency")
@@ -178,12 +216,11 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < pool_size; i++)
         name_pool[i] = std::to_string(i);
 
-    table_line(std::cout, width,
-               "name", "cost", "times",
-               "mean(ms)", "stddev", "per sec");
+    table_line(std::cout, width, "name", "cost", "times", "mean(ms)", "stddev",
+               "per sec");
     delimiter(std::cout, width, '-');
 
-#define DO_BENCHMARK(func) coke::sync_wait(do_benchmark(#func, bench_ ## func))
+#define DO_BENCHMARK(func) coke::sync_wait(do_benchmark(#func, bench_##func))
     DO_BENCHMARK(wf_go_one_name);
     DO_BENCHMARK(wf_go_five_name);
     DO_BENCHMARK(wf_go_ten_name);

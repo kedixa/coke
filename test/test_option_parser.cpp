@@ -14,12 +14,12 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
-#include <string>
 #include <cstdint>
-#include <vector>
 #include <gtest/gtest.h>
+#include <string>
+#include <vector>
 
 #include "coke/tools/option_parser.h"
 
@@ -35,14 +35,19 @@ struct Config {
     std::vector<double> vf64;
 };
 
-TEST(OPTION_PARSER, basic) {
-    std::vector<std::string> argv {
-        "program_name", "-f", "--flag", "-vvv", "--boolean=no",
-        "-i", "-1234", "-i", "-4321", "--uint32", "5678",
-        "-d=1E2p3TB4Gb56mB78kb90",
-        "-y=-0.1", "-y", "0.2", "--vf64=1e123",
-        "-s", "this is a string", "--", "ex1", "--ex2", "-ex3"
-    };
+TEST(OPTION_PARSER, basic)
+{
+    std::vector<std::string> argv{"program_name", "-f",
+                                  "--flag",       "-vvv",
+                                  "--boolean=no", "-i",
+                                  "-1234",        "-i",
+                                  "-4321",        "--uint32",
+                                  "5678",         "-d=1E2p3TB4Gb56mB78kb90",
+                                  "-y=-0.1",      "-y",
+                                  "0.2",          "--vf64=1e123",
+                                  "-s",           "this is a string",
+                                  "--",           "ex1",
+                                  "--ex2",        "-ex3"};
 
     coke::OptionParser args;
     Config cfg;
@@ -80,7 +85,8 @@ TEST(OPTION_PARSER, basic) {
     EXPECT_DOUBLE_EQ(cfg.vf64[2], 1e123);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     testing::InitGoogleTest(&argc, argv);
 
     return RUN_ALL_TESTS();

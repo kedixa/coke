@@ -14,11 +14,11 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <iostream>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "bench_common.h"
 #include "coke/coke.h"
@@ -40,7 +40,8 @@ bool yes = false;
 
 template<typename RootCreater, typename NodeCreater>
 WFGraphTask *wf_create_chain(RootCreater &&root_creater,
-                             NodeCreater &&node_creater) {
+                             NodeCreater &&node_creater)
+{
     WFGraphTask *g = WFTaskFactory::create_graph_task(nullptr);
     WFGraphNode *a, *b;
 
@@ -58,7 +59,8 @@ WFGraphTask *wf_create_chain(RootCreater &&root_creater,
 
 template<typename RootCreater, typename NodeCreater>
 WFGraphTask *wf_create_tree(RootCreater &&root_creater,
-                            NodeCreater &&node_creater) {
+                            NodeCreater &&node_creater)
+{
     WFGraphTask *g = WFTaskFactory::create_graph_task(nullptr);
     std::vector<WFGraphNode *> nodes;
 
@@ -67,7 +69,7 @@ WFGraphTask *wf_create_tree(RootCreater &&root_creater,
 
     for (int i = 1; i < num_nodes; i++) {
         nodes.push_back(node_creater(g));
-        *(nodes[i/2]) > *(nodes[i]);
+        *(nodes[i / 2]) > *(nodes[i]);
     }
 
     return g;
@@ -75,7 +77,8 @@ WFGraphTask *wf_create_tree(RootCreater &&root_creater,
 
 template<typename RootCreater, typename NodeCreater>
 WFGraphTask *wf_create_net(RootCreater &&root_creater,
-                           NodeCreater &&node_creater) {
+                           NodeCreater &&node_creater)
+{
     WFGraphTask *g = WFTaskFactory::create_graph_task(nullptr);
     std::vector<WFGraphNode *> nodes;
     int last_start = 0, last_stop = 1;
@@ -88,7 +91,7 @@ WFGraphTask *wf_create_net(RootCreater &&root_creater,
     while (i < num_nodes) {
         cur_start = i;
         cur_stop = std::min(cur_start + group_size, num_nodes);
-        for(; i < cur_stop; i++) {
+        for (; i < cur_stop; i++) {
             nodes.push_back(node_creater(g));
 
             for (int j = last_start; j < last_stop; j++)
@@ -104,7 +107,8 @@ WFGraphTask *wf_create_net(RootCreater &&root_creater,
 
 template<typename RootCreater, typename NodeCreater>
 WFGraphTask *wf_create_flower(RootCreater &&root_creater,
-                              NodeCreater &&node_creater) {
+                              NodeCreater &&node_creater)
+{
     WFGraphTask *g = WFTaskFactory::create_graph_task(nullptr);
     WFGraphNode *a, *b;
     a = root_creater(g);
@@ -118,7 +122,8 @@ WFGraphTask *wf_create_flower(RootCreater &&root_creater,
 }
 
 template<typename RootFunc, typename NodeFunc>
-auto coke_create_chain(RootFunc &&root_func, NodeFunc &&node_func) {
+auto coke_create_chain(RootFunc &&root_func, NodeFunc &&node_func)
+{
     coke::DagBuilder<void> builder;
     coke::DagNodeRef a = builder.root();
     coke::DagNodeRef b = builder.node(root_func);
@@ -135,7 +140,8 @@ auto coke_create_chain(RootFunc &&root_func, NodeFunc &&node_func) {
 }
 
 template<typename RootFunc, typename NodeFunc>
-auto coke_create_tree(RootFunc &&root_func, NodeFunc &&node_func) {
+auto coke_create_tree(RootFunc &&root_func, NodeFunc &&node_func)
+{
     coke::DagBuilder<void> builder;
     std::vector<coke::DagNodeRef<void>> nodes;
     nodes.reserve(num_nodes);
@@ -146,14 +152,15 @@ auto coke_create_tree(RootFunc &&root_func, NodeFunc &&node_func) {
 
     for (int i = 1; i < num_nodes; i++) {
         nodes.push_back(builder.node(node_func));
-        nodes[i/2] > nodes[i];
+        nodes[i / 2] > nodes[i];
     }
 
     return builder.build();
 }
 
 template<typename RootFunc, typename NodeFunc>
-auto coke_create_net(RootFunc &&root_func, NodeFunc &&node_func) {
+auto coke_create_net(RootFunc &&root_func, NodeFunc &&node_func)
+{
     coke::DagBuilder<void> builder;
     std::vector<coke::DagNodeRef<void>> nodes;
     int last_start = 0, last_stop = 1;
@@ -184,7 +191,8 @@ auto coke_create_net(RootFunc &&root_func, NodeFunc &&node_func) {
 }
 
 template<typename RootFunc, typename NodeFunc>
-auto coke_create_flower(RootFunc &&root_func, NodeFunc &&node_func) {
+auto coke_create_flower(RootFunc &&root_func, NodeFunc &&node_func)
+{
     coke::DagBuilder<void> builder;
     coke::DagNodeRef root = builder.root();
     coke::DagNodeRef first = builder.node(root_func);
@@ -198,29 +206,34 @@ auto coke_create_flower(RootFunc &&root_func, NodeFunc &&node_func) {
     return builder.build();
 }
 
-auto wf_timer_creater(WFGraphTask *g) {
-    auto &x = g->create_graph_node(WFTaskFactory::create_go_task("", []{}));
+auto wf_timer_creater(WFGraphTask *g)
+{
+    auto &x = g->create_graph_node(WFTaskFactory::create_go_task("", [] {}));
     return &x;
 }
 
-auto wf_creater(WFGraphTask *g) {
+auto wf_creater(WFGraphTask *g)
+{
     auto *c = WFTaskFactory::create_repeater_task(
-        [i=0](WFRepeaterTask *) mutable -> SubTask * {
+        [i = 0](WFRepeaterTask *) mutable -> SubTask * {
             if (i++ < task_per_node) {
-                return WFTaskFactory::create_go_task("", []{});
+                return WFTaskFactory::create_go_task("", [] {});
             }
             return nullptr;
         },
-        nullptr
-    );
+        nullptr);
 
     auto &x = g->create_graph_node(c);
     return &x;
 }
 
-coke::Task<> coke_yield_func() { co_await coke::switch_go_thread(""); }
+coke::Task<> coke_yield_func()
+{
+    co_await coke::switch_go_thread("");
+}
 
-coke::Task<> coke_func() {
+coke::Task<> coke_func()
+{
     for (int i = 0; i < task_per_node; i++) {
         co_await coke::switch_go_thread("");
     }
@@ -229,8 +242,9 @@ coke::Task<> coke_func() {
 using wf_creater_t = decltype(wf_timer_creater);
 
 template<typename Creater>
-coke::Task<> do_bench_wf(Creater &&creater) {
-    auto create = [cnt=0, creater] (WFRepeaterTask *) mutable -> SubTask * {
+coke::Task<> do_bench_wf(Creater &&creater)
+{
+    auto create = [cnt = 0, creater](WFRepeaterTask *) mutable -> SubTask * {
         if (cnt++ < total)
             return creater(wf_timer_creater, wf_creater);
         return nullptr;
@@ -242,78 +256,94 @@ coke::Task<> do_bench_wf(Creater &&creater) {
 
 // benchmarks
 
-coke::Task<> bench_wf_chain() {
+coke::Task<> bench_wf_chain()
+{
     co_await do_bench_wf(wf_create_chain<wf_creater_t, wf_creater_t>);
 }
 
-coke::Task<> bench_coke_chain_once() {
+coke::Task<> bench_coke_chain_once()
+{
     for (int i = 0; i < total; i++) {
         auto g = coke_create_chain(coke_yield_func, coke_func);
         co_await g->run();
     }
 }
 
-coke::Task<> bench_coke_chain() {
+coke::Task<> bench_coke_chain()
+{
     auto g = coke_create_chain(coke_yield_func, coke_func);
     for (int i = 0; i < total; i++)
         co_await g->run();
 }
 
-coke::Task<> bench_wf_tree() {
+coke::Task<> bench_wf_tree()
+{
     co_await do_bench_wf(wf_create_tree<wf_creater_t, wf_creater_t>);
 }
 
-coke::Task<> bench_coke_tree_once() {
+coke::Task<> bench_coke_tree_once()
+{
     for (int i = 0; i < total; i++) {
         auto g = coke_create_tree(coke_yield_func, coke_func);
         co_await g->run();
     }
 }
 
-coke::Task<> bench_coke_tree() {
+coke::Task<> bench_coke_tree()
+{
     auto g = coke_create_tree(coke_yield_func, coke_func);
     for (int i = 0; i < total; i++)
         co_await g->run();
 }
 
-coke::Task<> bench_wf_net() {
+coke::Task<> bench_wf_net()
+{
     co_await do_bench_wf(wf_create_net<wf_creater_t, wf_creater_t>);
 }
 
-coke::Task<> bench_coke_net_once() {
+coke::Task<> bench_coke_net_once()
+{
     for (int i = 0; i < total; i++) {
         auto g = coke_create_net(coke_yield_func, coke_func);
         co_await g->run();
     }
 }
 
-coke::Task<> bench_coke_net() {
+coke::Task<> bench_coke_net()
+{
     auto g = coke_create_net(coke_yield_func, coke_func);
     for (int i = 0; i < total; i++)
         co_await g->run();
 }
 
-coke::Task<> bench_wf_flower() {
+coke::Task<> bench_wf_flower()
+{
     co_await do_bench_wf(wf_create_flower<wf_creater_t, wf_creater_t>);
 }
 
-coke::Task<> bench_coke_flower_once() {
+coke::Task<> bench_coke_flower_once()
+{
     for (int i = 0; i < total; i++) {
         auto g = coke_create_flower(coke_yield_func, coke_func);
         co_await g->run();
     }
 }
 
-coke::Task<> bench_coke_flower() {
+coke::Task<> bench_coke_flower()
+{
     auto g = coke_create_flower(coke_yield_func, coke_func);
     for (int i = 0; i < total; i++)
         co_await g->run();
 }
 
-coke::Task<> warm_up() { co_await coke::yield(); }
+coke::Task<> warm_up()
+{
+    co_await coke::yield();
+}
 
-using bench_func_t = coke::Task<>(*)();
-coke::Task<> do_benchmark(const char *name, bench_func_t func) {
+using bench_func_t = coke::Task<> (*)();
+coke::Task<> do_benchmark(const char *name, bench_func_t func)
+{
     int run_times = 0;
     long long start, total_cost = 0;
     std::vector<long long> costs;
@@ -334,11 +364,12 @@ coke::Task<> do_benchmark(const char *name, bench_func_t func) {
     data_distribution(costs, mean, stddev);
     tps = 1.0e3 * total / (mean + 1e-9);
 
-    table_line(std::cout, width, name, total_cost, run_times,
-               mean, stddev, (long)tps);
+    table_line(std::cout, width, name, total_cost, run_times, mean, stddev,
+               (long)tps);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::OptionParser args;
 
     args.add_integer(max_secs_per_test, 'm', "max-secs")
@@ -382,12 +413,11 @@ int main(int argc, char *argv[]) {
 
     coke::sync_wait(warm_up());
 
-    table_line(std::cout, width,
-               "name", "cost", "times",
-               "mean(ms)", "stddev", "per sec");
+    table_line(std::cout, width, "name", "cost", "times", "mean(ms)", "stddev",
+               "per sec");
     delimiter(std::cout, width, '-');
 
-#define DO_BENCHMARK(func) coke::sync_wait(do_benchmark(#func, bench_ ## func))
+#define DO_BENCHMARK(func) coke::sync_wait(do_benchmark(#func, bench_##func))
     DO_BENCHMARK(wf_chain);
     DO_BENCHMARK(coke_chain_once);
     DO_BENCHMARK(coke_chain);

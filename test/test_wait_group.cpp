@@ -14,23 +14,25 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <atomic>
-#include <thread>
 #include <gtest/gtest.h>
+#include <thread>
 
 #include "coke/coke.h"
 
 std::atomic<int> sleep_cnt{0};
 
-coke::Task<> sleep(coke::WaitGroup &wg) {
+coke::Task<> sleep(coke::WaitGroup &wg)
+{
     co_await coke::sleep(0.05);
     sleep_cnt.fetch_add(1);
     wg.done();
 }
 
-coke::Task<> zero_count() {
+coke::Task<> zero_count()
+{
     coke::WaitGroup wg;
     auto id1 = std::this_thread::get_id();
     int ret;
@@ -43,7 +45,8 @@ coke::Task<> zero_count() {
     EXPECT_EQ(id1, id2);
 }
 
-coke::Task<> normal_use() {
+coke::Task<> normal_use()
+{
     coke::WaitGroup wg;
     int ret;
 
@@ -59,7 +62,8 @@ coke::Task<> normal_use() {
     EXPECT_EQ(ret, coke::WAIT_GROUP_SUCCESS);
 }
 
-coke::Task<> multiple_use() {
+coke::Task<> multiple_use()
+{
     coke::WaitGroup wg;
     int ret;
 
@@ -78,19 +82,23 @@ coke::Task<> multiple_use() {
     EXPECT_EQ(ret, coke::WAIT_GROUP_SUCCESS);
 }
 
-TEST(WAIT_GROUP, zero_count) {
+TEST(WAIT_GROUP, zero_count)
+{
     coke::sync_wait(zero_count());
 }
 
-TEST(WAIT_GROUP, normal_use) {
+TEST(WAIT_GROUP, normal_use)
+{
     coke::sync_wait(normal_use());
 }
 
-TEST(WAIT_GROUP, multiple_use) {
+TEST(WAIT_GROUP, multiple_use)
+{
     coke::sync_wait(multiple_use());
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 2;
     s.handler_threads = 2;

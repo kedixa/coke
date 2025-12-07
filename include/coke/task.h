@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_TASK_H
 #define COKE_TASK_H
@@ -27,13 +27,13 @@ using detail::Task;
 
 /**
  * @brief Check whether T is coke::Task type.
-*/
+ */
 template<typename T>
 constexpr inline bool is_task_v = detail::TaskHelper<T>::value;
 
 /**
  * If T is coke::Task<U>, then TaskRetType<T> is U
-*/
+ */
 template<typename T>
 using TaskRetType = typename detail::TaskHelper<T>::RetType;
 
@@ -41,9 +41,10 @@ using TaskRetType = typename detail::TaskHelper<T>::RetType;
  * @brief Detach the coke::Task. Each valid coke::Task can be co awaited,
  *        detached, detached on series, detached on new series at most once.
  * @param task Valid coke::Task object.
-*/
+ */
 template<Cokeable T>
-void detach(Task<T> &&task) {
+void detach(Task<T> &&task)
+{
     task.detach();
 }
 

@@ -27,8 +27,8 @@ namespace coke {
 
 class ClientConnInfo;
 
-constexpr static std::size_t GENERIC_CLIENT_CONN_ID = 0;
-constexpr static std::size_t INVALID_CLIENT_INFO_ID = 0;
+inline constexpr std::size_t GENERIC_CLIENT_CONN_ID = 0;
+inline constexpr std::size_t INVALID_CLIENT_INFO_ID = 0;
 
 namespace detail {
 
@@ -75,7 +75,7 @@ public:
     static ClientConnInfo create_instance(const std::string &full_info,
                                           bool unique_conn);
 
-    ClientConnInfo()  = default;
+    ClientConnInfo() = default;
     ~ClientConnInfo() = default;
 
     /**

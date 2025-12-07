@@ -1,20 +1,22 @@
+#include <cerrno>
 #include <iostream>
 #include <string>
-#include <cerrno>
 
-#include "coke/task.h"
 #include "coke/http/http_server.h"
+#include "coke/task.h"
 
 /**
  * This example start an http server on port 8888, the server replies a simple
  * http response for each request.
-*/
+ */
 
-int main() {
+int main()
+{
     coke::HttpServer server([](coke::HttpServerContext ctx) -> coke::Task<> {
         coke::HttpResponse &resp = ctx.get_resp();
 
-        resp.append_output_body("<html><body>Thanks for using coke!</body></html>");
+        resp.append_output_body(
+            "<html><body>Thanks for using coke!</body></html>");
 
         // After setting data to resp, await reply to send it to requester.
         // ctx.reply should be awaited exactly once.

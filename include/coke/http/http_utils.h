@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_HTTP_UTILS_H
 #define COKE_HTTP_UTILS_H
@@ -27,7 +27,8 @@ namespace coke {
 
 using HttpMessage = protocol::HttpMessage;
 
-inline std::string_view http_body_view(const HttpMessage &message) {
+inline std::string_view http_body_view(const HttpMessage &message)
+{
     const void *body;
     std::size_t blen;
 
@@ -37,45 +38,44 @@ inline std::string_view http_body_view(const HttpMessage &message) {
         return std::string_view{};
 }
 
-
 struct HttpHeaderView {
     std::string_view name;
     std::string_view value;
 };
 
-
 class HttpHeaderCursor {
     struct iterator {
-        iterator() {
+        iterator()
+        {
             cursor.head = nullptr;
             cursor.next = nullptr;
         }
 
-        iterator(const HttpMessage &message) {
+        iterator(const HttpMessage &message)
+        {
             http_header_cursor_init(&cursor, message.get_parser());
             next();
         }
 
-        ~iterator() {
-            http_header_cursor_deinit(&cursor);
-        }
+        ~iterator() { http_header_cursor_deinit(&cursor); }
 
-        bool operator==(const iterator &o) const {
+        bool operator==(const iterator &o) const
+        {
             return cursor.next == o.cursor.next;
         }
 
-        bool operator!=(const iterator &o) const {
+        bool operator!=(const iterator &o) const
+        {
             return cursor.next != o.cursor.next;
         }
 
-        iterator &operator++() {
+        iterator &operator++()
+        {
             next();
             return *this;
         }
 
-        HttpHeaderView operator*() {
-            return data;
-        }
+        HttpHeaderView operator*() { return data; }
 
     private:
         bool next() noexcept;
@@ -86,7 +86,7 @@ class HttpHeaderCursor {
     };
 
 public:
-    HttpHeaderCursor(const HttpMessage &message) : message(message) { }
+    HttpHeaderCursor(const HttpMessage &message) : message(message) {}
 
     iterator begin() const { return iterator(message); }
     iterator end() const { return iterator(); }
@@ -98,12 +98,12 @@ private:
     const protocol::HttpMessage &message;
 };
 
-
 class HttpChunkCursor {
     struct iterator {
         iterator() { cur = end = nullptr; }
 
-        iterator(const char *body, std::size_t blen, bool chunked) {
+        iterator(const char *body, std::size_t blen, bool chunked)
+        {
             this->cur = body;
             this->end = body + blen;
             this->chunked = chunked;
@@ -111,15 +111,18 @@ class HttpChunkCursor {
             next();
         }
 
-        bool operator==(const iterator &o) const {
+        bool operator==(const iterator &o) const
+        {
             return cur == o.cur && end == o.end;
         }
 
-        bool operator!=(const iterator &o) const {
+        bool operator!=(const iterator &o) const
+        {
             return cur != o.cur || end != o.end;
         }
 
-        iterator &operator++() {
+        iterator &operator++()
+        {
             next();
             return *this;
         }
@@ -137,9 +140,10 @@ class HttpChunkCursor {
     };
 
 public:
-    HttpChunkCursor(const HttpMessage &message) : message(message) { }
+    HttpChunkCursor(const HttpMessage &message) : message(message) {}
 
-    iterator begin() const {
+    iterator begin() const
+    {
         std::string_view body = http_body_view(message);
         return iterator(body.data(), body.size(), message.is_chunked());
     }

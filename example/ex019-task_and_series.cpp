@@ -1,12 +1,12 @@
 #include <iostream>
 
-#include "workflow/WFTaskFactory.h"
 #include "workflow/WFFacilities.h"
+#include "workflow/WFTaskFactory.h"
 
-#include "coke/sleep.h"
 #include "coke/go.h"
-#include "coke/task.h"
 #include "coke/series.h"
+#include "coke/sleep.h"
+#include "coke/task.h"
 
 /**
  * This example shows how to switch freely between coke::Task and SeriesWork.
@@ -16,11 +16,13 @@
  * following way.
  */
 
-void func() {
+void func()
+{
     std::cout << "Go func running" << std::endl;
 }
 
-coke::Task<> do_something_with_coke(std::string str) {
+coke::Task<> do_something_with_coke(std::string str)
+{
     std::cout << "Coke sleep 0.1s" << std::endl;
     co_await coke::sleep(0.1);
 
@@ -39,7 +41,8 @@ coke::Task<> do_something_with_coke(std::string str) {
     // No more co_await operation, unless you know what's going to happen.
 }
 
-int main() {
+int main()
+{
     WFFacilities::WaitGroup wg(1);
     auto series_callback = [&wg](const SeriesWork *) {
         std::cout << "Series callback" << std::endl;
@@ -48,7 +51,8 @@ int main() {
 
     auto timer_callback = [](WFTimerTask *timer) {
         SeriesWork *series = series_of(timer);
-        std::cout << "First timer running on series " << (void *)series << std::endl;
+        std::cout << "First timer running on series " << (void *)series
+                  << std::endl;
 
         // Switch to coke::Task. Since detach is required, it is necessary to
         // ensure that there are no references in the parameters.
@@ -58,7 +62,8 @@ int main() {
         // operations are allowed after detach.
     };
 
-    auto *timer = WFTaskFactory::create_timer_task(0, 100'000'000, timer_callback);
+    auto *timer = WFTaskFactory::create_timer_task(0, 100'000'000,
+                                                   timer_callback);
     SeriesWork *series = Workflow::create_series_work(timer, series_callback);
     series->start();
 

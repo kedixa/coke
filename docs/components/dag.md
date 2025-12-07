@@ -171,37 +171,27 @@ class DagBuilder;
 提供强连接 (`>`) 和弱连接 (`>=`) 的操作符重载，简化节点间的连接语法。
 
 ```cpp
-template<typename T>
-coke::DagNodeRef<T> operator> (coke::DagNodeRef<T> l, coke::DagNodeRef<T> r);
+template<typename T, typename U>
+    requires requires(const DagNodeRef<T> &l, const U &r) { l.then(r); }
+const U &operator>(const DagNodeRef<T> &l, const U &r);
 
 template<typename T>
-const coke::DagNodeGroup<T> &operator> (coke::DagNodeRef<T> l, const coke::DagNodeGroup<T> &r);
+decltype(auto) operator>(const DagNodeGroup<T> &l, const DagNodeRef<T> &r);
 
 template<typename T>
-const coke::DagNodeVector<T> &operator> (coke::DagNodeRef<T> l, const coke::DagNodeVector<T> &r);
-
-template<typename T>
-coke::DagNodeRef<T> operator> (const coke::DagNodeGroup<T> &l, coke::DagNodeRef<T> r);
-
-template<typename T>
-coke::DagNodeRef<T> operator> (const coke::DagNodeVector<T> &l, coke::DagNodeRef<T> r);
+decltype(auto) operator>(const DagNodeVector<T> &l, const DagNodeRef<T> &r);
 ```
 
 ```cpp
-template<typename T>
-coke::DagNodeRef<T> operator>=(coke::DagNodeRef<T> l, coke::DagNodeRef<T> r);
+template<typename T, typename U>
+    requires requires(const DagNodeRef<T> &l, const U &r) { l.weak_then(r); }
+const U &operator>=(const DagNodeRef<T> &l, const U &r);
 
 template<typename T>
-const coke::DagNodeGroup<T> &operator>=(coke::DagNodeRef<T> l, const coke::DagNodeGroup<T> &r);
+decltype(auto) operator>=(const DagNodeGroup<T> &l, const DagNodeRef<T> &r);
 
 template<typename T>
-const coke::DagNodeVector<T> &operator>=(coke::DagNodeRef<T> l, const coke::DagNodeVector<T> &r);
-
-template<typename T>
-coke::DagNodeRef<T> operator>=(const coke::DagNodeGroup<T> &l, coke::DagNodeRef<T> r);
-
-template<typename T>
-coke::DagNodeRef<T> operator>=(const coke::DagNodeVector<T> &l, coke::DagNodeRef<T> r);
+decltype(auto) operator>=(const DagNodeVector<T> &l, const DagNodeRef<T> &r);
 ```
 
 ## 示例

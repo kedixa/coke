@@ -40,7 +40,7 @@ class RlruCache;
 
 namespace detail {
 
-enum : uint16_t {
+enum _rlru_state : uint16_t {
     RLRU_WAITING = 0,
     RLRU_SUCCESS = 1,
     RLRU_FAILED = 2,
@@ -60,7 +60,7 @@ struct RlruEntry : public detail::RefCounted<RlruEntry<K, V>> {
 
     template<typename U>
     RlruEntry(uint16_t state, RlruSharedData *data, const U &key) noexcept
-        : removed(false), state(state), data(data), last_access(0), key(key)
+        : removed(false), state(state), last_access(0), data(data), key(key)
     {
     }
 

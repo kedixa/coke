@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DAG_H
 #define COKE_DAG_H
@@ -30,8 +30,8 @@
 
 #include "coke/global.h"
 #include "coke/latch.h"
-#include "coke/task.h"
 #include "coke/sleep.h"
+#include "coke/task.h"
 
 namespace coke {
 
@@ -49,18 +49,19 @@ struct dag_node_func<void> {
     using type = std::function<Task<>()>;
 };
 
-
 class DagCounter {
 public:
     DagCounter() = default;
     DagCounter(const DagCounter &) = delete;
 
-    void init(dag_index_t count, bool weak) {
+    void init(dag_index_t count, bool weak)
+    {
         cnt.store(count + (weak == true), std::memory_order_relaxed);
         weak_flag.store(weak, std::memory_order_relaxed);
     }
 
-    bool count(bool weak) {
+    bool count(bool weak)
+    {
         if (weak && !weak_flag.exchange(false, std::memory_order_acq_rel))
             return false;
 
@@ -72,12 +73,9 @@ private:
     std::atomic<bool> weak_flag;
 };
 
-
 class DagContextBase {
 public:
-    DagContextBase(dag_index_t cnt)
-        : lt(cnt), counts(new DagCounter[cnt])
-    { }
+    DagContextBase(dag_index_t cnt) : lt(cnt), counts(new DagCounter[cnt]) {}
 
     DagContextBase(const DagContextBase &) = delete;
     ~DagContextBase() = default;
@@ -86,20 +84,19 @@ public:
 
     void count_down() { lt.count_down(); }
 
-    DagCounter &operator[] (std::size_t i) { return counts[i]; }
+    DagCounter &operator[](std::size_t i) { return counts[i]; }
 
 protected:
     Latch lt;
     std::unique_ptr<DagCounter[]> counts;
 };
 
-
 template<typename T>
 class DagContext : public DagContextBase {
     using node_func_t = typename dag_node_func<T>::type;
+
 public:
-    DagContext(dag_index_t cnt, T &data) : DagContextBase(cnt), data(data)
-    { }
+    DagContext(dag_index_t cnt, T &data) : DagContextBase(cnt), data(data) {}
 
     Task<> invoke(node_func_t &func) { return func(data); }
 
@@ -107,22 +104,19 @@ private:
     T &data;
 };
 
-
 template<>
 class DagContext<void> : public DagContextBase {
     using node_func_t = typename dag_node_func<void>::type;
+
 public:
-    DagContext(dag_index_t cnt) : DagContextBase(cnt)
-    { }
+    DagContext(dag_index_t cnt) : DagContextBase(cnt) {}
 
     Task<> invoke(node_func_t &func) { return func(); }
 };
 
-
 bool dag_check(const std::vector<std::vector<dag_index_t>> &outs,
                const std::vector<std::vector<dag_index_t>> &weak_outs,
-               std::vector<dag_index_t> &counts,
-               std::vector<bool> &weak_flags);
+               std::vector<dag_index_t> &counts, std::vector<bool> &weak_flags);
 
 void dag_dump(std::ostream &os,
               const std::vector<std::vector<dag_index_t>> &outs,
@@ -130,7 +124,6 @@ void dag_dump(std::ostream &os,
               const std::vector<std::string> &names);
 
 } // namespace detail
-
 
 template<typename T>
 using dag_node_func_t = typename detail::dag_node_func<T>::type;
@@ -144,7 +137,6 @@ class DagGraphBase;
 template<typename T>
 class DagNodeRef;
 
-
 template<typename T>
 class DagGraphBase {
 public:
@@ -157,22 +149,23 @@ public:
      * @brief Get whether current `DagGraph` is valid or not.
      *
      * @return true if valid, else false.
-    */
+     */
     bool valid() const { return is_valid; }
 
     /**
      * @brief Dump the current DAG to `os` in dot language.
-    */
-    void dump(std::ostream &os) const {
+     */
+    void dump(std::ostream &os) const
+    {
         detail::dag_dump(os, outs, weak_outs, names);
     }
 
 protected:
     struct Node {
         template<typename FUNC>
-        Node(FUNC &&func)
-            : func(std::forward<FUNC>(func))
-        { }
+        Node(FUNC &&func) : func(std::forward<FUNC>(func))
+        {
+        }
 
         node_func_t func;
     };
@@ -181,7 +174,8 @@ protected:
 
     DagGraphBase() : is_valid(false) { node(nullptr, "root"); }
 
-    void start(detail::DagContext<T> &ctx) {
+    void start(detail::DagContext<T> &ctx)
+    {
         std::size_t n = nodes.size();
         for (std::size_t i = 0; i < n; i++)
             ctx[i].init(counters[i], weak_flags[i]);
@@ -189,7 +183,8 @@ protected:
         invoke(ctx, 0).detach();
     }
 
-    Task<> invoke(detail::DagContext<T> &ctx, dag_index_t id) {
+    Task<> invoke(detail::DagContext<T> &ctx, dag_index_t id)
+    {
         // TODO yield when recursive
 
         auto &func = nodes[id]->func;
@@ -208,7 +203,8 @@ protected:
     }
 
     template<typename FUNC>
-    dag_index_t node(FUNC &&func, const std::string &name) {
+    dag_index_t node(FUNC &&func, const std::string &name)
+    {
         dag_index_t id = nodes.size();
         node_ptr_t ptr(new Node(std::forward<FUNC>(func)));
         nodes.push_back(std::move(ptr));
@@ -218,7 +214,8 @@ protected:
         return id;
     }
 
-    void build() {
+    void build()
+    {
         is_valid = detail::dag_check(outs, weak_outs, counters, weak_flags);
     }
 
@@ -236,7 +233,6 @@ protected:
     friend DagNodeRef<T>;
 };
 
-
 template<typename T>
 class DagGraph : public DagGraphBase<T> {
     using Base = DagGraphBase<T>;
@@ -244,7 +240,7 @@ class DagGraph : public DagGraphBase<T> {
 public:
     /**
      * @brief DagGraph is not copy or move constructible.
-    */
+     */
     DagGraph(const DagGraph &) = delete;
 
     ~DagGraph() = default;
@@ -255,8 +251,9 @@ public:
      *        after DagGraph::run ends.
      *
      * @pre Current DagGraph is valid.
-    */
-    Task<> run(T &data) {
+     */
+    Task<> run(T &data)
+    {
         detail::DagContext<T> ctx(Base::nodes.size(), data);
         Base::start(ctx);
         co_await ctx.wait();
@@ -266,12 +263,11 @@ private:
     /**
      * @brief DagGraph cannot be constructed directly and must be created
      *        through DagBuilder.
-    */
-    DagGraph() : Base() { }
+     */
+    DagGraph() : Base() {}
 
     friend class DagBuilder<T>;
 };
-
 
 template<>
 class DagGraph<void> : public DagGraphBase<void> {
@@ -281,73 +277,78 @@ public:
     DagGraph(const DagGraph &) = delete;
     ~DagGraph() = default;
 
-    Task<> run() {
+    Task<> run()
+    {
         detail::DagContext<void> ctx(Base::nodes.size());
         Base::start(ctx);
         co_await ctx.wait();
     }
 
 private:
-    DagGraph() : Base() { }
+    DagGraph() : Base() {}
 
     friend class DagBuilder<void>;
 };
 
-
 /**
  * DagNodeRef
-*/
+ */
 template<typename T>
 class DagNodeRef {
 public:
     DagNodeRef(const DagNodeRef &) = default;
-    DagNodeRef &operator= (const DagNodeRef &) = default;
+    DagNodeRef &operator=(const DagNodeRef &) = default;
     ~DagNodeRef() = default;
 
     template<typename FUNC>
-        requires std::constructible_from<dag_node_func_t<T>, FUNC&&>
-    DagNodeRef then(FUNC &&func) const {
+        requires std::constructible_from<dag_node_func_t<T>, FUNC &&>
+    DagNodeRef then(FUNC &&func) const
+    {
         auto r = builder->node(std::forward<FUNC>(func));
         return then(r);
     }
 
     template<typename FUNC>
-        requires std::constructible_from<dag_node_func_t<T>, FUNC&&>
-    DagNodeRef weak_then(FUNC &&func) const {
+        requires std::constructible_from<dag_node_func_t<T>, FUNC &&>
+    DagNodeRef weak_then(FUNC &&func) const
+    {
         auto r = builder->node(std::forward<FUNC>(func));
         return weak_then(r);
     }
 
-    DagNodeRef then(DagNodeRef r) const {
-        return builder->connect(*this, r);
-    }
+    DagNodeRef then(DagNodeRef r) const { return builder->connect(*this, r); }
 
-    DagNodeRef weak_then(DagNodeRef r) const {
+    DagNodeRef weak_then(DagNodeRef r) const
+    {
         return builder->weak_connect(*this, r);
     }
 
     using NodeGroup = std::initializer_list<DagNodeRef<T>>;
     using NodeVector = std::vector<DagNodeRef<T>>;
 
-    const NodeGroup &then(const NodeGroup &group) {
+    const NodeGroup &then(const NodeGroup &group) const
+    {
         for (const auto &r : group)
             then(r);
         return group;
     }
 
-    const NodeGroup &weak_then(const NodeGroup &group) {
+    const NodeGroup &weak_then(const NodeGroup &group) const
+    {
         for (const auto &r : group)
             weak_then(r);
         return group;
     }
 
-    const NodeVector &then(const NodeVector &vec) {
+    const NodeVector &then(const NodeVector &vec) const
+    {
         for (const auto &r : vec)
             then(r);
         return vec;
     }
 
-    const NodeVector &weak_then(const NodeVector &vec) {
+    const NodeVector &weak_then(const NodeVector &vec) const
+    {
         for (const auto &r : vec)
             weak_then(r);
         return vec;
@@ -356,7 +357,8 @@ public:
 private:
     DagNodeRef(DagBuilder<T> *builder, dag_index_t id)
         : builder(builder), id(id)
-    { }
+    {
+    }
 
     DagBuilder<T> *builder;
     dag_index_t id;
@@ -364,10 +366,9 @@ private:
     friend class DagBuilder<T>;
 };
 
-
 /**
  * DagBuilder is used to create DagGraph.
-*/
+ */
 template<typename T>
 class DagBuilder {
 public:
@@ -375,7 +376,7 @@ public:
 
     /**
      * @brief Get the DagNodeRef of root node.
-    */
+     */
     DagNodeRef<T> root() { return DagNodeRef<T>(this, 0); }
 
     /**
@@ -386,26 +387,29 @@ public:
      * @param name The name of the created node, used in DagGraph<T>::dump.
      *
      * @return DagNodeRef of the created node.
-    */
+     */
     template<typename FUNC>
-        requires std::constructible_from<dag_node_func_t<T>, FUNC&&>
-    DagNodeRef<T> node(FUNC &&func, const std::string &name = "") {
+        requires std::constructible_from<dag_node_func_t<T>, FUNC &&>
+    DagNodeRef<T> node(FUNC &&func, const std::string &name = "")
+    {
         dag_index_t id = graph->node(std::forward<FUNC>(func), name);
         return DagNodeRef(this, id);
     }
 
     /**
      * @brief Strongly connect l -> r.
-    */
-    DagNodeRef<T> connect(DagNodeRef<T> l, DagNodeRef<T> r) const {
+     */
+    DagNodeRef<T> connect(DagNodeRef<T> l, DagNodeRef<T> r) const
+    {
         graph->outs[l.id].push_back(r.id);
         return r;
     }
 
     /**
      * @brief Weakly connect l -> r.
-    */
-    DagNodeRef<T> weak_connect(DagNodeRef<T> l, DagNodeRef<T> r) const {
+     */
+    DagNodeRef<T> weak_connect(DagNodeRef<T> l, DagNodeRef<T> r) const
+    {
         graph->weak_outs[l.id].push_back(r.id);
         return r;
     }
@@ -419,8 +423,9 @@ public:
      * @post DagBuilder and its DagGraph are no longer related in any way.
      *       Except for the destructor, any function of this DagBuilder and the
      *       DagNodeRef constructed from it can no longer be called.
-    */
-    std::shared_ptr<DagGraph<T>> build() {
+     */
+    std::shared_ptr<DagGraph<T>> build()
+    {
         auto g = graph;
         graph.reset();
         g->build();
@@ -436,7 +441,7 @@ private:
 /**
  * Dag Operators, `operator >` means strong connect, `operator >=` means weak
  * connect.
-*/
+ */
 
 template<typename T>
 using DagNodeGroup = typename DagNodeRef<T>::NodeGroup;
@@ -444,62 +449,52 @@ using DagNodeGroup = typename DagNodeRef<T>::NodeGroup;
 template<typename T>
 using DagNodeVector = typename DagNodeRef<T>::NodeVector;
 
-template<typename T>
-DagNodeRef<T> operator> (DagNodeRef<T> l, DagNodeRef<T> r) {
-    return l.then(r);
+template<typename T, typename U>
+    requires requires(const DagNodeRef<T> &l, const U &r) { l.then(r); }
+const U &operator>(const DagNodeRef<T> &l, const U &r)
+{
+    l.then(r);
+    return r;
 }
 
 template<typename T>
-const DagNodeGroup<T> &operator> (DagNodeRef<T> l, const DagNodeGroup<T> &r) {
-    return l.then(r);
-}
-
-template<typename T>
-const DagNodeVector<T> &operator> (DagNodeRef<T> l, const DagNodeVector<T> &r) {
-    return l.then(r);
-}
-
-template<typename T>
-DagNodeRef<T> operator> (const DagNodeGroup<T> &l, DagNodeRef<T> r) {
+decltype(auto) operator>(const DagNodeGroup<T> &l, const DagNodeRef<T> &r)
+{
     for (const auto &x : l)
         x.then(r);
-    return r;
+    return (r);
 }
 
 template<typename T>
-DagNodeRef<T> operator> (const DagNodeVector<T> &l, DagNodeRef<T> r) {
+decltype(auto) operator>(const DagNodeVector<T> &l, const DagNodeRef<T> &r)
+{
     for (const auto &x : l)
         x.then(r);
+    return (r);
+}
+
+template<typename T, typename U>
+    requires requires(const DagNodeRef<T> &l, const U &r) { l.weak_then(r); }
+const U &operator>=(const DagNodeRef<T> &l, const U &r)
+{
+    l.weak_then(r);
     return r;
 }
 
 template<typename T>
-DagNodeRef<T> operator>= (DagNodeRef<T> l, DagNodeRef<T> r) {
-    return l.weak_then(r);
-}
-
-template<typename T>
-const DagNodeGroup<T> &operator>= (DagNodeRef<T> l, const DagNodeGroup<T> &r) {
-    return l.weak_then(r);
-}
-
-template<typename T>
-const DagNodeVector<T> &operator>= (DagNodeRef<T> l, const DagNodeVector<T> &r) {
-    return l.weak_then(r);
-}
-
-template<typename T>
-DagNodeRef<T> operator>= (const DagNodeGroup<T> &l, DagNodeRef<T> r) {
+decltype(auto) operator>=(const DagNodeGroup<T> &l, const DagNodeRef<T> &r)
+{
     for (const auto &x : l)
         x.weak_then(r);
-    return r;
+    return (r);
 }
 
 template<typename T>
-DagNodeRef<T> operator>= (const DagNodeVector<T> &l, DagNodeRef<T> r) {
+decltype(auto) operator>=(const DagNodeVector<T> &l, const DagNodeRef<T> &r)
+{
     for (const auto &x : l)
         x.weak_then(r);
-    return r;
+    return (r);
 }
 
 } // namespace coke

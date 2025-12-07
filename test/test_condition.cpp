@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
-#include <vector>
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "coke/coke.h"
 
@@ -27,7 +27,8 @@ std::mutex mtx;
 coke::Condition cv;
 int x, y;
 
-coke::Task<int> cv_wait() {
+coke::Task<int> cv_wait()
+{
     int ret;
 
     std::unique_lock<std::mutex> lk(mtx);
@@ -37,7 +38,8 @@ coke::Task<int> cv_wait() {
     co_return x;
 }
 
-coke::Task<> test_wait() {
+coke::Task<> test_wait()
+{
     x = 0;
     y = 1;
 
@@ -58,7 +60,8 @@ coke::Task<> test_wait() {
     EXPECT_EQ(fut.get(), y);
 }
 
-coke::Task<int> cv_wait_for(std::chrono::nanoseconds ns) {
+coke::Task<int> cv_wait_for(std::chrono::nanoseconds ns)
+{
     int ret;
 
     std::unique_lock<std::mutex> lk(mtx);
@@ -75,7 +78,8 @@ coke::Task<int> cv_wait_for(std::chrono::nanoseconds ns) {
     co_return x;
 }
 
-coke::Task<> test_wait_for() {
+coke::Task<> test_wait_for()
+{
     x = 0;
     y = 1;
 
@@ -96,15 +100,18 @@ coke::Task<> test_wait_for() {
     EXPECT_EQ(fut.get(), y);
 }
 
-TEST(CONDITION, wait) {
+TEST(CONDITION, wait)
+{
     coke::sync_wait(test_wait());
 }
 
-TEST(CONDITION, wait_for) {
+TEST(CONDITION, wait_for)
+{
     coke::sync_wait(test_wait_for());
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 2;
     s.handler_threads = 2;

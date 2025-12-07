@@ -1,13 +1,59 @@
-if (NOT COKE_TRY_STATIC_WORKFLOW)
-    set(_COKE_BACKUP_CMAKE_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.lib;" ${CMAKE_FIND_LIBRARY_SUFFIXES})
-    find_library(COKE_TRY_STATIC_WORKFLOW workflow PATHS ${WORKFLOW_LIB_DIR})
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ${BACKUP_CMAKE_LIBRARY_SUFFIXES})
+# Find workflow library and create target coke-workflow-static,
+# coke-workflow-shared.
 
-    if (COKE_TRY_STATIC_WORKFLOW STREQUAL "COKE_TRY_STATIC_WORKFLOW-NOTFOUND")
-        unset(COKE_TRY_STATIC_WORKFLOW)
-        message(FATAL_ERROR "Workflow Not Found")
+if (NOT TARGET coke-workflow-static)
+    find_library(
+        COKE_STATIC_WORKFLOW_LIBRARY
+        NAMES
+            libworkflow.a libworkflow.lib
+        PATHS ${WORKFLOW_LIB_DIR}
+    )
+
+    if (COKE_STATIC_WORKFLOW_LIBRARY)
+        add_library(coke-workflow-static STATIC IMPORTED GLOBAL)
+        set_target_properties(coke-workflow-static
+            PROPERTIES
+                IMPORTED_LOCATION ${COKE_STATIC_WORKFLOW_LIBRARY}
+                INTERFACE_INCLUDE_DIRECTORIES ${WORKFLOW_INCLUDE_DIR}
+        )
+
+        message("Find static Workflow: " ${COKE_STATIC_WORKFLOW_LIBRARY})
+    endif ()
+endif ()
+
+if (NOT TARGET coke-workflow-shared)
+    find_library(
+        COKE_SHARED_WORKFLOW_LIBRARY
+        NAMES
+            libworkflow.so libworkflow.dylib libworkflow.dll
+        PATHS ${WORKFLOW_LIB_DIR}
+    )
+
+    if (COKE_SHARED_WORKFLOW_LIBRARY)
+        add_library(coke-workflow-shared SHARED IMPORTED GLOBAL)
+        set_target_properties(coke-workflow-shared
+            PROPERTIES
+                IMPORTED_LOCATION ${COKE_SHARED_WORKFLOW_LIBRARY}
+                INTERFACE_INCLUDE_DIRECTORIES ${WORKFLOW_INCLUDE_DIR}
+        )
+
+        message("Find shared Workflow: " ${COKE_SHARED_WORKFLOW_LIBRARY})
+    endif ()
+endif ()
+
+if (NOT TARGET coke-workflow)
+    get_target_property(coke_target_type coke::coke TYPE)
+    if (coke_target_type STREQUAL "STATIC_LIBRARY")
+        set(coke_is_static TRUE)
     else ()
-        message("Found Workflow: " ${COKE_TRY_STATIC_WORKFLOW})
-    endif()
+        set(coke_is_static FALSE)
+    endif ()
+
+    if (TARGET coke-workflow-static AND coke_is_static)
+        add_library(coke-workflow ALIAS coke-workflow-static)
+    elseif (TARGET coke-workflow-shared)
+        add_library(coke-workflow ALIAS coke-workflow-shared)
+    else ()
+        message(FATAL_ERROR "Workflow Not Found")
+    endif ()
 endif ()

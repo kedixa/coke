@@ -41,13 +41,13 @@ namespace coke {
  * @brief NULL_SHORT_NAME is used to indicate that the option doesn't has short
  *        name, its value is always char(0).
  */
-constexpr const char NULL_SHORT_NAME = 0;
+inline constexpr const char NULL_SHORT_NAME = 0;
 
 /**
  * @brief NULL_LONG_NAME is used to indicate that the option doesn't has long
  *        name, its value is always empty string.
  */
-constexpr const char *NULL_LONG_NAME = "";
+inline constexpr const char *NULL_LONG_NAME = "";
 
 namespace detail {
 

@@ -1,9 +1,9 @@
+#include <cctype>
+#include <cerrno>
+#include <fcntl.h>
 #include <iostream>
 #include <string>
-#include <cerrno>
-#include <cctype>
 #include <unistd.h>
-#include <fcntl.h>
 
 #include "coke/coke.h"
 
@@ -14,9 +14,10 @@ unsigned char buf[BUF_SIZE];
  * This example shows how to read data from file, count its words and lines,
  * the file maybe very large, so we read up to `BUF_SIZE` bytes at a time,
  * and read until FileResult::nbytes == 0 (which means EOF).
-*/
+ */
 
-coke::Task<> word_count(const std::string &fn) {
+coke::Task<> word_count(const std::string &fn)
+{
     coke::FileResult res;
     int fd;
     off_t offset = 0;
@@ -58,14 +59,16 @@ coke::Task<> word_count(const std::string &fn) {
                   << "Lines: " << lines << std::endl;
     }
     else {
-        std::cerr << "ERROR: state:" << res.state << " error:" << res.error << std::endl;
+        std::cerr << "ERROR: state:" << res.state << " error:" << res.error
+                  << std::endl;
         std::cerr << coke::get_error_string(res.state, res.error) << std::endl;
     }
 
     close(fd);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     if (argc != 2 || argv[1] == nullptr) {
         std::cerr << "Usage: " << argv[0] << " file.txt" << std::endl;
         return 1;

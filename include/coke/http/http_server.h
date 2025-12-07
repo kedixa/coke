@@ -14,15 +14,15 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_HTTP_SERVER_H
 #define COKE_HTTP_SERVER_H
 
 #include "coke/net/basic_server.h"
 
-#include "workflow/WFHttpServer.h"
 #include "workflow/HttpMessage.h"
+#include "workflow/WFHttpServer.h"
 
 namespace coke {
 
@@ -32,7 +32,7 @@ using HttpServerContext = ServerContext<HttpRequest, HttpResponse>;
 using HttpReplyResult = NetworkReplyResult;
 
 struct HttpServerParams : public ServerParams {
-    HttpServerParams() : ServerParams(HTTP_SERVER_PARAMS_DEFAULT) { }
+    HttpServerParams() : ServerParams(HTTP_SERVER_PARAMS_DEFAULT) {}
     ~HttpServerParams() = default;
 };
 
@@ -40,11 +40,14 @@ class HttpServer : public BasicServer<HttpRequest, HttpResponse> {
 public:
     HttpServer(const HttpServerParams &params, ProcessorType co_proc)
         : BasicServer<HttpRequest, HttpResponse>(params, std::move(co_proc))
-    { }
+    {
+    }
 
     HttpServer(ProcessorType co_proc)
-        : BasicServer<HttpRequest, HttpResponse>(HttpServerParams(), std::move(co_proc))
-    { }
+        : BasicServer<HttpRequest, HttpResponse>(HttpServerParams(),
+                                                 std::move(co_proc))
+    {
+    }
 };
 
 } // namespace coke

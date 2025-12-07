@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
-#include <cstdio>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <gtest/gtest.h>
 
@@ -27,7 +27,8 @@ constexpr size_t BUF_SIZE = 1024;
 char buf[BUF_SIZE];
 char data[BUF_SIZE];
 
-coke::Task<> read_write(int fd) {
+coke::Task<> read_write(int fd)
+{
     EXPECT_GE(fd, 0);
     if (fd < 0)
         co_return;
@@ -48,7 +49,8 @@ coke::Task<> read_write(int fd) {
     EXPECT_EQ(cmp, 0);
 }
 
-TEST(FILEIO, read_write) {
+TEST(FILEIO, read_write)
+{
     std::FILE *file = tmpfile();
 
     EXPECT_NE(file, nullptr);
@@ -59,7 +61,8 @@ TEST(FILEIO, read_write) {
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 2;
     s.handler_threads = 2;

@@ -14,13 +14,13 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
-#include <cstdint>
 #include <cerrno>
+#include <cstdint>
 #include <cstdlib>
-#include <strings.h>
 #include <openssl/evp.h>
+#include <strings.h>
 
 #include "coke/http/http_client.h"
 #include "coke/http/http_utils.h"
@@ -29,7 +29,7 @@
 
 namespace coke {
 
-static int encode_auth(const char *p, std::string& auth)
+static int encode_auth(const char *p, std::string &auth)
 {
     std::size_t len = strlen(p);
     std::size_t base64_len = (len + 2) / 3 * 4;
@@ -46,7 +46,8 @@ static int encode_auth(const char *p, std::string& auth)
     return 0;
 }
 
-static std::string_view get_http_host(coke::HttpRequest &req) {
+static std::string_view get_http_host(coke::HttpRequest &req)
+{
     constexpr int host_len = 4;
 
     for (const coke::HttpHeaderView &header : coke::HttpHeaderCursor(req)) {
@@ -58,9 +59,11 @@ static std::string_view get_http_host(coke::HttpRequest &req) {
     return std::string_view();
 }
 
-HttpClient::AwaiterType
-HttpClient::request(const std::string &url, const std::string &method,
-                    const HttpHeader &headers, std::string body) {
+HttpClient::AwaiterType HttpClient::request(const std::string &url,
+                                            const std::string &method,
+                                            const HttpHeader &headers,
+                                            std::string body)
+{
     ParsedURI uri;
     HttpRequest req;
     std::string request_uri("/");
@@ -83,9 +86,9 @@ HttpClient::request(const std::string &url, const std::string &method,
     return create_task(url, &req);
 }
 
-
-HttpClient::AwaiterType
-HttpClient::create_task(const std::string &url, ReqType *req) noexcept {
+HttpClient::AwaiterType HttpClient::create_task(const std::string &url,
+                                                ReqType *req) noexcept
+{
     WFHttpTask *task;
     HttpRequest *treq;
     bool https;
@@ -97,11 +100,14 @@ HttpClient::create_task(const std::string &url, ReqType *req) noexcept {
     // redirect disabled when http url with proxy
 
     if (has_proxy && https)
-        task = WFTaskFactory::create_http_task(url, proxy, params.redirect_max, params.retry_max, nullptr);
+        task = WFTaskFactory::create_http_task(url, proxy, params.redirect_max,
+                                               params.retry_max, nullptr);
     else if (has_proxy)
-        task = WFTaskFactory::create_http_task(proxy, 0, params.retry_max, nullptr);
+        task = WFTaskFactory::create_http_task(proxy, 0, params.retry_max,
+                                               nullptr);
     else
-        task = WFTaskFactory::create_http_task(url, params.redirect_max, params.retry_max, nullptr);
+        task = WFTaskFactory::create_http_task(url, params.redirect_max,
+                                               params.retry_max, nullptr);
 
     treq = task->get_req();
 
@@ -128,10 +134,11 @@ HttpClient::create_task(const std::string &url, ReqType *req) noexcept {
     if (has_proxy && !https) {
         ParsedURI proxy_uri;
         if (URIParser::parse(proxy, proxy_uri) == 0) {
-            if (proxy_uri.userinfo  && proxy_uri.userinfo[0]) {
+            if (proxy_uri.userinfo && proxy_uri.userinfo[0]) {
                 std::string proxy_auth;
                 if (encode_auth(proxy_uri.userinfo, proxy_auth) == 0)
-                    treq->add_header_pair("Proxy-Authorization", proxy_auth.data());
+                    treq->add_header_pair("Proxy-Authorization",
+                                          proxy_auth.data());
             }
         }
 
@@ -154,7 +161,8 @@ HttpClient::create_task(const std::string &url, ReqType *req) noexcept {
     return AwaiterType(task);
 }
 
-bool HttpHeaderCursor::iterator::next() noexcept {
+bool HttpHeaderCursor::iterator::next() noexcept
+{
     if (!cursor.next)
         return false;
 
@@ -173,7 +181,8 @@ bool HttpHeaderCursor::iterator::next() noexcept {
     return true;
 }
 
-bool HttpChunkCursor::iterator::next() noexcept {
+bool HttpChunkCursor::iterator::next() noexcept
+{
     if (cur == end) {
         cur = end = nullptr;
         return false;
@@ -204,7 +213,7 @@ bool HttpChunkCursor::iterator::next() noexcept {
         return false;
     }
 
-    chunk = std::string_view(cur+2, len);
+    chunk = std::string_view(cur + 2, len);
     cur += len + 4;
     return true;
 }

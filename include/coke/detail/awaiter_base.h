@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_AWAITER_BASE_H
 #define COKE_DETAIL_AWAITER_BASE_H
@@ -32,7 +32,7 @@ namespace coke {
  *
  * Awaitable objects are used to wait for a workflow task and notify the caller
  * of its results.
-*/
+ */
 class AwaiterBase {
     static void *create_series(SubTask *first);
 
@@ -45,20 +45,22 @@ public:
         : hdl(std::exchange(that.hdl, nullptr)),
           subtask(std::exchange(that.subtask, nullptr)),
           in_series(std::exchange(that.in_series, false))
-    { }
+    {
+    }
 
     /**
      * @brief If the task associated with the current awaiter has not been
      *        started, the default action of the destructor is to delete task.
-    */
+     */
     virtual ~AwaiterBase();
 
     /**
      * @brief AwaiterBase is not copyable.
-    */
-    AwaiterBase &operator= (const AwaiterBase &) = delete;
+     */
+    AwaiterBase &operator=(const AwaiterBase &) = delete;
 
-    AwaiterBase &operator=(AwaiterBase &&that) noexcept {
+    AwaiterBase &operator=(AwaiterBase &&that) noexcept
+    {
         if (this != &that) {
             std::swap(this->hdl, that.hdl);
             std::swap(this->subtask, that.subtask);
@@ -72,7 +74,7 @@ public:
      * @brief Return whether this awaiter is already ready.
      *
      * If the awaiter not maintains a task, it will not be suspend.
-    */
+     */
     bool await_ready() { return subtask == nullptr; }
 
     /**
@@ -80,9 +82,10 @@ public:
      *        awaiter). If PromiseType is CoPromise, task will run on the same
      *        series in h, otherwise on a new series.
      * @tparam PromiseType Type of promise.
-    */
+     */
     template<typename PromiseType>
-    void await_suspend(std::coroutine_handle<PromiseType> h) {
+    void await_suspend(std::coroutine_handle<PromiseType> h)
+    {
         this->hdl = h;
 
         if constexpr (IsCokePromise<PromiseType>) {
@@ -113,8 +116,9 @@ public:
      *        coroutine.
      *
      * @pre this->subtask is done.
-    */
-    virtual void done() {
+     */
+    virtual void done()
+    {
         subtask = nullptr;
         hdl.resume();
     }
@@ -128,7 +132,7 @@ protected:
      * @param is_new Whether this is the first awaiter in this coroutine. If
      *        `is_new` is true, this->subtask is the first task of the series,
      *        and the series is not started now.
-    */
+     */
     virtual void suspend(void *series, bool is_new = false);
 
     /**
@@ -141,8 +145,9 @@ protected:
      *        in the server's series.
      *        It is bad behavious if `in_series` is true but not in current
      *        coroutine's series.
-    */
-    void set_task(SubTask *subtask, bool in_series = false) noexcept {
+     */
+    void set_task(SubTask *subtask, bool in_series = false) noexcept
+    {
         this->subtask = subtask;
         this->in_series = in_series;
     }

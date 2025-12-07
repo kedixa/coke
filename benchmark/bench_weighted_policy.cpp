@@ -33,8 +33,8 @@ std::vector<int> width{20, 10, 10, 8, 6, 8, 8, 10};
 
 long long total = 1000000;
 int concurrency = 4;
-int times       = 1;
-bool yes        = false;
+int times = 1;
+bool yes = false;
 
 bool next(long long &cur)
 {
@@ -90,7 +90,7 @@ void do_benchmark(const char *name, coke::NSPolicy *policy, int num_addr,
 
     for (int i = 0; i < times; i++) {
         current = 0;
-        start   = current_msec();
+        start = current_msec();
 
         bench_policy(policy, fail_ratio);
 
@@ -138,10 +138,10 @@ int main(int argc, char *argv[])
 
     coke::NSPolicyParams params;
     params.break_timeout_ms = 0;
-    params.max_fail_marks   = 1;
+    params.max_fail_marks = 1;
 
     constexpr int N = 4;
-    int naddrs[N]   = {1000, 10000, 100000, 1000000};
+    int naddrs[N] = {1000, 10000, 100000, 1000000};
 
     using coke::WeightedLeastConnPolicy;
     using coke::WeightedRandomPolicy;

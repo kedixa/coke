@@ -14,12 +14,12 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_FILEIO_H
 #define COKE_FILEIO_H
 
-#include <sys/uio.h>  // struct iovec
+#include <sys/uio.h> // struct iovec
 
 #include "coke/basic_awaiter.h"
 
@@ -29,11 +29,11 @@ namespace coke {
  * @brief Return value type of file input and output operations.
  * When `state` is not coke::STATE_SUCCESS, `error` means system error errno.
  * When file io success, `nbytes` indicates the number of bytes read or written.
-*/
+ */
 struct FileResult {
     int state;
     int error;
-    long nbytes;  // the number of bytes read or written
+    long nbytes;
 };
 
 class [[nodiscard]] FileAwaiter : public BasicAwaiter<FileResult> {

@@ -14,14 +14,14 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_HTTP_CLIENT_H
 #define COKE_HTTP_CLIENT_H
 
-#include <vector>
-#include <utility>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "coke/net/network.h"
 
@@ -35,15 +35,14 @@ using HttpAwaiter = NetworkAwaiter<HttpRequest, HttpResponse>;
 using HttpResult = HttpAwaiter::ResultType;
 
 struct HttpClientParams {
-    int retry_max           = 0;
-    int send_timeout        = -1;
-    int receive_timeout     = -1;
-    int keep_alive_timeout  = 60 * 1000;
+    int retry_max = 0;
+    int send_timeout = -1;
+    int receive_timeout = -1;
+    int keep_alive_timeout = 60 * 1000;
 
-    int redirect_max        = 0;
+    int redirect_max = 0;
     std::string proxy;
 };
-
 
 class HttpClient {
 public:
@@ -53,18 +52,20 @@ public:
     using HttpHeader = std::vector<std::pair<std::string, std::string>>;
 
 public:
-    explicit
-    HttpClient(const HttpClientParams &params = HttpClientParams())
+    explicit HttpClient(const HttpClientParams &params = HttpClientParams())
         : params(params)
-    { }
+    {
+    }
 
     virtual ~HttpClient() = default;
 
-    AwaiterType request(const std::string &url) {
+    AwaiterType request(const std::string &url)
+    {
         return create_task(url, nullptr);
     }
 
-    AwaiterType request(const std::string &url, ReqType &&req) {
+    AwaiterType request(const std::string &url, ReqType &&req)
+    {
         return create_task(url, &req);
     }
 
@@ -72,7 +73,8 @@ public:
                         const HttpHeader &headers, std::string body);
 
 protected:
-    virtual AwaiterType create_task(const std::string &url, ReqType *req) noexcept;
+    virtual AwaiterType create_task(const std::string &url,
+                                    ReqType *req) noexcept;
 
 protected:
     HttpClientParams params;

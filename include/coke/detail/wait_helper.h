@@ -14,30 +14,26 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_DETAIL_WAIT_HELPER_H
 #define COKE_DETAIL_WAIT_HELPER_H
 
 #include <cstddef>
+#include <memory>
 #include <type_traits>
 #include <vector>
-#include <memory>
 
-#include "coke/task.h"
 #include "coke/latch.h"
+#include "coke/task.h"
 
 namespace coke::detail {
 
 template<typename T>
 struct ValueHelper {
-    void set_value(T &&t) {
-        value = std::move(t);
-    }
+    void set_value(T &&t) { value = std::move(t); }
 
-    T get_value() {
-        return std::move(value);
-    }
+    T get_value() { return std::move(value); }
 
 private:
     T value;
@@ -45,24 +41,18 @@ private:
 
 template<>
 struct ValueHelper<void> {
-    void get_value() { }
+    void get_value() {}
 };
 
 template<typename T>
 struct MValueHelper {
     using RetType = std::vector<T>;
 
-    MValueHelper(std::size_t n) {
-        value.resize(n);
-    }
+    MValueHelper(std::size_t n) { value.resize(n); }
 
-    void set_value(std::size_t i, T &&t) {
-        value[i] = std::move(t);
-    }
+    void set_value(std::size_t i, T &&t) { value[i] = std::move(t); }
 
-    std::vector<T> get_value() {
-        return std::move(value);
-    }
+    std::vector<T> get_value() { return std::move(value); }
 
 private:
     std::vector<T> value;
@@ -71,25 +61,22 @@ private:
 /**
  * @brief Overloading for bool type because std::vector<bool> cannot be
  *        accessed in multiple threads.
-*/
+ */
 template<>
 struct MValueHelper<bool> {
     using RetType = std::vector<bool>;
 
-    MValueHelper(std::size_t n)
-        : value(std::make_unique<bool []>(n)), n(n)
-    { }
+    MValueHelper(std::size_t n) : value(std::make_unique<bool[]>(n)), n(n) {}
 
-    void set_value(std::size_t i, bool t) {
-        value[i] = t;
-    }
+    void set_value(std::size_t i, bool t) { value[i] = t; }
 
-    std::vector<bool> get_value() {
+    std::vector<bool> get_value()
+    {
         return std::vector<bool>(value.get(), value.get() + n);
     }
 
 private:
-    std::unique_ptr<bool []> value;
+    std::unique_ptr<bool[]> value;
     std::size_t n;
 };
 
@@ -97,13 +84,14 @@ template<>
 struct MValueHelper<void> {
     using RetType = void;
 
-    MValueHelper(std::size_t) { }
+    MValueHelper(std::size_t) {}
 
-    void get_value() { }
+    void get_value() {}
 };
 
 template<Cokeable T, typename L>
-Task<> coke_wait_helper(Task<T> task, ValueHelper<T> &v, L &lt) {
+Task<> coke_wait_helper(Task<T> task, ValueHelper<T> &v, L &lt)
+{
     if constexpr (std::is_same_v<T, void>)
         co_await std::move(task);
     else
@@ -139,18 +127,18 @@ auto async_wait_helper(std::vector<Task<T>> tasks)
 }
 
 template<typename T>
-concept AwaitableType = requires (T t) {
+concept AwaitableType = requires(T t) {
     requires std::derived_from<T, AwaiterBase>;
     { t.await_resume() };
 };
 
 template<typename T>
-using AwaiterResult = std::remove_cvref_t<
-    std::invoke_result_t<decltype(&T::await_resume), T *>
->;
+using AwaiterResult =
+    std::remove_cvref_t<std::invoke_result_t<decltype(&T::await_resume), T *>>;
 
 template<AwaitableType A>
-auto make_task_from_awaitable_helper(A a) -> Task<AwaiterResult<A>> {
+auto make_task_from_awaitable_helper(A a) -> Task<AwaiterResult<A>>
+{
     co_return co_await std::move(a);
 }
 
@@ -163,7 +151,8 @@ using detail::AwaiterResult;
 
 template<AwaitableType A>
     requires std::is_same_v<std::remove_reference_t<A>, A>
-auto make_task_from_awaitable(A &&a) -> Task<AwaiterResult<A>> {
+auto make_task_from_awaitable(A &&a) -> Task<AwaiterResult<A>>
+{
     return detail::make_task_from_awaitable_helper(std::move(a));
 }
 

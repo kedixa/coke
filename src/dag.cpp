@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <iomanip>
 
@@ -24,8 +24,7 @@ namespace coke::detail {
 
 bool dag_check(const std::vector<std::vector<dag_index_t>> &outs,
                const std::vector<std::vector<dag_index_t>> &weak_outs,
-               std::vector<dag_index_t> &counts,
-               std::vector<bool> &weak_flags)
+               std::vector<dag_index_t> &counts, std::vector<bool> &weak_flags)
 {
     std::size_t n = outs.size();
     if (n == 0)
@@ -95,18 +94,17 @@ struct GetLabel {
     dag_index_t id;
     const std::string &name;
 
-    GetLabel(dag_index_t id, const std::string &name)
-        : id(id), name(name)
-    { }
+    GetLabel(dag_index_t id, const std::string &name) : id(id), name(name) {}
 };
 
 struct GetName {
     dag_index_t id;
 
-    GetName(dag_index_t id) : id(id) { }
+    GetName(dag_index_t id) : id(id) {}
 };
 
-std::ostream &operator<< (std::ostream &os, const GetLabel &x) {
+std::ostream &operator<<(std::ostream &os, const GetLabel &x)
+{
     if (x.name.empty())
         os << "<Node<sub>" << x.id << "</sub>>";
     else
@@ -114,7 +112,8 @@ std::ostream &operator<< (std::ostream &os, const GetLabel &x) {
     return os;
 }
 
-std::ostream &operator<< (std::ostream &os, const GetName &x) {
+std::ostream &operator<<(std::ostream &os, const GetName &x)
+{
     os << "N" << x.id;
     return os;
 }
@@ -130,8 +129,8 @@ void dag_dump(std::ostream &os,
     os << "digraph {\n";
 
     for (dag_index_t i = 0; i < n; i++) {
-        os << "    " << GetName(i)
-           << " [label=" << GetLabel(i, names[i]) << "];\n";
+        os << "    " << GetName(i) << " [label=" << GetLabel(i, names[i])
+           << "];\n";
     }
 
     os << "\n";

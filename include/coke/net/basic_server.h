@@ -53,9 +53,9 @@ public:
 
 template<typename REQ, typename RESP>
 class ServerContext {
-    using ReqType     = REQ;
-    using RespType    = RESP;
-    using TaskType    = WFNetworkTask<REQ, RESP>;
+    using ReqType = REQ;
+    using RespType = RESP;
+    using TaskType = WFNetworkTask<REQ, RESP>;
     using AwaiterType = NetworkReplyAwaiter;
 
 public:
@@ -65,7 +65,7 @@ public:
     {
         // that cannot be used any more
         that.replied = true;
-        that.task    = nullptr;
+        that.task = nullptr;
     }
 
     ServerContext &operator=(ServerContext &&that)
@@ -112,12 +112,12 @@ class BasicServer : public WFServer<REQ, RESP> {
     using BaseType = WFServer<REQ, RESP>;
 
 public:
-    using ReqType           = REQ;
-    using RespType          = RESP;
-    using TaskType          = WFNetworkTask<ReqType, RespType>;
+    using ReqType = REQ;
+    using RespType = RESP;
+    using TaskType = WFNetworkTask<ReqType, RespType>;
     using ServerContextType = ServerContext<ReqType, RespType>;
-    using ReplyResultType   = NetworkReplyResult;
-    using ProcessorType     = std::function<Task<>(ServerContextType)>;
+    using ReplyResultType = NetworkReplyResult;
+    using ProcessorType = std::function<Task<>(ServerContextType)>;
 
 private:
     static auto get_process(BasicServer *server)
@@ -152,13 +152,13 @@ ServerParams to_server_params(const P &p) noexcept
 {
     ServerParams r = SERVER_PARAMS_DEFAULT;
 
-    r.transport_type        = p.transport_type;
-    r.max_connections       = p.max_connections;
+    r.transport_type = p.transport_type;
+    r.max_connections = p.max_connections;
     r.peer_response_timeout = p.peer_response_timeout;
-    r.receive_timeout       = p.receive_timeout;
-    r.keep_alive_timeout    = p.keep_alive_timeout;
-    r.request_size_limit    = p.request_size_limit;
-    r.ssl_accept_timeout    = p.ssl_accept_timeout;
+    r.receive_timeout = p.receive_timeout;
+    r.keep_alive_timeout = p.keep_alive_timeout;
+    r.request_size_limit = p.request_size_limit;
+    r.ssl_accept_timeout = p.ssl_accept_timeout;
 
     return r;
 }

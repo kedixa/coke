@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_BASIC_AWAITER_H
 #define COKE_BASIC_AWAITER_H
@@ -46,21 +46,22 @@ namespace coke {
  *      }
  *  };
  * @endcode
-*/
+ */
 template<Cokeable T>
 class BasicAwaiter;
 
 /**
  * @brief AwaiterInfo is a helper of BasicAwaiter.
-*/
+ */
 template<Cokeable T>
 struct AwaiterInfo {
-    AwaiterInfo(AwaiterBase *ptr) noexcept : ptr(ptr) { }
+    AwaiterInfo(AwaiterBase *ptr) noexcept : ptr(ptr) {}
     AwaiterInfo(const AwaiterBase &) = delete;
 
     // The caller make sure that type(*ptr) is Awaiter A
     template<typename A = BasicAwaiter<T>>
-    A *get_awaiter() noexcept {
+    A *get_awaiter() noexcept
+    {
         return static_cast<A *>(ptr);
     }
 
@@ -68,7 +69,8 @@ struct AwaiterInfo {
 
 private:
     struct Empty {};
-    using OptType = std::conditional_t<std::is_void_v<T>, Empty, std::optional<T>>;
+    using OptType =
+        std::conditional_t<std::is_void_v<T>, Empty, std::optional<T>>;
 
     AwaiterBase *ptr = nullptr;
     [[no_unique_address]] OptType opt;
@@ -77,7 +79,7 @@ private:
 template<Cokeable T>
 class BasicAwaiter : public AwaiterBase {
 public:
-    BasicAwaiter() : info(new AwaiterInfo<T>(this)) { }
+    BasicAwaiter() : info(new AwaiterInfo<T>(this)) {}
     ~BasicAwaiter() { delete info; }
 
     /**
@@ -88,10 +90,9 @@ public:
     /**
      * @brief Move constructor, AwaiterInfo associate task with the new
      *        BasicAwaiter after move.
-    */
+     */
     BasicAwaiter(BasicAwaiter &&that) noexcept
-        : AwaiterBase(std::move(that)),
-          info(std::exchange(that.info, nullptr))
+        : AwaiterBase(std::move(that)), info(std::exchange(that.info, nullptr))
     {
         if (this->info)
             this->info->ptr = this;
@@ -100,8 +101,9 @@ public:
     /**
      * @brief Move assign operator, AwaiterInfo associate task with the new
      *        BasicAwaiter after move.
-    */
-    BasicAwaiter &operator= (BasicAwaiter &&that) noexcept {
+     */
+    BasicAwaiter &operator=(BasicAwaiter &&that) noexcept
+    {
         if (this != &that) {
             AwaiterBase::operator=(std::move(that));
             std::swap(this->info, that.info);
@@ -118,16 +120,15 @@ public:
     /**
      * @brief Get the AwaiterInfo on this BasicAwaiter. See code example of
      *        this class to find how to use it.
-    */
-    AwaiterInfo<T> *get_info() const noexcept {
-        return info;
-    }
+     */
+    AwaiterInfo<T> *get_info() const noexcept { return info; }
 
     /**
      * @brief Emplace return value of workflow's task to this awaiter.
-    */
+     */
     template<typename... ARGS>
-    void emplace_result(ARGS&&... args) {
+    void emplace_result(ARGS &&...args)
+    {
         if constexpr (!std::is_void_v<T>)
             info->opt.emplace(std::forward<ARGS>(args)...);
     }
@@ -135,8 +136,9 @@ public:
     /**
      * @brief Get the co_await result of this awaiter, which is set
      *        by `emplace_result`.
-    */
-    T await_resume() {
+     */
+    T await_resume()
+    {
         if constexpr (!std::is_void_v<T>)
             return std::move(info->opt.value());
     }

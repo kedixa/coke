@@ -46,16 +46,16 @@ using RedisKeyValues = std::vector<RedisKeyValue>;
 using RedisFieldElements = std::vector<RedisFieldElement>;
 
 // clang-format off
-enum : uint16_t {
+enum _redis_flag : uint16_t {
     REDIS_FLAG_READONLY = 0x01,
 };
 
-enum : int16_t {
+enum _redis_slot : int16_t {
     REDIS_AUTO_SLOT   = 16384,
     REDIS_ANY_PRIMARY = 16385,
 };
 
-enum : int {
+enum _redis_err : int {
     REDIS_ERR_NO_INFO    = 1,
     REDIS_ERR_NO_COMMAND = 2,
     REDIS_ERR_AUTH       = 3,

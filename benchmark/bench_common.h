@@ -14,24 +14,25 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #ifndef COKE_BENCH_COMMON_H
 #define COKE_BENCH_COMMON_H
 
 #include <chrono>
 #include <cmath>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <vector>
 
-#include "coke/tools/option_parser.h"
 #include "coke/basic_awaiter.h"
+#include "coke/tools/option_parser.h"
 #include "workflow/WFTaskFactory.h"
 
 class RepeaterAwaiter : public coke::BasicAwaiter<void> {
 public:
-    RepeaterAwaiter(WFRepeaterTask *task) {
+    RepeaterAwaiter(WFRepeaterTask *task)
+    {
         task->set_callback([info = this->get_info()](void *) {
             auto *awaiter = info->get_awaiter<RepeaterAwaiter>();
             awaiter->done();
@@ -41,21 +42,23 @@ public:
     }
 };
 
-inline long long current_msec() {
+inline long long current_msec()
+{
     auto dur = std::chrono::steady_clock::now().time_since_epoch();
     auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(dur);
     return msec.count();
 }
 
-inline long long current_usec() {
+inline long long current_usec()
+{
     auto dur = std::chrono::steady_clock::now().time_since_epoch();
     auto usec = std::chrono::duration_cast<std::chrono::microseconds>(dur);
     return usec.count();
 }
 
-inline void
-data_distribution(const std::vector<long long> &data,
-                  double &mean, double &stddev) {
+inline void data_distribution(const std::vector<long long> &data, double &mean,
+                              double &stddev)
+{
     if (data.empty()) {
         mean = 0.0;
         stddev = 0.0;
@@ -69,12 +72,13 @@ data_distribution(const std::vector<long long> &data,
     if (data.size() > 1) {
         for (const auto &d : data)
             stddev += (d - mean) * (d - mean);
-        stddev = std::sqrt(stddev / (double)(data.size()-1));
+        stddev = std::sqrt(stddev / (double)(data.size() - 1));
     }
 }
 
-inline
-void delimiter(std::ostream &os, const std::vector<int> &width, char c = ' ') {
+inline void delimiter(std::ostream &os, const std::vector<int> &width,
+                      char c = ' ')
+{
     if (width.empty())
         return;
 
@@ -85,21 +89,22 @@ void delimiter(std::ostream &os, const std::vector<int> &width, char c = ' ') {
 }
 
 template<typename T>
-void print_helper(std::ostream &os, int width, T &&t) {
+void print_helper(std::ostream &os, int width, T &&t)
+{
     os << " " << std::setw(width) << t << " |";
 }
 
 template<typename... ARGS>
-void table_line(std::ostream &os, const std::vector<int> &width,
-                ARGS&&... args) {
+void table_line(std::ostream &os, const std::vector<int> &width, ARGS &&...args)
+{
     os << "|";
     std::size_t i = 0;
     (print_helper(os, width[i++], args), ...);
     os << std::endl;
 }
 
-int parse_args(coke::OptionParser &args,
-               int argc, char *argv[], bool *yes) {
+int parse_args(coke::OptionParser &args, int argc, char *argv[], bool *yes)
+{
     std::string error;
     int ret = args.parse(argc, argv, error);
     if (ret < 0) {

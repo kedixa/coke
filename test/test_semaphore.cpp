@@ -14,12 +14,12 @@
  * limitations under the License.
  *
  * Authors: kedixa (https://github.com/kedixa)
-*/
+ */
 
 #include <atomic>
 #include <chrono>
-#include <vector>
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "coke/coke.h"
 
@@ -43,7 +43,8 @@ struct ParamPack {
     int loop_max;
 };
 
-coke::Task<> do_test_semaphore(ParamPack *p) {
+coke::Task<> do_test_semaphore(ParamPack *p)
+{
     coke::Semaphore &sem = p->sem;
     int ret;
 
@@ -80,15 +81,14 @@ coke::Task<> do_test_semaphore(ParamPack *p) {
     }
 }
 
-void test_semaphore(int sem_max, int test_method) {
-    ParamPack p {
-        .sem = coke::Semaphore(sem_max),
-        .count = 0,
-        .total = 0,
-        .sem_max = sem_max,
-        .test_method = test_method,
-        .loop_max = 128
-    };
+void test_semaphore(int sem_max, int test_method)
+{
+    ParamPack p{.sem = coke::Semaphore(sem_max),
+                .count = 0,
+                .total = 0,
+                .sem_max = sem_max,
+                .test_method = test_method,
+                .loop_max = 128};
 
     std::vector<coke::Task<>> tasks;
     tasks.reserve(MAX_TASKS);
@@ -101,22 +101,26 @@ void test_semaphore(int sem_max, int test_method) {
     EXPECT_EQ(p.total.load(), (MAX_TASKS * p.loop_max));
 }
 
-TEST(SEMAPHORE, sem_try_acquire) {
+TEST(SEMAPHORE, sem_try_acquire)
+{
     test_semaphore(1, TEST_TRY_ACQUIRE);
     test_semaphore(16, TEST_TRY_ACQUIRE);
 }
 
-TEST(SEMAPHORE, sem_acquire) {
+TEST(SEMAPHORE, sem_acquire)
+{
     test_semaphore(1, TEST_ACQUIRE);
     test_semaphore(16, TEST_ACQUIRE);
 }
 
-TEST(SEMAPHORE, sem_acquire_for) {
+TEST(SEMAPHORE, sem_acquire_for)
+{
     test_semaphore(1, TEST_ACQUIRE_FOR);
     test_semaphore(16, TEST_ACQUIRE_FOR);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     coke::GlobalSettings s;
     s.poller_threads = 4;
     s.handler_threads = 8;
