@@ -40,15 +40,24 @@ set(SRCS
 if (COKE_BUILD_STATIC)
     add_library(${COKE_STATIC_LIBRARY} STATIC ${SRCS})
 
-    target_include_directories(${COKE_STATIC_LIBRARY} PUBLIC
-        $<BUILD_INTERFACE:${WORKFLOW_INCLUDE_DIR}>
-        $<BUILD_INTERFACE:${OPENSSL_INCLUDE_DIR}>
-        $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
-        $<INSTALL_INTERFACE:include>
+    target_include_directories(${COKE_STATIC_LIBRARY}
+        PUBLIC
+            $<BUILD_INTERFACE:${WORKFLOW_INCLUDE_DIR}>
+            $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     )
 
-    set_target_properties(${COKE_STATIC_LIBRARY} PROPERTIES OUTPUT_NAME ${COKE_LIBRARY})
-    set_target_properties(${COKE_STATIC_LIBRARY} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    target_link_libraries(${COKE_STATIC_LIBRARY}
+        PUBLIC
+            OpenSSL::SSL OpenSSL::Crypto
+            Threads::Threads
+    )
+
+    set_target_properties(${COKE_STATIC_LIBRARY}
+        PROPERTIES
+            OUTPUT_NAME ${COKE_LIBRARY}
+            POSITION_INDEPENDENT_CODE ON
+    )
 
     add_library(coke::${COKE_STATIC_LIBRARY} ALIAS ${COKE_STATIC_LIBRARY})
 endif ()
@@ -56,16 +65,24 @@ endif ()
 if (COKE_BUILD_SHARED)
     add_library(${COKE_SHARED_LIBRARY} SHARED ${SRCS})
 
-    target_include_directories(${COKE_SHARED_LIBRARY} PUBLIC
-        $<BUILD_INTERFACE:${WORKFLOW_INCLUDE_DIR}>
-        $<BUILD_INTERFACE:${OPENSSL_INCLUDE_DIR}>
-        $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
-        $<INSTALL_INTERFACE:include>
+    target_include_directories(${COKE_SHARED_LIBRARY}
+        PUBLIC
+            $<BUILD_INTERFACE:${WORKFLOW_INCLUDE_DIR}>
+            $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    )
+
+    target_link_libraries(${COKE_STATIC_LIBRARY}
+        PUBLIC
+            OpenSSL::SSL OpenSSL::Crypto
+            Threads::Threads
     )
 
     set_target_properties(${COKE_SHARED_LIBRARY}
-        PROPERTIES OUTPUT_NAME ${COKE_LIBRARY}
-        VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR}
+        PROPERTIES
+            OUTPUT_NAME ${COKE_LIBRARY}
+            VERSION ${PROJECT_VERSION}
+            SOVERSION ${PROJECT_VERSION_MAJOR}
     )
 
     add_library(coke::${COKE_SHARED_LIBRARY} ALIAS ${COKE_SHARED_LIBRARY})

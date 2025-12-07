@@ -1,6 +1,34 @@
+###########################################################
+# Coke Library CMake Configuration
+#
+# This file set the following variables:
+# - COKE_VERSION: Coke library version
+# - COKE_MAJOR_VERSION: Coke library major version
+# - COKE_MINOR_VERSION: Coke library minor version
+# - COKE_PATCH_VERSION: Coke library patch version
+# - COKE_INCLUDE_DIR: Coke include directory
+# - COKE_LIBRARY_DIR: Coke library output directory
+#
+# This file exports the following targets:
+# - coke::coke-static If COKE_BUILD_STATIC is ON
+# - coke::coke-shared If COKE_BUILD_SHARED is ON
+# - coke::coke Alias of coke::coke-static or coke::coke-shared
+#
+# Configurable build options:
+# - COKE_BUILD_STATIC: Build static library (default: ON)
+# - COKE_BUILD_SHARED: Build shared library (default: OFF)
+# - COKE_ENABLE_TEST: Build tests (default: OFF)
+# - COKE_ENABLE_BENCHMARK: Build benchmarks (default: OFF)
+# - COKE_ENABLE_EXAMPLE: Build examples (default: OFF)
+#
+# Override options using -D, e.g., -DCOKE_ENABLE_EXAMPLE=ON
+###########################################################
+
 cmake_minimum_required(VERSION 3.16)
 
-set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "cmake build type")
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "CMake build type")
+endif()
 
 project(
     coke
@@ -8,27 +36,45 @@ project(
     LANGUAGES CXX
 )
 
-set(COKE_ENABLE_TEST FALSE CACHE BOOL "Whether to build and run tests, default FALSE")
-set(COKE_ENABLE_BENCHMARK FALSE CACHE BOOL "Whether to build benchmarks, default FALSE")
-set(COKE_ENABLE_EXAMPLE FALSE CACHE BOOL "Whether to build examples, default FALSE")
-set(COKE_BUILD_STATIC TRUE CACHE BOOL "Whether to build coke static library, default TRUE")
-set(COKE_BUILD_SHARED FALSE CACHE BOOL "Whether to build coke shared library, default FALSE")
+include(GNUInstallDirs)
 
-set(COKE_LIBRARY ${PROJECT_NAME})
-set(COKE_LIBRARY_DIR ${PROJECT_BINARY_DIR}/lib)
-set(COKE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
-set(COKE_INSTALL_CMAKE_FILE ${PROJECT_BINARY_DIR}/${COKE_LIBRARY}-config.install.cmake)
-set(COKE_LIBRARY_TARGETS ${COKE_LIBRARY}Targets)
-
-set(COKE_STATIC_LIBRARY ${COKE_LIBRARY}-static)
-set(COKE_SHARED_LIBRARY ${COKE_LIBRARY}-shared)
-
-if (NOT "${CMAKE_CXX_STANDARD}")
+if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 20)
 endif ()
 
+# Build Options
+
+option(COKE_BUILD_STATIC "Build coke static library." ON)
+option(COKE_BUILD_SHARED "Build coke shared library." OFF)
+option(COKE_ENABLE_TEST "Build coke tests." OFF)
+option(COKE_ENABLE_BENCHMARK "Build coke benchmarks." OFF)
+option(COKE_ENABLE_EXAMPLE "Build coke examples" OFF)
+
+# Variables
+
+set(COKE_LIBRARY coke)
+set(COKE_STATIC_LIBRARY ${COKE_LIBRARY}-static)
+set(COKE_SHARED_LIBRARY ${COKE_LIBRARY}-shared)
+
+set(COKE_VERSION ${coke_VERSION} CACHE STRING "Coke library version")
+set(COKE_MAJOR_VERSION ${coke_VERSION_MAJOR} CACHE STRING "Coke major version")
+set(COKE_MINOR_VERSION ${coke_VERSION_MINOR} CACHE STRING "Coke minor version")
+set(COKE_PATCH_VERSION ${coke_VERSION_PATCH} CACHE STRING "Coke patch version")
+
+set(COKE_LIBRARY_DIR ${PROJECT_BINARY_DIR}/lib CACHE STRING "Coke library dir")
+set(COKE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include CACHE STRING "Coke include dir")
+
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${COKE_LIBRARY_DIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${COKE_LIBRARY_DIR})
+
+set(COKE_CONFIG_INPUT_FILE ${PROJECT_SOURCE_DIR}/cmake/coke-config.cmake.in)
+
+set(COKE_VERSION_OUTPUT_FILE ${PROJECT_BINARY_DIR}/coke-config-version.cmake)
+set(COKE_CONFIG_OUTPUT_FILE ${PROJECT_BINARY_DIR}/coke-config.cmake)
+set(COKE_INSTALL_CONFIG_OUTPUT_FILE ${PROJECT_BINARY_DIR}/coke-config.install.cmake)
+set(COKE_CMAKE_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/coke)
+
+# Build
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-interference-size")
@@ -62,63 +108,91 @@ if (COKE_ENABLE_TEST)
     add_subdirectory(test)
 endif()
 
-include(GNUInstallDirs)
+# Install and Export
+
 include(CMakePackageConfigHelpers)
 
-set(LIBRARY_NAME ${COKE_LIBRARY})
+set(COKE_INSTALL_TARGETS)
+set(COKE_TARGETS_EXPORT_NAME ${COKE_LIBRARY}-targets)
+
+if (TARGET ${COKE_STATIC_LIBRARY})
+    list(APPEND COKE_INSTALL_TARGETS ${COKE_STATIC_LIBRARY})
+endif ()
+
+if (TARGET ${COKE_SHARED_LIBRARY})
+    list(APPEND COKE_INSTALL_TARGETS ${COKE_SHARED_LIBRARY})
+endif ()
+
+
+# Generate config files for build tree.
 set(INCLUDE_DIR ${COKE_INCLUDE_DIR})
 set(LIBRARY_DIR ${COKE_LIBRARY_DIR})
 configure_package_config_file(
-    cmake/${COKE_LIBRARY}-config.cmake.in
-    ${PROJECT_BINARY_DIR}/${COKE_LIBRARY}-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY}
-    PATH_VARS INCLUDE_DIR LIBRARY_DIR LIBRARY_NAME
+    ${COKE_CONFIG_INPUT_FILE}
+    ${COKE_CONFIG_OUTPUT_FILE}
+    INSTALL_DESTINATION ${COKE_CMAKE_INSTALL_DIR}
+    PATH_VARS INCLUDE_DIR LIBRARY_DIR
 )
 
+write_basic_package_version_file(
+    ${COKE_VERSION_OUTPUT_FILE}
+    VERSION ${COKE_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+# Generate config files for install.
 set(INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR})
 set(LIBRARY_DIR ${CMAKE_INSTALL_LIBDIR})
 configure_package_config_file(
-    cmake/${COKE_LIBRARY}-config.install.cmake.in
-    ${COKE_INSTALL_CMAKE_FILE}
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY}
-    PATH_VARS INCLUDE_DIR LIBRARY_DIR LIBRARY_NAME
+    ${COKE_CONFIG_INPUT_FILE}
+    ${COKE_INSTALL_CONFIG_OUTPUT_FILE}
+    INSTALL_DESTINATION ${COKE_CMAKE_INSTALL_DIR}
+    PATH_VARS INCLUDE_DIR LIBRARY_DIR
 )
 
-if (COKE_BUILD_STATIC)
-    install(TARGETS
-        ${COKE_STATIC_LIBRARY}
-        EXPORT ${COKE_LIBRARY_TARGETS}
-        LIBRARY DESTINATION lib
-    )
-endif ()
-
-if (COKE_BUILD_SHARED)
-    install(TARGETS
-        ${COKE_SHARED_LIBRARY}
-        EXPORT ${COKE_LIBRARY_TARGETS}
-        LIBRARY DESTINATION lib
-    )
-endif ()
-
-install(EXPORT ${COKE_LIBRARY_TARGETS} FILE ${COKE_LIBRARY}-targets.cmake
-    NAMESPACE coke:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY}
+export(
+    TARGETS ${COKE_INSTALL_TARGETS}
+    NAMESPACE coke::
+    FILE ${PROJECT_BINARY_DIR}/${COKE_TARGETS_EXPORT_NAME}.cmake
 )
 
-install(DIRECTORY
-    ${COKE_INCLUDE_DIR}/coke
+install(
+    TARGETS ${COKE_INSTALL_TARGETS}
+    EXPORT ${COKE_TARGETS_EXPORT_NAME}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(
+    EXPORT ${COKE_TARGETS_EXPORT_NAME}
+    FILE ${COKE_TARGETS_EXPORT_NAME}.cmake
+    NAMESPACE coke::
+    DESTINATION ${COKE_CMAKE_INSTALL_DIR}
+)
+
+install(
+    DIRECTORY ${COKE_INCLUDE_DIR}/coke
     DESTINATION include
 )
 
-install(FILES ${COKE_INSTALL_CMAKE_FILE}
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${COKE_LIBRARY}
-    RENAME ${COKE_LIBRARY}-config.cmake
+install(
+    FILES ${COKE_INSTALL_CONFIG_OUTPUT_FILE}
+    DESTINATION ${COKE_CMAKE_INSTALL_DIR}
+    RENAME coke-config.cmake
 )
+
+install(
+    FILES ${COKE_VERSION_OUTPUT_FILE}
+    DESTINATION ${COKE_CMAKE_INSTALL_DIR}
+)
+
+# Package
 
 set(CPACK_GENERATOR "RPM")
 set(CPACK_PACKAGE_NAME "coke")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "coke: Coroutine Workflow based on C++ 20")
 set(CPACK_PACKAGE_VENDOR "kedixa")
-set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_VERSION ${COKE_VERSION})
 set(CPACK_RPM_PACKAGE_URL "https://github.com/kedixa/coke/")
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0")
 set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
