@@ -31,8 +31,6 @@ set(ALL_TESTS
     test_wait
 )
 
-include (../cmake/find-workflow.cmake)
-
 foreach(exec_name ${ALL_TESTS})
     add_executable(${exec_name} ${exec_name}.cpp)
     add_test(NAME ${exec_name} COMMAND ${exec_name})
@@ -44,7 +42,6 @@ foreach(exec_name ${ALL_TESTS})
     target_link_libraries(${exec_name}
         PRIVATE
             coke::coke
-            coke-workflow
             GTest::GTest
     )
 endforeach()

@@ -27,8 +27,6 @@ set(ALL_EXAMPLES
     ex024-tlv_uds
 )
 
-include (../cmake/find-workflow.cmake)
-
 foreach(example ${ALL_EXAMPLES})
     string(REGEX MATCH "[^-]*$" exec_name ${example})
     add_executable(${exec_name} ${example}.cpp)
@@ -36,7 +34,6 @@ foreach(example ${ALL_EXAMPLES})
     target_link_libraries(${exec_name}
         PRIVATE
             coke::coke
-            coke-workflow
     )
 endforeach()
 
