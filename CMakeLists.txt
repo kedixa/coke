@@ -31,9 +31,9 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 if (NOT DEFINED PROJECT_NAME)
-    set(COKE_MASTER_PROJECT ON)
+    set(COKE_MASTER_PROJECT ON CACHE BOOL "Whether coke is root project")
 else ()
-    set(COKE_MASTER_PROJECT OFF)
+    set(COKE_MASTER_PROJECT OFF CACHE BOOL "Whether coke is root project")
 endif ()
 
 project(
@@ -86,6 +86,13 @@ set(COKE_CMAKE_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/coke)
 
 # Build
 
+find_package(OpenSSL REQUIRED)
+find_package(Threads REQUIRED)
+
+if (COKE_WORKFLOW_SRC_DIR)
+    add_subdirectory(${COKE_WORKFLOW_SRC_DIR})
+endif ()
+
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-interference-size")
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
@@ -95,13 +102,6 @@ endif ()
 if (APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 endif ()
-
-if (COKE_WORKFLOW_SRC_DIR)
-    add_subdirectory(${COKE_WORKFLOW_SRC_DIR})
-endif ()
-
-find_package(OpenSSL REQUIRED)
-find_package(Threads REQUIRED)
 
 include(cmake/find-workflow.cmake)
 
@@ -122,7 +122,10 @@ endif()
 
 # Install and Export
 
-if (COKE_MASTER_PROJECT)
+if (COKE_MASTER_PROJECT AND COKE_WORKFLOW_SRC_DIR)
+    message(WARNING "Export and Install is disabled when depending workflow from source code!")
+    message(WARNING "Please build and install Workflow and Coke separately.")
+elseif (COKE_MASTER_PROJECT)
     include(CMakePackageConfigHelpers)
 
     set(COKE_INSTALL_TARGETS)
