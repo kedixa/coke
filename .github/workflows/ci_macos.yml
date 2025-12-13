@@ -28,12 +28,15 @@ jobs:
         path: workflow
     - name: Build
       run: |
-        cmake -Wno-dev -S workflow -B build.workflow \
-          -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
-        cmake --build build.workflow -j 8
-        cmake -S . -B build.coke -Dworkflow_DIR=workflow \
+        cmake -Wno-dev -S . -B build.cmake \
+          -DCOKE_WORKFLOW_SRC_DIR=workflow \
+          -DCMAKE_C_COMPILER=clang \
           -DCMAKE_CXX_COMPILER=clang++ \
-          -DCOKE_ENABLE_EXAMPLE=y \
-          -DCOKE_ENABLE_TEST=y
-        cmake --build build.coke -j 8
-        ctest -j 1 --test-dir build.coke/test --output-on-failure
+          -DCMAKE_CXX_STANDARD=20 \
+          -DCOKE_BUILD_STATIC=ON \
+          -DCOKE_BUILD_SHARED=ON \
+          -DCOKE_ENABLE_TEST=ON \
+          -DCOKE_ENABLE_EXAMPLE=ON \
+          -DCOKE_ENABLE_BENCHMARK=ON
+        cmake --build build.cmake -j 8
+        ctest --test-dir build.cmake/test -j 1 --output-on-failure
