@@ -51,3 +51,5 @@ if (USE_GNU_READLINE)
         )
     endforeach()
 endif()
+
+add_custom_target(all_examples DEPENDS ${ALL_EXAMPLES})

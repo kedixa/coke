@@ -19,3 +19,5 @@ foreach(exec_name ${ALL_BENCHMARK})
             coke::coke
     )
 endforeach()
+
+add_custom_target(all_benchmarks DEPENDS ${ALL_BENCHMARK})

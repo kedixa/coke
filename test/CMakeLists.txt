@@ -45,3 +45,5 @@ foreach(exec_name ${ALL_TESTS})
             GTest::GTest
     )
 endforeach()
+
+add_custom_target(all_tests DEPENDS ${ALL_TESTS})
