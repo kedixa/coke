@@ -1,11 +1,13 @@
 ---
 name: Bug
-about: 反馈问题/I find a bug
-title: '[BUG] <your title>'
+about: 反馈问题/Find a bug
+title: '[BUG] <title>'
 labels: bug
-assignees: 'kedixa'
 
 ---
+
+<!-- Change <title> to a brief description of the issue. -->
+<!-- 将 <title> 修改为对问题的简要描述 -->
 
 <!-- Note: Please search to see if an issue already exists. -->
 <!-- 注意: 请在Issues中搜索以查看问题是否已存在。 -->

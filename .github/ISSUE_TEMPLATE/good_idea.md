@@ -1,11 +1,13 @@
 ---
 name: Idea
-about: 我有个好想法/I have a good idea
-title: '[IDEA] <your title>'
+about: 有个好想法/Have a good idea
+title: '[IDEA] <title>'
 labels: idea
-assignees: 'kedixa'
 
 ---
+
+<!-- Change <title> to a brief description of the issue. -->
+<!-- 将 <title> 修改为对问题的简要描述 -->
 
 <!-- If ideas of C++ Workflow, please file an issue under the workflow project. -->
 
