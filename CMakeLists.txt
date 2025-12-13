@@ -30,6 +30,12 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "CMake build type")
 endif()
 
+if (NOT DEFINED PROJECT_NAME)
+    set(COKE_MASTER_PROJECT ON CACHE BOOL "Whether coke is root project")
+else ()
+    set(COKE_MASTER_PROJECT OFF CACHE BOOL "Whether coke is root project")
+endif ()
+
 project(
     coke
     VERSION 0.6.0
@@ -50,6 +56,8 @@ option(COKE_ENABLE_TEST "Build coke tests." OFF)
 option(COKE_ENABLE_BENCHMARK "Build coke benchmarks." OFF)
 option(COKE_ENABLE_EXAMPLE "Build coke examples" OFF)
 
+set(COKE_WORKFLOW_SRC_DIR "" CACHE STRING "Find workflow source code in subdir.")
+
 # Variables
 
 set(COKE_LIBRARY coke)
@@ -68,13 +76,22 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${COKE_LIBRARY_DIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${COKE_LIBRARY_DIR})
 
 set(COKE_CONFIG_INPUT_FILE ${PROJECT_SOURCE_DIR}/cmake/coke-config.cmake.in)
+set(COKE_FIND_WORKFLOW_INPUT_FILE ${PROJECT_SOURCE_DIR}/cmake/find-workflow.cmake)
 
 set(COKE_VERSION_OUTPUT_FILE ${PROJECT_BINARY_DIR}/coke-config-version.cmake)
 set(COKE_CONFIG_OUTPUT_FILE ${PROJECT_BINARY_DIR}/coke-config.cmake)
+set(COKE_FIND_WORKFLOW_OUTPUT_FILE ${PROJECT_BINARY_DIR}/find-workflow.cmake)
 set(COKE_INSTALL_CONFIG_OUTPUT_FILE ${PROJECT_BINARY_DIR}/coke-config.install.cmake)
 set(COKE_CMAKE_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/coke)
 
 # Build
+
+find_package(OpenSSL REQUIRED)
+find_package(Threads REQUIRED)
+
+if (COKE_WORKFLOW_SRC_DIR)
+    add_subdirectory(${COKE_WORKFLOW_SRC_DIR})
+endif ()
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-interference-size")
@@ -86,12 +103,7 @@ if (APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 endif ()
 
-if (NOT WORKFLOW_INCLUDE_DIR)
-    find_package(Workflow REQUIRED)
-endif ()
-
-find_package(OpenSSL REQUIRED)
-find_package(Threads REQUIRED)
+include(cmake/find-workflow.cmake)
 
 add_subdirectory(src)
 
@@ -110,93 +122,106 @@ endif()
 
 # Install and Export
 
-include(CMakePackageConfigHelpers)
+if (COKE_MASTER_PROJECT AND COKE_WORKFLOW_SRC_DIR)
+    message(WARNING "Export and Install is disabled when depending workflow from source code!")
+    message(WARNING "Please build and install Workflow and Coke separately.")
+elseif (COKE_MASTER_PROJECT)
+    include(CMakePackageConfigHelpers)
 
-set(COKE_INSTALL_TARGETS)
-set(COKE_TARGETS_EXPORT_NAME ${COKE_LIBRARY}-targets)
+    set(COKE_INSTALL_TARGETS)
+    set(COKE_TARGETS_EXPORT_NAME ${COKE_LIBRARY}-targets)
 
-if (TARGET ${COKE_STATIC_LIBRARY})
-    list(APPEND COKE_INSTALL_TARGETS ${COKE_STATIC_LIBRARY})
+    if (TARGET ${COKE_STATIC_LIBRARY})
+        list(APPEND COKE_INSTALL_TARGETS ${COKE_STATIC_LIBRARY})
+    endif ()
+
+    if (TARGET ${COKE_SHARED_LIBRARY})
+        list(APPEND COKE_INSTALL_TARGETS ${COKE_SHARED_LIBRARY})
+    endif ()
+
+
+    # Generate config files for build tree.
+    set(INCLUDE_DIR ${COKE_INCLUDE_DIR})
+    set(LIBRARY_DIR ${COKE_LIBRARY_DIR})
+    configure_package_config_file(
+        ${COKE_CONFIG_INPUT_FILE}
+        ${COKE_CONFIG_OUTPUT_FILE}
+        INSTALL_DESTINATION ${COKE_CMAKE_INSTALL_DIR}
+        PATH_VARS INCLUDE_DIR LIBRARY_DIR
+    )
+
+    write_basic_package_version_file(
+        ${COKE_VERSION_OUTPUT_FILE}
+        VERSION ${COKE_VERSION}
+        COMPATIBILITY AnyNewerVersion
+    )
+
+    # Generate config files for install.
+    set(INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR})
+    set(LIBRARY_DIR ${CMAKE_INSTALL_LIBDIR})
+    configure_package_config_file(
+        ${COKE_CONFIG_INPUT_FILE}
+        ${COKE_INSTALL_CONFIG_OUTPUT_FILE}
+        INSTALL_DESTINATION ${COKE_CMAKE_INSTALL_DIR}
+        PATH_VARS INCLUDE_DIR LIBRARY_DIR
+    )
+
+    configure_file(
+        ${COKE_FIND_WORKFLOW_INPUT_FILE}
+        ${COKE_FIND_WORKFLOW_OUTPUT_FILE}
+        COPYONLY
+    )
+
+    export(
+        TARGETS ${COKE_INSTALL_TARGETS}
+        NAMESPACE coke::
+        FILE ${PROJECT_BINARY_DIR}/${COKE_TARGETS_EXPORT_NAME}.cmake
+    )
+
+    install(
+        TARGETS ${COKE_INSTALL_TARGETS}
+        EXPORT ${COKE_TARGETS_EXPORT_NAME}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+
+    install(
+        EXPORT ${COKE_TARGETS_EXPORT_NAME}
+        FILE ${COKE_TARGETS_EXPORT_NAME}.cmake
+        NAMESPACE coke::
+        DESTINATION ${COKE_CMAKE_INSTALL_DIR}
+    )
+
+    install(
+        DIRECTORY ${COKE_INCLUDE_DIR}/coke
+        DESTINATION include
+    )
+
+    install(
+        FILES ${COKE_INSTALL_CONFIG_OUTPUT_FILE}
+        DESTINATION ${COKE_CMAKE_INSTALL_DIR}
+        RENAME coke-config.cmake
+    )
+
+    install(
+        FILES
+            ${COKE_VERSION_OUTPUT_FILE}
+            ${COKE_FIND_WORKFLOW_OUTPUT_FILE}
+        DESTINATION ${COKE_CMAKE_INSTALL_DIR}
+    )
+
+    # Package
+
+    set(CPACK_GENERATOR "RPM")
+    set(CPACK_PACKAGE_NAME "coke")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "coke: Coroutine Workflow based on C++ 20")
+    set(CPACK_PACKAGE_VENDOR "kedixa")
+    set(CPACK_PACKAGE_VERSION ${COKE_VERSION})
+    set(CPACK_RPM_PACKAGE_URL "https://github.com/kedixa/coke/")
+    set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0")
+    set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
+    set(CPACK_RPM_PACKAGE_RELEASE_DIST ON)
+    set(CPACK_RPM_PACKAGE_RELEASE "0")
+
+    include(CPack)
 endif ()
-
-if (TARGET ${COKE_SHARED_LIBRARY})
-    list(APPEND COKE_INSTALL_TARGETS ${COKE_SHARED_LIBRARY})
-endif ()
-
-
-# Generate config files for build tree.
-set(INCLUDE_DIR ${COKE_INCLUDE_DIR})
-set(LIBRARY_DIR ${COKE_LIBRARY_DIR})
-configure_package_config_file(
-    ${COKE_CONFIG_INPUT_FILE}
-    ${COKE_CONFIG_OUTPUT_FILE}
-    INSTALL_DESTINATION ${COKE_CMAKE_INSTALL_DIR}
-    PATH_VARS INCLUDE_DIR LIBRARY_DIR
-)
-
-write_basic_package_version_file(
-    ${COKE_VERSION_OUTPUT_FILE}
-    VERSION ${COKE_VERSION}
-    COMPATIBILITY AnyNewerVersion
-)
-
-# Generate config files for install.
-set(INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR})
-set(LIBRARY_DIR ${CMAKE_INSTALL_LIBDIR})
-configure_package_config_file(
-    ${COKE_CONFIG_INPUT_FILE}
-    ${COKE_INSTALL_CONFIG_OUTPUT_FILE}
-    INSTALL_DESTINATION ${COKE_CMAKE_INSTALL_DIR}
-    PATH_VARS INCLUDE_DIR LIBRARY_DIR
-)
-
-export(
-    TARGETS ${COKE_INSTALL_TARGETS}
-    NAMESPACE coke::
-    FILE ${PROJECT_BINARY_DIR}/${COKE_TARGETS_EXPORT_NAME}.cmake
-)
-
-install(
-    TARGETS ${COKE_INSTALL_TARGETS}
-    EXPORT ${COKE_TARGETS_EXPORT_NAME}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-
-install(
-    EXPORT ${COKE_TARGETS_EXPORT_NAME}
-    FILE ${COKE_TARGETS_EXPORT_NAME}.cmake
-    NAMESPACE coke::
-    DESTINATION ${COKE_CMAKE_INSTALL_DIR}
-)
-
-install(
-    DIRECTORY ${COKE_INCLUDE_DIR}/coke
-    DESTINATION include
-)
-
-install(
-    FILES ${COKE_INSTALL_CONFIG_OUTPUT_FILE}
-    DESTINATION ${COKE_CMAKE_INSTALL_DIR}
-    RENAME coke-config.cmake
-)
-
-install(
-    FILES ${COKE_VERSION_OUTPUT_FILE}
-    DESTINATION ${COKE_CMAKE_INSTALL_DIR}
-)
-
-# Package
-
-set(CPACK_GENERATOR "RPM")
-set(CPACK_PACKAGE_NAME "coke")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "coke: Coroutine Workflow based on C++ 20")
-set(CPACK_PACKAGE_VENDOR "kedixa")
-set(CPACK_PACKAGE_VERSION ${COKE_VERSION})
-set(CPACK_RPM_PACKAGE_URL "https://github.com/kedixa/coke/")
-set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0")
-set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
-set(CPACK_RPM_PACKAGE_RELEASE_DIST ON)
-set(CPACK_RPM_PACKAGE_RELEASE "0")
-
-include(CPack)

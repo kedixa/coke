@@ -11,14 +11,13 @@ set(ALL_BENCHMARK
     bench_weighted_policy
 )
 
-include (../cmake/find-workflow.cmake)
-
 foreach(exec_name ${ALL_BENCHMARK})
     add_executable(${exec_name} ${exec_name}.cpp)
 
     target_link_libraries(${exec_name}
         PRIVATE
             coke::coke
-            coke-workflow
     )
 endforeach()
+
+add_custom_target(all_benchmarks DEPENDS ${ALL_BENCHMARK})

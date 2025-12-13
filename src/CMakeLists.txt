@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(SRCS
+add_library(coke-objs OBJECT
     cancelable_timer.cpp
     coke_impl.cpp
     condition.cpp
@@ -37,56 +37,73 @@ set(SRCS
     redis/value.cpp
 )
 
+# In subdirectory mode, build after workflow
+if (TARGET workflow-static)
+    add_dependencies(coke-objs workflow-static)
+endif ()
+
+if (TARGET workflow-shared)
+    add_dependencies(coke-objs workflow-shared)
+endif ()
+
+if (TARGET coke::workflow-static)
+    target_include_directories(coke-objs
+        PRIVATE
+            $<TARGET_PROPERTY:coke::workflow-static,INTERFACE_INCLUDE_DIRECTORIES>
+            $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
+    )
+elseif (TARGET coke::workflow-shared)
+    target_include_directories(coke-objs
+        PRIVATE
+            $<TARGET_PROPERTY:coke::workflow-static,INTERFACE_INCLUDE_DIRECTORIES>
+            $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
+    )
+endif ()
+
+set_target_properties(coke-objs PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 if (COKE_BUILD_STATIC)
-    add_library(${COKE_STATIC_LIBRARY} STATIC ${SRCS})
+    if (NOT TARGET coke::workflow-static)
+        message(FATAL_ERROR "Requires workflow-static but not found.")
+    endif ()
+
+    add_library(${COKE_STATIC_LIBRARY} STATIC $<TARGET_OBJECTS:coke-objs>)
 
     target_include_directories(${COKE_STATIC_LIBRARY}
         PUBLIC
-            $<BUILD_INTERFACE:${WORKFLOW_INCLUDE_DIR}>
             $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     )
 
-    target_link_directories(${COKE_STATIC_LIBRARY}
-        PUBLIC
-            $<BUILD_INTERFACE:${WORKFLOW_LIB_DIR}>
-    )
-
     target_link_libraries(${COKE_STATIC_LIBRARY}
         PUBLIC
-            OpenSSL::SSL OpenSSL::Crypto
-            Threads::Threads
+            coke::workflow-static
     )
 
     set_target_properties(${COKE_STATIC_LIBRARY}
         PROPERTIES
             OUTPUT_NAME ${COKE_LIBRARY}
-            POSITION_INDEPENDENT_CODE ON
     )
 
     add_library(coke::${COKE_STATIC_LIBRARY} ALIAS ${COKE_STATIC_LIBRARY})
 endif ()
 
 if (COKE_BUILD_SHARED)
-    add_library(${COKE_SHARED_LIBRARY} SHARED ${SRCS})
+    if (NOT TARGET coke::workflow-shared)
+        message(FATAL_ERROR "Requires workflow-shared but not found.")
+    endif ()
+
+    add_library(${COKE_SHARED_LIBRARY} SHARED $<TARGET_OBJECTS:coke-objs>)
 
     target_include_directories(${COKE_SHARED_LIBRARY}
         PUBLIC
-            $<BUILD_INTERFACE:${WORKFLOW_INCLUDE_DIR}>
             $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     )
 
-    target_link_directories(${COKE_SHARED_LIBRARY}
-        PUBLIC
-            $<BUILD_INTERFACE:${WORKFLOW_LIB_DIR}>
-    )
-
     target_link_libraries(${COKE_SHARED_LIBRARY}
         PUBLIC
-            workflow
-            OpenSSL::SSL OpenSSL::Crypto
-            Threads::Threads
+            coke::workflow-shared
     )
 
     set_target_properties(${COKE_SHARED_LIBRARY}

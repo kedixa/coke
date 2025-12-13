@@ -9,6 +9,7 @@ set_and_check(COKE_INCLUDE_DIR "@PACKAGE_INCLUDE_DIR@")
 set_and_check(COKE_LIBRARY_DIR "@PACKAGE_LIBRARY_DIR@")
 
 if (NOT TARGET coke::coke)
+    include(${CMAKE_CURRENT_LIST_DIR}/find-workflow.cmake)
     include(${CMAKE_CURRENT_LIST_DIR}/@COKE_TARGETS_EXPORT_NAME@.cmake)
 
     if (TARGET coke::coke-static)
