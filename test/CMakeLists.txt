@@ -21,6 +21,7 @@ set(ALL_TESTS
     test_option_parser
     test_parallel
     test_queue
+    test_redis_value
     test_scope
     test_semaphore
     test_series
