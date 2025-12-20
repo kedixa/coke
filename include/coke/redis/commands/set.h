@@ -361,7 +361,7 @@ struct RedisSetCommands {
     auto sscan(StrHolder key, StrHolder cursor, uint64_t count)
     {
         return sscan(std::move(key), std::move(cursor),
-                     RedisSscanOpt{.count = count});
+                     RedisSscanOpt{.match = "", .count = count});
     }
 
     /**
