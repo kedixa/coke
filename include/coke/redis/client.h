@@ -27,6 +27,7 @@
 #include "coke/redis/commands/hyperloglog.h"
 #include "coke/redis/commands/list.h"
 #include "coke/redis/commands/publish.h"
+#include "coke/redis/commands/set.h"
 #include "coke/redis/commands/string.h"
 #include "coke/redis/commands/transaction.h"
 
@@ -61,6 +62,7 @@ class RedisClient : public RedisBitmapCommands<RedisClient>,
                     public RedisHyperloglogCommands<RedisClient>,
                     public RedisListCommands<RedisClient>,
                     public RedisPublishCommands<RedisClient>,
+                    public RedisSetCommands<RedisClient>,
                     public RedisStringCommands<RedisClient>,
                     public RedisClientImpl {
 public:
@@ -112,6 +114,7 @@ class RedisConnectionClient
       public RedisHyperloglogCommands<RedisConnectionClient>,
       public RedisListCommands<RedisConnectionClient>,
       public RedisPublishCommands<RedisConnectionClient>,
+      public RedisSetCommands<RedisConnectionClient>,
       public RedisStringCommands<RedisConnectionClient>,
       public RedisTransactionCommands<RedisConnectionClient>,
       public RedisClientImpl {

@@ -525,6 +525,9 @@ using coke::RedisListCommands;
 
 using coke::RedisPublishCommands;
 
+using coke::RedisSscanOpt;
+using coke::RedisSetCommands;
+
 using coke::RedisGetexExpireOpt;
 using coke::RedisLcsOpt;
 using coke::RedisSetOpt;
