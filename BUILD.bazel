@@ -2,17 +2,41 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "detail_hdrs",
-    hdrs = glob(["include/coke/detail/*.h"])
+    hdrs = [
+        "include/coke/detail/awaiter_base.h",
+        "include/coke/detail/basic_concept.h",
+        "include/coke/detail/binary_indexed_tree.h",
+        "include/coke/detail/condition_impl.h",
+        "include/coke/detail/constant.h",
+        "include/coke/detail/exception_config.h",
+        "include/coke/detail/future_base.h",
+        "include/coke/detail/go_task.h",
+        "include/coke/detail/mutex_table.h",
+        "include/coke/detail/random.h",
+        "include/coke/detail/ref_counted.h",
+        "include/coke/detail/series_task.h",
+        "include/coke/detail/sleep_base.h",
+        "include/coke/detail/task_impl.h",
+        "include/coke/detail/timer_task.h",
+        "include/coke/detail/wait_helper.h",
+    ],
+    includes = ["include"],
 )
 
 cc_library(
     name = "compatible_hdrs",
-    hdrs = glob(["include/coke/compatible/*.h"])
+    hdrs = [
+        "include/coke/compatible/to_numeric.h",
+    ],
+    includes = ["include"],
 )
 
 cc_library(
     name = "tools",
-    hdrs = glob(["include/coke/tools/*.h"]),
+    hdrs = [
+        "include/coke/tools/option_parser.h",
+        "include/coke/tools/scope.h",
+    ],
     includes = ["include"],
 )
 
@@ -86,7 +110,15 @@ cc_library(
         "src/nspolicy/weighted_round_robin_policy.cpp",
         "src/nspolicy/weighted_least_conn_policy.cpp",
     ],
-    hdrs = glob(["include/coke/nspolicy/*.h"]),
+    hdrs = [
+        "include/coke/nspolicy/address_info.h",
+        "include/coke/nspolicy/nspolicy.h",
+        "include/coke/nspolicy/weighted_least_conn_policy.h",
+        "include/coke/nspolicy/weighted_policy_base_impl.h",
+        "include/coke/nspolicy/weighted_policy_base.h",
+        "include/coke/nspolicy/weighted_random_policy.h",
+        "include/coke/nspolicy/weighted_round_robin_policy.h",
+    ],
     includes = ["include"],
     deps = [
         "//:common",
@@ -98,7 +130,11 @@ cc_library(
     srcs = [
         "src/net/client_conn_info.cpp",
     ],
-    hdrs = glob(["include/coke/net/*.h"]),
+    hdrs = [
+        "include/coke/net/basic_server.h",
+        "include/coke/net/client_conn_info.h",
+        "include/coke/net/network.h",
+    ],
     includes = ["include"],
     deps = [
         "//:common",
@@ -111,7 +147,12 @@ cc_library(
         "src/net/tlv_task.cpp",
         "src/net/tlv_client.cpp",
     ],
-    hdrs = glob(["include/coke/tlv/*.h"]),
+    hdrs = [
+        "include/coke/tlv/basic_types.h",
+        "include/coke/tlv/client.h",
+        "include/coke/tlv/server.h",
+        "include/coke/tlv/task.h",
+    ],
     includes = ["include"],
     deps = [
         "//:net",
@@ -123,7 +164,11 @@ cc_library(
     srcs = [
         "src/http_impl.cpp"
     ],
-    hdrs = glob(["include/coke/http/*.h"]),
+    hdrs = [
+        "include/coke/http/http_client.h",
+        "include/coke/http/http_server.h",
+        "include/coke/http/http_utils.h",
+    ],
     includes = ["include"],
     deps = [
         "//:net",
@@ -174,7 +219,10 @@ cc_library(
     srcs = [
         "src/mysql_impl.cpp"
     ],
-    hdrs = glob(["include/coke/mysql/*.h"]),
+    hdrs = [
+        "include/coke/mysql/mysql_client.h",
+        "include/coke/mysql/mysql_utils.h",
+    ],
     includes = ["include"],
     deps = [
         "//:net",
