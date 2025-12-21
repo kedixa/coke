@@ -29,6 +29,7 @@ set(ALL_TESTS
     test_series
     test_shared_mutex
     test_sleep
+    test_str_holder
     test_str_packer
     test_wait_group
     test_wait
