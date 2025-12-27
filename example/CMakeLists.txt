@@ -27,14 +27,15 @@ set(ALL_EXAMPLES
     ex024-tlv_uds
 )
 
+add_custom_target(all_examples)
+
 foreach(example ${ALL_EXAMPLES})
     string(REGEX MATCH "[^-]*$" exec_name ${example})
     add_executable(${exec_name} ${example}.cpp)
 
-    target_link_libraries(${exec_name}
-        PRIVATE
-            coke::coke
-    )
+    target_link_libraries(${exec_name} PRIVATE coke::coke)
+
+    add_dependencies(all_examples ${exec_name})
 endforeach()
 
 if (USE_GNU_READLINE)
@@ -51,5 +52,3 @@ if (USE_GNU_READLINE)
         )
     endforeach()
 endif()
-
-add_custom_target(all_examples DEPENDS ${ALL_EXAMPLES})
