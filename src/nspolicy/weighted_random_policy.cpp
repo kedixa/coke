@@ -62,8 +62,9 @@ void WeightedRandomPolicy::remove_from_policy(AddrInfo *addr)
     available_weight -= addr->get_weight();
 }
 
-AddrInfo *WeightedRandomPolicy::select_addr(const ParsedURI &uri,
-                                            const SelectHistory &history)
+AddrInfo *
+WeightedRandomPolicy::select_addr([[maybe_unused]] const ParsedURI &uri,
+                                  const SelectHistory &history)
 {
     if (available_weight == 0)
         return nullptr;

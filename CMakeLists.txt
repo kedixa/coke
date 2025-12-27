@@ -38,7 +38,7 @@ endif ()
 
 project(
     coke
-    VERSION 0.6.0
+    VERSION 0.7.0
     LANGUAGES CXX
 )
 
@@ -93,19 +93,31 @@ if (COKE_WORKFLOW_SRC_DIR)
     add_subdirectory(${COKE_WORKFLOW_SRC_DIR})
 endif ()
 
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-interference-size")
-elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
-endif ()
+if (COKE_MASTER_PROJECT)
+    # add compile options when this is master project
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+        add_compile_options(-Wall -Wextra)
 
-if (APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            add_compile_options(-Wno-interference-size)
+        endif ()
+
+        if (APPLE)
+            add_compile_options(-Wno-deprecated-declarations)
+        endif ()
+    endif ()
 endif ()
 
 include(cmake/find-workflow.cmake)
 
 add_subdirectory(src)
+
+if (COKE_MASTER_PROJECT AND COKE_WORKFLOW_SRC_DIR)
+    # disable unused parameter warnings
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+        add_compile_options(-Wno-unused-parameter)
+    endif ()
+endif ()
 
 if (COKE_ENABLE_EXAMPLE)
     add_subdirectory(example)
@@ -221,7 +233,7 @@ elseif (COKE_MASTER_PROJECT)
     set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0")
     set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
     set(CPACK_RPM_PACKAGE_RELEASE_DIST ON)
-    set(CPACK_RPM_PACKAGE_RELEASE "0")
+    set(CPACK_RPM_PACKAGE_RELEASE 1)
 
     include(CPack)
 endif ()

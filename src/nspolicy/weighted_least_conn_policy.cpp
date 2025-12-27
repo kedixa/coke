@@ -46,8 +46,9 @@ void WeightedLeastConnPolicy::remove_from_policy(AddrInfo *addr)
     available_weight -= addr->get_weight();
 }
 
-AddrInfo *WeightedLeastConnPolicy::select_addr(const ParsedURI &uri,
-                                               const SelectHistory &history)
+AddrInfo *
+WeightedLeastConnPolicy::select_addr([[maybe_unused]] const ParsedURI &uri,
+                                     const SelectHistory &history)
 {
     if (available_weight == 0)
         return nullptr;

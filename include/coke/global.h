@@ -27,16 +27,16 @@
 #define COKE_BUILD_VERSION_NUMBER(major, minor, patch)                         \
     (major * 0x010000L + minor * 0x0100L + patch * 0x01L)
 
-#define COKE_VERSION_NUMBER COKE_BUILD_VERSION_NUMBER(0, 6, 0)
+#define COKE_VERSION_NUMBER COKE_BUILD_VERSION_NUMBER(0, 7, 0)
 
 namespace coke {
 
 // version
 inline constexpr int COKE_MAJOR_VERSION = 0;
-inline constexpr int COKE_MINOR_VERSION = 6;
+inline constexpr int COKE_MINOR_VERSION = 7;
 inline constexpr int COKE_PATCH_VERSION = 0;
 
-inline constexpr const char COKE_VERSION_STR[] = "0.6.0";
+inline constexpr const char COKE_VERSION_STR[] = "0.7.0";
 
 // state constant from workflow, see WFTask.h
 inline constexpr int STATE_UNDEFINED = -1;

@@ -21,11 +21,15 @@ set(ALL_TESTS
     test_option_parser
     test_parallel
     test_queue
+    test_redis_command
+    test_redis_parser
+    test_redis_value
     test_scope
     test_semaphore
     test_series
     test_shared_mutex
     test_sleep
+    test_str_holder
     test_str_packer
     test_wait_group
     test_wait
