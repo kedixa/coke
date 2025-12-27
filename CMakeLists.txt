@@ -38,7 +38,7 @@ endif ()
 
 project(
     coke
-    VERSION 0.6.0
+    VERSION 0.7.0
     LANGUAGES CXX
 )
 
@@ -111,6 +111,13 @@ endif ()
 include(cmake/find-workflow.cmake)
 
 add_subdirectory(src)
+
+if (COKE_MASTER_PROJECT AND COKE_WORKFLOW_SRC_DIR)
+    # disable unused parameter warnings
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+        add_compile_options(-Wno-unused-parameter)
+    endif ()
+endif ()
 
 if (COKE_ENABLE_EXAMPLE)
     add_subdirectory(example)
