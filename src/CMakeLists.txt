@@ -46,19 +46,28 @@ if (TARGET workflow-shared)
     add_dependencies(coke-objs workflow-shared)
 endif ()
 
+add_library(coke-wfhdrs INTERFACE)
+
 if (TARGET coke::workflow-static)
-    target_include_directories(coke-objs
-        PRIVATE
+    target_include_directories(coke-wfhdrs
+        SYSTEM
+        INTERFACE
             $<TARGET_PROPERTY:coke::workflow-static,INTERFACE_INCLUDE_DIRECTORIES>
-            $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
     )
 elseif (TARGET coke::workflow-shared)
-    target_include_directories(coke-objs
-        PRIVATE
+    target_include_directories(coke-wfhdrs
+        SYSTEM
+        INTERFACE
             $<TARGET_PROPERTY:coke::workflow-static,INTERFACE_INCLUDE_DIRECTORIES>
-            $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
     )
 endif ()
+
+target_link_libraries(coke-objs PRIVATE coke-wfhdrs)
+
+target_include_directories(coke-objs
+    PRIVATE
+        $<BUILD_INTERFACE:${COKE_INCLUDE_DIR}>
+)
 
 set_target_properties(coke-objs PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
@@ -110,7 +119,7 @@ if (COKE_BUILD_SHARED)
         PROPERTIES
             OUTPUT_NAME ${COKE_LIBRARY}
             VERSION ${PROJECT_VERSION}
-            SOVERSION ${PROJECT_VERSION_MAJOR}
+            SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     )
 
     add_library(coke::${COKE_SHARED_LIBRARY} ALIAS ${COKE_SHARED_LIBRARY})
